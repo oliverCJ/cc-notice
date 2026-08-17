@@ -65,6 +65,14 @@ describe('SoundOutputFields', () => {
     );
 
     await waitFor(() => expect(mocks.soundAssets).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('combobox', { name: '内置音频' }));
+    fireEvent.click(screen.getByRole('option', { name: 'done' }));
+
+    expect(onChange).toHaveBeenCalledWith({
+      ...output,
+      soundFilePath: 'builtin:done.wav'
+    });
+
     fireEvent.click(screen.getByRole('combobox', { name: '音频来源' }));
     fireEvent.click(screen.getByRole('option', { name: '用户目录' }));
     fireEvent.click(screen.getByRole('combobox', { name: '用户目录音频' }));
@@ -74,6 +82,28 @@ describe('SoundOutputFields', () => {
       ...output,
       soundFilePath: '/home/.cc-notice/sounds/soft.mp3'
     });
+  });
+
+  test('matches imported built-in sound reference in built-in selector', async () => {
+    mocks.soundAssets.mockResolvedValueOnce([
+      { id: 'builtin:done.mp3', label: 'done', path: '/app/sounds/done.mp3', source: 'built-in' }
+    ]);
+
+    render(
+      <SoundOutputFields
+        internalEvent="agent.completed"
+        output={{ ...output, soundFilePath: 'builtin:done.mp3' }}
+        onChange={vi.fn()}
+      />
+    );
+
+    await waitFor(() => expect(mocks.soundAssets).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', { name: '内置音频' })).toBeInTheDocument()
+    );
+
+    expect(screen.getAllByDisplayValue('done.mp3')).toHaveLength(1);
+    expect(screen.queryByLabelText(/音频文件/)).not.toBeInTheDocument();
   });
 
   test('previews selected sound with current volume and duration', async () => {

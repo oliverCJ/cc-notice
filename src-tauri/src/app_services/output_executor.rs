@@ -1,10 +1,12 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Once;
 use std::time::{Duration, Instant};
 
 use tauri::Manager;
 
 use crate::app_services::inbound_event_service::SubmitRelayEventResult;
+use crate::app_services::sound_asset_service::SoundAssetService;
 use crate::core::desktop_notice::{
     DesktopMascotPlayMode, DesktopMascotState, DesktopNoticeColorMode, DesktopNoticeColorStop,
     DesktopNoticeConfigError, DesktopNoticeEdge, DesktopNoticeErrorCode,
@@ -341,12 +343,13 @@ impl<N, W, S, D> CombinedOutputExecutor<N, W, S, D> {
 
 impl NativeOutputExecutor {
     pub fn from_app_handle(app: tauri::AppHandle) -> Self {
+        let resource_dir = app.path().resource_dir().ok();
         CombinedOutputExecutor::new(
             ThrottledNotificationExecutor::new(NativeNotificationSender::from_app_handle(
                 app.clone(),
             )),
             NativeWebhookExecutor::default(),
-            NativeSoundExecutor::default(),
+            NativeSoundExecutor::new(NativeSoundSender::from_runtime_paths(resource_dir)),
             NativeDesktopNoticeExecutor::new(NativeDesktopNoticeSender::from_app_handle(app)),
         )
     }
@@ -403,11 +406,12 @@ impl<N, S, D> LocalOutputExecutor<N, S, D> {
 
 impl NativeLocalOutputExecutor {
     pub fn from_app_handle(app: tauri::AppHandle) -> Self {
+        let resource_dir = app.path().resource_dir().ok();
         LocalOutputExecutor::new(
             ThrottledNotificationExecutor::new(NativeNotificationSender::from_app_handle(
                 app.clone(),
             )),
-            NativeSoundExecutor::default(),
+            NativeSoundExecutor::new(NativeSoundSender::from_runtime_paths(resource_dir)),
             NativeDesktopNoticeExecutor::new(NativeDesktopNoticeSender::from_app_handle(app)),
         )
     }
@@ -728,10 +732,31 @@ impl WebhookSender for AsyncReqwestWebhookSender {
 }
 
 #[derive(Debug, Default)]
-pub struct NativeSoundSender;
+pub struct NativeSoundSender {
+    sound_asset_service: Option<SoundAssetService>,
+}
+
+impl NativeSoundSender {
+    pub fn from_runtime_paths(resource_dir: Option<PathBuf>) -> Self {
+        Self {
+            sound_asset_service: Some(SoundAssetService::from_default_runtime_paths(resource_dir)),
+        }
+    }
+
+    fn resolve_file_path(&self, file_path: &str) -> String {
+        self.sound_asset_service
+            .as_ref()
+            .map(|service| service.resolve_sound_reference(file_path))
+            .unwrap_or_else(|| file_path.to_string())
+    }
+}
 
 impl SoundSender for NativeSoundSender {
     fn play(&self, request: SoundRequest) -> Result<(), String> {
+        let request = SoundRequest {
+            file_path: self.resolve_file_path(&request.file_path),
+            ..request
+        };
         tauri::async_runtime::spawn(async move {
             let rule_id = request.rule_id.clone();
             if let Err(error) = play_native_sound(request) {

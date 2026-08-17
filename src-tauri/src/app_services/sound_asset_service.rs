@@ -7,6 +7,7 @@ use crate::infrastructure::path_text::user_facing_path_text;
 
 const USER_SOUND_DIR_NAME: &str = "sounds";
 const SUPPORTED_AUDIO_EXTENSIONS: &[&str] = &["wav", "aiff", "aif", "mp3", "m4a"];
+pub const BUILTIN_SOUND_REFERENCE_PREFIX: &str = "builtin:";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -71,10 +72,42 @@ impl SoundAssetService {
         self.app_home.join(USER_SOUND_DIR_NAME)
     }
 
+    pub fn resolve_sound_reference(&self, reference: &str) -> String {
+        let Some(file_name) = builtin_sound_file_name(reference) else {
+            return reference.to_string();
+        };
+        user_facing_path_text(&self.built_in_dir.join(file_name).to_string_lossy())
+    }
+
     fn ensure_user_sound_dir(&self) -> Result<(), String> {
         std::fs::create_dir_all(self.user_sound_dir())
             .map_err(|error| format!("failed to initialize user sound directory: {error}"))
     }
+}
+
+pub fn builtin_sound_reference(file_name: &str) -> Option<String> {
+    if !is_safe_sound_file_name(file_name) {
+        return None;
+    }
+    Some(format!("{BUILTIN_SOUND_REFERENCE_PREFIX}{file_name}"))
+}
+
+fn builtin_sound_file_name(reference: &str) -> Option<&str> {
+    let file_name = reference.strip_prefix(BUILTIN_SOUND_REFERENCE_PREFIX)?;
+    if is_safe_sound_file_name(file_name) {
+        Some(file_name)
+    } else {
+        None
+    }
+}
+
+fn is_safe_sound_file_name(file_name: &str) -> bool {
+    !file_name.trim().is_empty()
+        && !file_name.contains('/')
+        && !file_name.contains('\\')
+        && file_name != "."
+        && file_name != ".."
+        && is_supported_audio_file(Path::new(file_name))
 }
 
 fn scan_sound_dir(dir: &Path, source: SoundAssetSource) -> Vec<SoundAsset> {
@@ -183,6 +216,38 @@ mod tests {
         assert_eq!(
             r"\\server\share\done.mp3",
             user_facing_path_text(r"\\?\UNC\server\share\done.mp3")
+        );
+    }
+
+    #[test]
+    fn resolves_builtin_sound_reference_from_runtime_resource_dir() {
+        let root = unique_temp_root("cc-notice-resolve-builtin-sound");
+        let service = SoundAssetService::from_runtime_paths(
+            Some(root.join("resources")),
+            root.join(".cc-notice"),
+        );
+
+        assert_eq!(
+            root.join("resources")
+                .join("assets")
+                .join("sounds")
+                .join("done.mp3")
+                .to_string_lossy(),
+            service.resolve_sound_reference("builtin:done.mp3")
+        );
+    }
+
+    #[test]
+    fn leaves_custom_sound_path_unchanged_when_resolving_reference() {
+        let root = unique_temp_root("cc-notice-resolve-custom-sound");
+        let service = SoundAssetService::from_runtime_paths(
+            Some(root.join("resources")),
+            root.join(".cc-notice"),
+        );
+
+        assert_eq!(
+            "/Users/test/.cc-notice/sounds/custom.mp3",
+            service.resolve_sound_reference("/Users/test/.cc-notice/sounds/custom.mp3")
         );
     }
 }

@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
+use crate::app_services::sound_asset_service::builtin_sound_reference;
 use crate::core::desktop_notice::{
     is_registered_mascot_asset_pack, validate_desktop_notice_instances, DesktopNoticeInstance,
     DesktopNoticeVariant,
@@ -304,6 +305,7 @@ impl ProfilePackageService {
         existing_desktop_notice_instance_ids: &[String],
     ) -> Result<ImportedProfilePackage, String> {
         let mut profile = package.profile.clone();
+        normalize_profile_sound_references(&mut profile);
         profile.id = generate_profile_id(imported_name);
         profile.name = normalized_import_profile_name(imported_name)?;
         let desktop_notice_bindings = build_imported_desktop_notice_bindings(
@@ -354,8 +356,42 @@ fn sanitize_export_profile(
                 }
             }
         }
+        if rule.output.output_type == HardwareOutputType::Sound {
+            normalize_export_sound_reference(rule);
+        }
     }
     profile
+}
+
+fn normalize_profile_sound_references(profile: &mut NoticeProfile) {
+    for rule in &mut profile.hardware_rules {
+        if rule.output.output_type == HardwareOutputType::Sound {
+            normalize_export_sound_reference(rule);
+        }
+    }
+}
+
+fn normalize_export_sound_reference(rule: &mut HardwareRule) {
+    let Some(file_path) = rule.output.sound_file_path.as_deref() else {
+        return;
+    };
+    let Some(file_name) = built_in_sound_file_name_from_path(file_path) else {
+        return;
+    };
+    if let Some(reference) = builtin_sound_reference(&file_name) {
+        rule.output.sound_file_path = Some(reference);
+    }
+}
+
+fn built_in_sound_file_name_from_path(file_path: &str) -> Option<String> {
+    let normalized = file_path.replace('\\', "/");
+    let marker = "/assets/sounds/";
+    let marker_index = normalized.rfind(marker)?;
+    let file_name = normalized[(marker_index + marker.len())..].trim();
+    if file_name.is_empty() || file_name.contains('/') {
+        return None;
+    }
+    Some(file_name.to_string())
 }
 
 fn build_source_desktop_notice_key_map(profile: &NoticeProfile) -> BTreeMap<String, String> {
@@ -1095,6 +1131,75 @@ mod tests {
     }
 
     #[test]
+    fn export_package_stores_builtin_sound_as_stable_asset_id() {
+        let mut source = NoticeProfile::daily_coding();
+        source.hardware_rules = vec![sound_rule(
+            "sound-rule",
+            "/Applications/CC Notice.app/Contents/Resources/assets/sounds/done.mp3",
+        )];
+
+        let package = ProfilePackageService::export_package(&source, "2026-08-17T10:00:00+08:00");
+
+        assert_eq!(
+            Some("builtin:done.mp3"),
+            package.profile.hardware_rules[0]
+                .output
+                .sound_file_path
+                .as_deref()
+        );
+    }
+
+    #[test]
+    fn export_package_keeps_user_sound_file_path() {
+        let mut source = NoticeProfile::daily_coding();
+        source.hardware_rules = vec![sound_rule(
+            "sound-rule",
+            "/Users/test/.cc-notice/sounds/custom.mp3",
+        )];
+
+        let package = ProfilePackageService::export_package(&source, "2026-08-17T10:00:00+08:00");
+
+        assert_eq!(
+            Some("/Users/test/.cc-notice/sounds/custom.mp3"),
+            package.profile.hardware_rules[0]
+                .output
+                .sound_file_path
+                .as_deref()
+        );
+    }
+
+    #[test]
+    fn import_package_normalizes_legacy_builtin_sound_absolute_path() {
+        let mut source = NoticeProfile::daily_coding();
+        source.hardware_rules = vec![sound_rule(
+            "sound-rule",
+            "/Applications/CC Notice.app/Contents/Resources/assets/sounds/done.mp3",
+        )];
+        let package = ProfilePackage {
+            schema_version: 1,
+            kind: PROFILE_PACKAGE_KIND.to_string(),
+            exported_at: "2026-08-17T10:00:00+08:00".to_string(),
+            app_version: "1.0.0".to_string(),
+            profile: source,
+            device_rule_hints: Vec::new(),
+            desktop_notice_instances: Vec::new(),
+        };
+
+        let imported = ProfilePackageService::build_imported_profile(
+            &package,
+            "import-a1b2c3-Daily Coding",
+            &[],
+            &[],
+        )
+        .expect("legacy package should import");
+
+        assert_eq!(
+            Some("builtin:done.mp3"),
+            imported.hardware_rules[0].output.sound_file_path.as_deref()
+        );
+    }
+
+    #[test]
     fn import_package_sets_display_device_id_for_legacy_display_rule_binding() {
         let mut source = NoticeProfile::daily_coding();
         source.hardware_rules = vec![legacy_display_rule("display-rule")];
@@ -1430,6 +1535,17 @@ mod tests {
         rule.output.notification_level = Some("info".to_string());
         rule.output.notification_title = Some("Title".to_string());
         rule.output.notification_body = Some("Body".to_string());
+        rule
+    }
+
+    fn sound_rule(rule_id: &str, file_path: &str) -> HardwareRule {
+        let mut rule = device_rule(rule_id, "unused-device", "unused-channel");
+        rule.output.output_type = HardwareOutputType::Sound;
+        rule.output.channel_actions.clear();
+        rule.output.sound_file_path = Some(file_path.to_string());
+        rule.output.sound_volume_percent = Some(80);
+        rule.output.sound_max_duration_ms = Some(3000);
+        rule.output.sound_throttle_seconds = Some(30);
         rule
     }
 

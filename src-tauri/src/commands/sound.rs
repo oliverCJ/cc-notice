@@ -10,12 +10,14 @@ pub fn sound_assets(app: tauri::AppHandle) -> Result<Vec<SoundAsset>, String> {
 
 #[tauri::command]
 pub fn preview_sound(
+    app: tauri::AppHandle,
     file_path: String,
     volume_percent: u8,
     max_duration_ms: u32,
 ) -> Result<(), String> {
+    let resource_dir = app.path().resource_dir().ok();
     preview_sound_with_sender(
-        &NativeSoundSender,
+        &NativeSoundSender::from_runtime_paths(resource_dir),
         file_path,
         volume_percent,
         max_duration_ms,

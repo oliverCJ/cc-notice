@@ -52,7 +52,8 @@ export function SoundOutputFields({
     () => assets.filter((asset) => asset.source === 'user'),
     [assets]
   );
-  const currentAssetId = assets.find((asset) => asset.path === filePath)?.id ?? '';
+  const currentAssetId =
+    assets.find((asset) => asset.id === filePath || asset.path === filePath)?.id ?? '';
 
   useEffect(() => {
     let cancelled = false;
@@ -83,9 +84,18 @@ export function SoundOutputFields({
   }, [toast]);
 
   useEffect(() => {
-    if (assets.some((asset) => asset.source === 'built-in' && asset.path === filePath)) {
+    if (
+      assets.some(
+        (asset) =>
+          asset.source === 'built-in' && (asset.id === filePath || asset.path === filePath)
+      )
+    ) {
       setSourceMode('built-in');
-    } else if (assets.some((asset) => asset.source === 'user' && asset.path === filePath)) {
+    } else if (
+      assets.some(
+        (asset) => asset.source === 'user' && (asset.id === filePath || asset.path === filePath)
+      )
+    ) {
       setSourceMode('user');
     } else if (filePath) {
       setSourceMode('custom');
@@ -119,7 +129,7 @@ export function SoundOutputFields({
     }
     onChange({
       ...output,
-      soundFilePath: asset.path
+      soundFilePath: asset.source === 'built-in' ? asset.id : asset.path
     });
   }
 
@@ -291,6 +301,9 @@ export function SoundOutputFields({
 }
 
 function userFacingSoundPath(path: string) {
+  if (path.startsWith('builtin:')) {
+    return path.slice('builtin:'.length);
+  }
   if (path.startsWith('\\\\?\\')) {
     const rest = path.slice(4);
     if (rest.startsWith('UNC\\')) {
