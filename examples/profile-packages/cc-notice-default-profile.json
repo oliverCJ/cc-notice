@@ -1,0 +1,843 @@
+{
+  "schemaVersion": 2,
+  "kind": "cc-notice-profile-package",
+  "exportedAt": "2026-08-17T22:33:05.298819+08:00",
+  "appVersion": "1.1.1",
+  "profile": {
+    "id": "profile-2d3b9031",
+    "name": "预设-1",
+    "enabledHookEvents": [],
+    "aiEventMappings": [
+      {
+        "id": "codex-session-start",
+        "source": "codex",
+        "event": "SessionStart",
+        "internalEvent": "agent.started",
+        "enabled": true
+      },
+      {
+        "id": "codex-user-prompt",
+        "source": "codex",
+        "event": "UserPromptSubmit",
+        "internalEvent": "agent.started",
+        "enabled": true
+      },
+      {
+        "id": "codex-post-tool-use",
+        "source": "codex",
+        "event": "PostToolUse",
+        "internalEvent": "agent.working",
+        "enabled": true
+      },
+      {
+        "id": "codex-permission-request",
+        "source": "codex",
+        "event": "PermissionRequest",
+        "internalEvent": "agent.waiting_input",
+        "enabled": true
+      },
+      {
+        "id": "codex-stop",
+        "source": "codex",
+        "event": "Stop",
+        "internalEvent": "agent.completed",
+        "enabled": true
+      },
+      {
+        "id": "claude-session-start",
+        "source": "claude-code",
+        "event": "SessionStart",
+        "internalEvent": "agent.started",
+        "enabled": true
+      },
+      {
+        "id": "claude-user-prompt",
+        "source": "claude-code",
+        "event": "UserPromptSubmit",
+        "internalEvent": "agent.started",
+        "enabled": true
+      },
+      {
+        "id": "claude-post-tool-use",
+        "source": "claude-code",
+        "event": "PostToolUse",
+        "internalEvent": "agent.working",
+        "enabled": true
+      },
+      {
+        "id": "claude-post-tool-failure",
+        "source": "claude-code",
+        "event": "PostToolUseFailure",
+        "internalEvent": "agent.failed",
+        "enabled": true
+      },
+      {
+        "id": "claude-notification",
+        "source": "claude-code",
+        "event": "Notification",
+        "internalEvent": "notification",
+        "enabled": true
+      },
+      {
+        "id": "claude-permission-request",
+        "source": "claude-code",
+        "event": "PermissionRequest",
+        "internalEvent": "agent.waiting_input",
+        "enabled": true
+      },
+      {
+        "id": "claude-stop",
+        "source": "claude-code",
+        "event": "Stop",
+        "internalEvent": "agent.completed",
+        "enabled": true
+      },
+      {
+        "id": "claude-stop-failure",
+        "source": "claude-code",
+        "event": "StopFailure",
+        "internalEvent": "agent.failed",
+        "enabled": true
+      },
+      {
+        "id": "codex-subagentstop-agent-working",
+        "source": "codex",
+        "event": "SubagentStop",
+        "internalEvent": "agent.working",
+        "enabled": true
+      },
+      {
+        "id": "claude-code-sessionend-agent-completed",
+        "source": "claude-code",
+        "event": "SessionEnd",
+        "internalEvent": "agent.completed",
+        "enabled": true
+      },
+      {
+        "id": "claude-code-precompact-context-compacting",
+        "source": "claude-code",
+        "event": "PreCompact",
+        "internalEvent": "context.compacting",
+        "enabled": true
+      },
+      {
+        "id": "codex-precompact-context-compacting",
+        "source": "codex",
+        "event": "PreCompact",
+        "internalEvent": "context.compacting",
+        "enabled": true
+      }
+    ],
+    "hardwareRules": [
+      {
+        "id": "agent-working-system-notification-output",
+        "internalEvent": "agent.working",
+        "output": {
+          "type": "system-notification",
+          "durationMs": null,
+          "text": null,
+          "notificationLevel": "info",
+          "notificationTitle": "{{source}} · {{internalEvent}}",
+          "notificationBody": "模型：{{model}}，事件：{{event}}",
+          "notificationTitleMaxChars": 80,
+          "notificationBodyMaxChars": 300,
+          "notificationThrottleSeconds": 30,
+          "notificationSound": "default"
+        },
+        "priority": 60,
+        "enabled": false
+      },
+      {
+        "id": "agent-waiting-input-system-notification-output",
+        "internalEvent": "agent.waiting_input",
+        "output": {
+          "type": "system-notification",
+          "durationMs": null,
+          "text": null,
+          "notificationLevel": "info",
+          "notificationTitle": "{{source}} 等待输入",
+          "notificationBody": "当前事件：{{internalEvent}}",
+          "notificationTitleMaxChars": 80,
+          "notificationBodyMaxChars": 300,
+          "notificationThrottleSeconds": 30,
+          "notificationSound": "default"
+        },
+        "priority": 80,
+        "enabled": true
+      },
+      {
+        "id": "agent-completed-system-notification-output",
+        "internalEvent": "agent.completed",
+        "output": {
+          "type": "system-notification",
+          "durationMs": null,
+          "text": null,
+          "notificationLevel": "info",
+          "notificationTitle": "{{source}} 已完成任务",
+          "notificationBody": "{{last_assistant_message}}",
+          "notificationTitleMaxChars": 80,
+          "notificationBodyMaxChars": 300,
+          "notificationThrottleSeconds": 30,
+          "notificationSound": "default"
+        },
+        "priority": 60,
+        "enabled": true
+      },
+      {
+        "id": "agent-failed-system-notification-output",
+        "internalEvent": "agent.failed",
+        "output": {
+          "type": "system-notification",
+          "durationMs": null,
+          "text": null,
+          "notificationLevel": "info",
+          "notificationTitle": "{{source}} 任务异常",
+          "notificationBody": "事件：{{event}}，模型：{{model}}",
+          "notificationTitleMaxChars": 80,
+          "notificationBodyMaxChars": 300,
+          "notificationThrottleSeconds": 30,
+          "notificationSound": "default"
+        },
+        "priority": 100,
+        "enabled": true
+      },
+      {
+        "id": "agent-completed-sound-output",
+        "internalEvent": "agent.completed",
+        "output": {
+          "type": "sound",
+          "durationMs": null,
+          "text": null,
+          "soundFilePath": "builtin:done.mp3",
+          "soundVolumePercent": 80,
+          "soundMaxDurationMs": 3000,
+          "soundThrottleSeconds": 30
+        },
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "agent-failed-sound-output",
+        "internalEvent": "agent.failed",
+        "output": {
+          "type": "sound",
+          "durationMs": null,
+          "text": null,
+          "soundFilePath": "builtin:failed.mp3",
+          "soundVolumePercent": 80,
+          "soundMaxDurationMs": 3000,
+          "soundThrottleSeconds": 30
+        },
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "agent-started-sound-output",
+        "internalEvent": "agent.started",
+        "output": {
+          "type": "sound",
+          "durationMs": null,
+          "text": null,
+          "soundFilePath": "builtin:alert.mp3",
+          "soundVolumePercent": 80,
+          "soundMaxDurationMs": 3000,
+          "soundThrottleSeconds": 30
+        },
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "agent-waiting-input-sound-output",
+        "internalEvent": "agent.waiting_input",
+        "output": {
+          "type": "sound",
+          "durationMs": null,
+          "text": null,
+          "soundFilePath": "builtin:alert.mp3",
+          "soundVolumePercent": 80,
+          "soundMaxDurationMs": 3000,
+          "soundThrottleSeconds": 30
+        },
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "agent-completed-device-channel-output",
+        "internalEvent": "agent.completed",
+        "output": {
+          "type": "device-channel",
+          "channelActions": [
+            {
+              "id": "action-1",
+              "deviceId": "source-device-1",
+              "channelId": "pin.gp2",
+              "channelAction": "activate",
+              "durationMs": 5000
+            },
+            {
+              "id": "action-2",
+              "deviceId": "source-device-1",
+              "channelId": "pin.gp1",
+              "channelAction": "deactivate"
+            },
+            {
+              "id": "action-3",
+              "deviceId": "source-device-1",
+              "channelId": "buzzer.gp18",
+              "channelAction": "pattern",
+              "pattern": "success"
+            }
+          ],
+          "durationMs": null,
+          "text": null,
+          "displayDeviceId": ""
+        },
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "agent-failed-device-channel-output",
+        "internalEvent": "agent.failed",
+        "output": {
+          "type": "device-channel",
+          "channelActions": [
+            {
+              "id": "action-1",
+              "deviceId": "source-device-1",
+              "channelId": "pin.gp0",
+              "channelAction": "blink",
+              "durationMs": 5000,
+              "intervalMs": 500
+            },
+            {
+              "id": "action-2",
+              "deviceId": "source-device-1",
+              "channelId": "pin.gp1",
+              "channelAction": "blink",
+              "durationMs": 5000,
+              "intervalMs": 500
+            }
+          ],
+          "durationMs": null,
+          "text": null,
+          "displayDeviceId": ""
+        },
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "agent-started-device-channel-output",
+        "internalEvent": "agent.started",
+        "output": {
+          "type": "device-channel",
+          "channelActions": [
+            {
+              "id": "action-1",
+              "deviceId": "source-device-1",
+              "channelId": "pin.gp1",
+              "channelAction": "pulse",
+              "durationMs": 2000
+            },
+            {
+              "id": "action-2",
+              "deviceId": "source-device-1",
+              "channelId": "buzzer.gp18",
+              "channelAction": "pattern",
+              "pattern": "working"
+            }
+          ],
+          "durationMs": null,
+          "text": null,
+          "displayDeviceId": ""
+        },
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "agent-waiting-input-device-channel-output",
+        "internalEvent": "agent.waiting_input",
+        "output": {
+          "type": "device-channel",
+          "channelActions": [
+            {
+              "id": "action-1",
+              "deviceId": "source-device-1",
+              "channelId": "pin.gp0",
+              "channelAction": "blink",
+              "durationMs": 5000,
+              "intervalMs": 500
+            },
+            {
+              "id": "action-2",
+              "deviceId": "source-device-1",
+              "channelId": "pin.gp1",
+              "channelAction": "blink",
+              "durationMs": 5000,
+              "intervalMs": 500
+            },
+            {
+              "id": "action-3",
+              "deviceId": "source-device-1",
+              "channelId": "pin.gp2",
+              "channelAction": "blink",
+              "durationMs": 5000,
+              "intervalMs": 500
+            },
+            {
+              "id": "action-4",
+              "deviceId": "source-device-1",
+              "channelId": "buzzer.gp18",
+              "channelAction": "pattern",
+              "pattern": "warning"
+            }
+          ],
+          "durationMs": null,
+          "text": null,
+          "displayDeviceId": ""
+        },
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "agent-working-device-channel-output",
+        "internalEvent": "agent.working",
+        "output": {
+          "type": "device-channel",
+          "channelActions": [
+            {
+              "id": "action-1",
+              "deviceId": "source-device-1",
+              "channelId": "pin.gp1",
+              "channelAction": "breathe",
+              "durationMs": 15000,
+              "intervalMs": 1200
+            }
+          ],
+          "durationMs": null,
+          "text": null,
+          "displayDeviceId": ""
+        },
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "notification-device-channel-output",
+        "internalEvent": "notification",
+        "output": {
+          "type": "device-channel",
+          "channelActions": [
+            {
+              "id": "action-1",
+              "deviceId": "source-device-1",
+              "channelId": "pin.gp2",
+              "channelAction": "blink",
+              "durationMs": 3000,
+              "intervalMs": 500
+            }
+          ],
+          "durationMs": null,
+          "text": null,
+          "displayDeviceId": ""
+        },
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "context-compacting-system-notification-output",
+        "internalEvent": "context.compacting",
+        "output": {
+          "type": "system-notification",
+          "durationMs": null,
+          "text": null,
+          "notificationLevel": "info",
+          "notificationTitle": "{{source}} · {{internalEvent}}",
+          "notificationBody": "模型：{{model}}，事件：{{event}}",
+          "notificationTitleMaxChars": 80,
+          "notificationBodyMaxChars": 300,
+          "notificationThrottleSeconds": 30,
+          "notificationSound": "default"
+        },
+        "priority": 50,
+        "enabled": false
+      },
+      {
+        "id": "context-compacting-device-channel-output",
+        "internalEvent": "context.compacting",
+        "output": {
+          "type": "device-channel",
+          "channelActions": [
+            {
+              "id": "action-1",
+              "deviceId": "source-device-1",
+              "channelId": "pin.gp0",
+              "channelAction": "breathe",
+              "durationMs": 10000,
+              "intervalMs": 1200
+            }
+          ],
+          "durationMs": null,
+          "text": null,
+          "displayDeviceId": ""
+        },
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "agent-completed-webhook-output",
+        "internalEvent": "agent.completed",
+        "output": {
+          "type": "webhook",
+          "durationMs": null,
+          "text": null,
+          "webhookMethod": "POST",
+          "webhookUrl": "https://example.com/replace-with-your-webhook",
+          "webhookHeaders": "{\n  \"Content-Type\": \"application/json\"\n}",
+          "webhookBody": "{\n  \"msg_type\": \"interactive\",\n  \"card\": {\n    \"type\": \"template\",\n    \"data\": {\n      \"template_id\": \"REPLACE_WITH_YOUR_TEMPLATE_ID\",\n      \"template_version_name\": \"REPLACE_WITH_YOUR_TEMPLATE_VERSION\",\n      \"template_variable\": {\n        \"title\": \"任务结束\",\n        \"source\": \"{{source}}\",\n        \"model\": \"{{model}}\",\n        \"event\": \"{{event}}\",\n        \"timestamp\": \"{{timestamp}}\",\n        \"pwd\": \"{{pwd}}\",\n        \"sessionId\": \"{{sessionId}}\",\n        \"permissionMode\": \"{{permissionMode}}\",\n        \"summary\": \"{{last_assistant_message}}\"\n      }\n    }\n  }\n}",
+          "webhookBodyMaxChars": 8000
+        },
+        "priority": 50,
+        "enabled": false
+      },
+      {
+        "id": "agent-working-desktop-notice-output",
+        "internalEvent": "agent.working",
+        "output": {
+          "type": "desktop-notice",
+          "durationMs": null,
+          "text": null,
+          "desktopNoticeTargets": [
+            {
+              "targetId": "source-desktop-notice-1",
+              "effect": "edge-breathing",
+              "colorMode": "solid",
+              "colors": [
+                {
+                  "color": "#FACC15",
+                  "position": 0
+                }
+              ],
+              "durationMs": 20000,
+              "animationPeriodMs": 4000,
+              "breathingPeriodMs": 4000,
+              "opacityPercent": 100,
+              "brightnessPercent": 100,
+              "restoreBehavior": "use-instance-idle",
+              "edge": "auto",
+              "mascotPlayMode": "default"
+            },
+            {
+              "targetId": "source-desktop-notice-2",
+              "effect": "solid",
+              "colorMode": "solid",
+              "colors": [
+                {
+                  "color": "#22C55E",
+                  "position": 0
+                }
+              ],
+              "durationMs": 20000,
+              "opacityPercent": 100,
+              "brightnessPercent": 100,
+              "restoreBehavior": "use-instance-idle",
+              "edge": "auto",
+              "mascotState": "working",
+              "mascotActionId": "working.loop",
+              "mascotPlayMode": "default"
+            }
+          ]
+        },
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "agent-completed-desktop-notice-output",
+        "internalEvent": "agent.completed",
+        "output": {
+          "type": "desktop-notice",
+          "durationMs": null,
+          "text": null,
+          "desktopNoticeTargets": [
+            {
+              "targetId": "source-desktop-notice-1",
+              "effect": "scan",
+              "colorMode": "solid",
+              "colors": [
+                {
+                  "color": "#22C55E",
+                  "position": 0
+                }
+              ],
+              "durationMs": 10000,
+              "animationPeriodMs": 2200,
+              "opacityPercent": 100,
+              "brightnessPercent": 100,
+              "restoreBehavior": "use-instance-idle",
+              "edge": "auto",
+              "mascotPlayMode": "default"
+            },
+            {
+              "targetId": "source-desktop-notice-2",
+              "effect": "solid",
+              "colorMode": "solid",
+              "colors": [
+                {
+                  "color": "#22C55E",
+                  "position": 0
+                }
+              ],
+              "durationMs": 10000,
+              "opacityPercent": 100,
+              "brightnessPercent": 100,
+              "restoreBehavior": "use-instance-idle",
+              "edge": "auto",
+              "mascotState": "success",
+              "mascotActionId": "success.hug",
+              "mascotPlayMode": "once-then-hold",
+              "mascotPlaybackWindowMs": 1800,
+              "mascotBubbleTemplate": "搞定"
+            }
+          ]
+        },
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "agent-waiting-input-desktop-notice-output",
+        "internalEvent": "agent.waiting_input",
+        "output": {
+          "type": "desktop-notice",
+          "durationMs": null,
+          "text": null,
+          "desktopNoticeTargets": [
+            {
+              "targetId": "source-desktop-notice-2",
+              "effect": "solid",
+              "colorMode": "solid",
+              "colors": [
+                {
+                  "color": "#22C55E",
+                  "position": 0
+                }
+              ],
+              "durationMs": 5000,
+              "opacityPercent": 100,
+              "brightnessPercent": 100,
+              "restoreBehavior": "use-instance-idle",
+              "edge": "auto",
+              "mascotState": "waiting-input",
+              "mascotActionId": "waiting-input.surprised",
+              "mascotPlayMode": "once-then-hold",
+              "mascotPlaybackWindowMs": 1800
+            }
+          ]
+        },
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "agent-started-desktop-notice-output",
+        "internalEvent": "agent.started",
+        "output": {
+          "type": "desktop-notice",
+          "durationMs": null,
+          "text": null,
+          "desktopNoticeTargets": [
+            {
+              "targetId": "source-desktop-notice-2",
+              "effect": "solid",
+              "colorMode": "solid",
+              "colors": [
+                {
+                  "color": "#22C55E",
+                  "position": 0
+                }
+              ],
+              "durationMs": 3000,
+              "opacityPercent": 100,
+              "brightnessPercent": 100,
+              "restoreBehavior": "use-instance-idle",
+              "edge": "auto",
+              "mascotState": "task-received",
+              "mascotActionId": "task-received.fly",
+              "mascotPlayMode": "once-then-hold"
+            }
+          ]
+        },
+        "priority": 50,
+        "enabled": true
+      }
+    ],
+    "device": {
+      "boardId": "rp2040-pico",
+      "transport": "serial"
+    }
+  },
+  "deviceRuleHints": [
+    {
+      "sourceDeviceKey": "source-device-1",
+      "boardId": "rp2040-pico",
+      "requirements": [
+        {
+          "ruleId": "agent-completed-device-channel-output",
+          "outputType": "device-channel",
+          "channelId": "pin.gp2",
+          "channelKind": null,
+          "action": "activate",
+          "extension": null
+        },
+        {
+          "ruleId": "agent-completed-device-channel-output",
+          "outputType": "device-channel",
+          "channelId": "pin.gp1",
+          "channelKind": null,
+          "action": "deactivate",
+          "extension": null
+        },
+        {
+          "ruleId": "agent-completed-device-channel-output",
+          "outputType": "device-channel",
+          "channelId": "buzzer.gp18",
+          "channelKind": null,
+          "action": "pattern",
+          "extension": null
+        },
+        {
+          "ruleId": "agent-failed-device-channel-output",
+          "outputType": "device-channel",
+          "channelId": "pin.gp0",
+          "channelKind": null,
+          "action": "blink",
+          "extension": null
+        },
+        {
+          "ruleId": "agent-failed-device-channel-output",
+          "outputType": "device-channel",
+          "channelId": "pin.gp1",
+          "channelKind": null,
+          "action": "blink",
+          "extension": null
+        },
+        {
+          "ruleId": "agent-started-device-channel-output",
+          "outputType": "device-channel",
+          "channelId": "pin.gp1",
+          "channelKind": null,
+          "action": "pulse",
+          "extension": null
+        },
+        {
+          "ruleId": "agent-started-device-channel-output",
+          "outputType": "device-channel",
+          "channelId": "buzzer.gp18",
+          "channelKind": null,
+          "action": "pattern",
+          "extension": null
+        },
+        {
+          "ruleId": "agent-waiting-input-device-channel-output",
+          "outputType": "device-channel",
+          "channelId": "pin.gp0",
+          "channelKind": null,
+          "action": "blink",
+          "extension": null
+        },
+        {
+          "ruleId": "agent-waiting-input-device-channel-output",
+          "outputType": "device-channel",
+          "channelId": "pin.gp1",
+          "channelKind": null,
+          "action": "blink",
+          "extension": null
+        },
+        {
+          "ruleId": "agent-waiting-input-device-channel-output",
+          "outputType": "device-channel",
+          "channelId": "pin.gp2",
+          "channelKind": null,
+          "action": "blink",
+          "extension": null
+        },
+        {
+          "ruleId": "agent-waiting-input-device-channel-output",
+          "outputType": "device-channel",
+          "channelId": "buzzer.gp18",
+          "channelKind": null,
+          "action": "pattern",
+          "extension": null
+        },
+        {
+          "ruleId": "agent-working-device-channel-output",
+          "outputType": "device-channel",
+          "channelId": "pin.gp1",
+          "channelKind": null,
+          "action": "breathe",
+          "extension": null
+        },
+        {
+          "ruleId": "notification-device-channel-output",
+          "outputType": "device-channel",
+          "channelId": "pin.gp2",
+          "channelKind": null,
+          "action": "blink",
+          "extension": null
+        },
+        {
+          "ruleId": "context-compacting-device-channel-output",
+          "outputType": "device-channel",
+          "channelId": "pin.gp0",
+          "channelKind": null,
+          "action": "breathe",
+          "extension": null
+        }
+      ]
+    }
+  ],
+  "desktopNoticeInstances": [
+    {
+      "id": "source-desktop-notice-2",
+      "name": "G7精灵",
+      "variant": "mascot",
+      "enabled": true,
+      "showOnStartup": false,
+      "alwaysOnTop": true,
+      "idleBehavior": "hidden",
+      "customLightbar": null,
+      "edgeLightbar": null,
+      "mascot": {
+        "assetPackId": "g7-buddy",
+        "stageSize": {
+          "width": 200,
+          "height": 200
+        },
+        "presetPosition": "custom",
+        "idleState": "idle",
+        "interactionEnabled": false,
+        "bubbleEnabled": false,
+        "bubblePlacement": "top-left",
+        "bubbleFontSizePx": 18,
+        "bubbleFontId": "comic"
+      }
+    },
+    {
+      "id": "source-desktop-notice-1",
+      "name": "四周",
+      "variant": "edge-lightbar",
+      "enabled": true,
+      "showOnStartup": false,
+      "alwaysOnTop": true,
+      "idleBehavior": "hidden",
+      "customLightbar": null,
+      "edgeLightbar": {
+        "enabledEdges": [
+          "right",
+          "left",
+          "bottom"
+        ],
+        "thicknessPx": 30,
+        "insetPx": 0,
+        "opacityPercent": 100
+      },
+      "mascot": null
+    }
+  ]
+}

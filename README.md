@@ -122,6 +122,21 @@ Arduino Uno / Nano、Pro Micro 和 STM32 受限于 Flash / SRAM 或烧录方式�
 4. 在规则页面配置事件映射和输出方式。
 5. 如果使用硬件设备，在固件页面烧录固件，再到设备页面识别和注册设备。
 
+## 预设配置模板
+
+仓库提供 [examples/profile-packages/cc-notice-default-profile.json](examples/profile-packages/cc-notice-default-profile.json)，可作为预设配置模板导入软件，快速获得一套面向 Claude Code / Codex 的常用事件映射和输出规则。
+
+导入方式：
+
+1. 打开 CC Notice。
+2. 进入规则配置或配置方案管理区域。
+3. 选择导入配置，并选择 `examples/profile-packages/cc-notice-default-profile.json`。
+4. 导入后检查事件映射、通知、声音、桌面提示、Webhook 和设备通道规则是否符合自己的使用环境。
+
+该模板主要用于减少首次配置成本。导入后仍需要在 Hook 设置中为本机 AI 工具写入 Hook 配置；如果使用硬件设备，也需要先完成固件烧录、设备识别和注册，再把模板中的设备通道规则调整到实际连接的设备和引脚。
+
+模板中可能包含 Webhook 示例规则。启用前请替换为自己的 Webhook 地址和请求内容，并确认不会外发敏感信息。
+
 ## 开发构建
 
 依赖：
