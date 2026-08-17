@@ -1,0 +1,92 @@
+{
+  "id": "warm-buddy",
+  "nameKey": "desktopNotice.mascot.packs.warmBuddy",
+  "version": "1.0.0",
+  "renderer": "lottie",
+  "status": "ready",
+  "visualDirection": "warm-robot-buddy",
+  "animations": {
+    "idle": "animations/idle.json",
+    "working": "animations/working.json",
+    "success": "animations/success.json",
+    "error": "animations/error.json",
+    "wave": "animations/wave.json"
+  },
+  "states": [
+    "task-received",
+    "working",
+    "waiting-input",
+    "thinking",
+    "success",
+    "warning",
+    "error",
+    "idle"
+  ],
+  "actions": [
+    {
+      "id": "task-received.wave",
+      "state": "task-received",
+      "animation": "wave",
+      "loop": false,
+      "interruptible": true
+    },
+    {
+      "id": "working.loop",
+      "state": "working",
+      "animation": "working",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "waiting-input.look-around",
+      "state": "waiting-input",
+      "animation": "idle",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "thinking.loop",
+      "state": "thinking",
+      "animation": "working",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "success.jump",
+      "state": "success",
+      "animation": "success",
+      "loop": false,
+      "interruptible": false
+    },
+    {
+      "id": "warning.notice",
+      "state": "warning",
+      "animation": "wave",
+      "loop": false,
+      "interruptible": false
+    },
+    {
+      "id": "error.shake",
+      "state": "error",
+      "animation": "error",
+      "loop": false,
+      "interruptible": false
+    },
+    {
+      "id": "idle.breathe",
+      "state": "idle",
+      "animation": "idle",
+      "loop": true,
+      "interruptible": true
+    }
+  ],
+  "interactions": {
+    "hoverActionId": "idle.breathe",
+    "clickActionId": "task-received.wave"
+  },
+  "bubbleStyle": {
+    "maxLines": 2,
+    "maxCharsPerLine": 18,
+    "placements": ["top", "top-left", "top-right"]
+  }
+}

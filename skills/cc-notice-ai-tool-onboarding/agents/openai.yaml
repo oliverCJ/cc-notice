@@ -1,0 +1,4 @@
+interface:
+  display_name: "CC Notice AI 工具接入"
+  short_description: "接入新 AI 工具、Hook 配置和事件映射流程"
+  default_prompt: "使用 $cc-notice-ai-tool-onboarding 在核对官方 Hook 文档后规划并接入新的 CC Notice AI 工具。"

@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+
+# Frontend build output
+dist/
+
+# Tauri / Rust build output
+src-tauri/target/
+src-tauri/target-*/
+
+# Generated Tauri schemas and app bundles
+src-tauri/gen/schemas/
+src-tauri/target/
+src-tauri/bundle/
+
+# Runtime logs and local env
+*.log
+.env
+.env.*
+!.env.example
+
+# Release archives and unsigned local packages
+*.dmg
+*.pkg
+*.msi
+*.exe
+*.AppImage
+*.deb
+*.rpm
+*.zip
+!src/assets/desktop-mascots/custom-gif-template.zip
+*.tar.gz
+
+# Signing credentials must stay outside the repository.
+*.p12
+*.pfx
+*.cer
+*.crt
+*.key
+*.pem
+*.mobileprovision
+*.entitlements.local
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Test and coverage output
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Generated packaged assets
+src-tauri/assets/tools/cc-notice-relay

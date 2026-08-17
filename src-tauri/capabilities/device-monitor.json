@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "device-monitor",
+  "description": "Capability for device transport monitor windows.",
+  "windows": ["device-monitor:*"],
+  "permissions": ["core:default", "core:window:allow-destroy"]
+}

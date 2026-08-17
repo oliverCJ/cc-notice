@@ -1,0 +1,233 @@
+sources:
+  - id: codex
+    events:
+      - event: SessionStart
+        title: 会话开始
+        description: Codex 会话或恢复会话开始时触发。
+        scenario: 用于提示 AI 已进入工作状态。
+        defaultSelected: true
+        mappedNoticeEvent: agent.started
+      - event: SubagentStart
+        title: 子代理开始
+        description: Codex 启动子代理处理任务时触发。
+        scenario: 用于观察复杂任务中的子代理活动。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: PreToolUse
+        title: 工具调用前
+        description: Codex 即将调用命令、文件或其他工具前触发。
+        scenario: 用于提示 AI 正在执行具体操作。
+        defaultSelected: true
+        mappedNoticeEvent: tool.executing
+      - event: PermissionRequest
+        title: 权限请求
+        description: Codex 需要用户授权某个工具调用时触发。
+        scenario: 用于提示用户需要处理授权或确认。
+        defaultSelected: true
+        mappedNoticeEvent: agent.waiting_input
+      - event: PostToolUse
+        title: 工具调用后
+        description: Codex 工具调用完成后触发。
+        scenario: 用于提示一次命令或工具操作已结束。
+        defaultSelected: true
+        mappedNoticeEvent: agent.working
+      - event: PreCompact
+        title: 压缩前
+        description: Codex 即将压缩上下文前触发。
+        scenario: 用于观察上下文整理前的状态变化。
+        defaultSelected: false
+        mappedNoticeEvent: context.compacting
+      - event: PostCompact
+        title: 压缩后
+        description: Codex 完成上下文压缩后触发。
+        scenario: 用于观察上下文整理完成。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: UserPromptSubmit
+        title: 用户提交提示
+        description: 用户向 Codex 提交新提示时触发。
+        scenario: 用于提示新一轮 AI 工作即将开始。
+        defaultSelected: true
+        mappedNoticeEvent: agent.started
+      - event: SubagentStop
+        title: 子代理结束
+        description: Codex 子代理完成工作时触发。
+        scenario: 用于观察复杂任务中的子代理结束。
+        defaultSelected: false
+        mappedNoticeEvent: agent.completed
+      - event: Stop
+        title: 会话轮次结束
+        description: Codex 当前响应或任务轮次结束时触发。
+        scenario: 用于提示 AI 当前工作已完成。
+        defaultSelected: true
+        mappedNoticeEvent: agent.completed
+  - id: claude-code
+    events:
+      - event: SessionStart
+        title: 会话开始
+        description: Claude Code 会话开始时触发。
+        scenario: 用于提示 AI 已进入工作状态。
+        defaultSelected: true
+        mappedNoticeEvent: agent.started
+      - event: UserPromptSubmit
+        title: 用户提交提示
+        description: 用户提交新提示时触发。
+        scenario: 用于提示新一轮 AI 工作即将开始。
+        defaultSelected: true
+        mappedNoticeEvent: agent.started
+      - event: UserPromptExpansion
+        title: 提示扩展
+        description: Claude Code 扩展用户提示时触发。
+        scenario: 用于观察提示被扩展或改写的过程。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: PreToolUse
+        title: 工具调用前
+        description: 工具调用前触发。
+        scenario: 用于提示 AI 正在执行具体操作。
+        defaultSelected: true
+        mappedNoticeEvent: tool.executing
+      - event: PostToolUse
+        title: 工具调用后
+        description: 工具调用完成后触发。
+        scenario: 用于提示一次工具操作已结束。
+        defaultSelected: true
+        mappedNoticeEvent: agent.working
+      - event: PostToolUseFailure
+        title: 工具调用失败
+        description: 工具调用失败后触发。
+        scenario: 用于提示 AI 操作失败。
+        defaultSelected: true
+        mappedNoticeEvent: agent.failed
+      - event: PostToolBatch
+        title: 工具批次完成
+        description: 一批工具调用完成后触发。
+        scenario: 用于减少逐条工具事件带来的提示频率。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: Notification
+        title: 通知
+        description: Claude Code 发出通知时触发。
+        scenario: 用于提示用户需要关注状态变化。
+        defaultSelected: true
+        mappedNoticeEvent: notification
+      - event: PermissionRequest
+        title: 权限请求
+        description: 需要用户授权时触发。
+        scenario: 用于提示用户处理授权。
+        defaultSelected: true
+        mappedNoticeEvent: agent.waiting_input
+      - event: Stop
+        title: 停止
+        description: 当前响应或任务结束时触发。
+        scenario: 用于提示 AI 当前工作已完成。
+        defaultSelected: true
+        mappedNoticeEvent: agent.completed
+      - event: StopFailure
+        title: 停止失败
+        description: 停止流程失败时触发。
+        scenario: 用于提示任务结束阶段发生异常。
+        defaultSelected: true
+        mappedNoticeEvent: agent.failed
+      - event: SubagentStart
+        title: 子代理开始
+        description: 子代理开始处理任务时触发。
+        scenario: 用于观察复杂任务中的子代理活动。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: SubagentStop
+        title: 子代理结束
+        description: 子代理完成工作时触发。
+        scenario: 用于观察复杂任务中的子代理结束。
+        defaultSelected: false
+        mappedNoticeEvent: agent.completed
+      - event: TaskCreated
+        title: 任务创建
+        description: Claude Code 创建任务时触发。
+        scenario: 用于观察任务拆分和排队。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: TaskCompleted
+        title: 任务完成
+        description: Claude Code 任务完成时触发。
+        scenario: 用于观察任务完成。
+        defaultSelected: false
+        mappedNoticeEvent: agent.completed
+      - event: PreCompact
+        title: 压缩前
+        description: 上下文压缩前触发。
+        scenario: 用于观察上下文整理前状态。
+        defaultSelected: false
+        mappedNoticeEvent: context.compacting
+      - event: PostCompact
+        title: 压缩后
+        description: 上下文压缩后触发。
+        scenario: 用于观察上下文整理完成。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: SessionEnd
+        title: 会话结束
+        description: 会话结束时触发。
+        scenario: 用于提示 AI 会话已结束。
+        defaultSelected: false
+        mappedNoticeEvent: agent.completed
+      - event: ConfigChange
+        title: 配置变化
+        description: 配置变化时触发。
+        scenario: 用于观察 Claude Code 配置调整。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: CwdChanged
+        title: 目录变化
+        description: 工作目录变化时触发。
+        scenario: 用于观察工作上下文切换。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: FileChanged
+        title: 文件变化
+        description: 文件变化时触发。
+        scenario: 用于观察文件编辑活动。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: PermissionDenied
+        title: 权限拒绝
+        description: 权限请求被拒绝时触发。
+        scenario: 用于提示权限受限导致操作无法继续。
+        defaultSelected: false
+        mappedNoticeEvent: agent.failed
+      - event: TeammateIdle
+        title: 协作者空闲
+        description: 协作者空闲时触发。
+        scenario: 用于协作场景的状态提示。
+        defaultSelected: false
+        mappedNoticeEvent: agent.waiting_input
+      - event: WorktreeCreate
+        title: 工作树创建
+        description: 创建工作树时触发。
+        scenario: 用于观察并行工作区创建。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: WorktreeRemove
+        title: 工作树移除
+        description: 移除工作树时触发。
+        scenario: 用于观察并行工作区清理。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: MessageDisplay
+        title: 消息显示
+        description: 显示消息时触发。
+        scenario: 用于观察重要消息展示。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: Elicitation
+        title: 信息征询
+        description: Claude Code 征询额外信息时触发。
+        scenario: 用于提示用户可能需要补充信息。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: ElicitationResult
+        title: 信息征询结果
+        description: 信息征询得到结果时触发。
+        scenario: 用于观察补充信息流程完成。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working

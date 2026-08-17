@@ -1,0 +1,365 @@
+templates:
+  - id: basic
+    name: 基础映射方案
+    description: 预设常用 AI Hook 到内部事件的映射和基础输出规则，不启用任何 Hook。
+    recommended: true
+    aiEventMappings:
+      - id: codex-session-start
+        source: codex
+        event: SessionStart
+        internalEvent: agent.started
+      - id: codex-user-prompt
+        source: codex
+        event: UserPromptSubmit
+        internalEvent: agent.started
+      - id: codex-pre-tool-use
+        source: codex
+        event: PreToolUse
+        internalEvent: tool.executing
+      - id: codex-post-tool-use
+        source: codex
+        event: PostToolUse
+        internalEvent: agent.working
+      - id: codex-permission-request
+        source: codex
+        event: PermissionRequest
+        internalEvent: agent.waiting_input
+      - id: codex-stop
+        source: codex
+        event: Stop
+        internalEvent: agent.completed
+      - id: claude-session-start
+        source: claude-code
+        event: SessionStart
+        internalEvent: agent.started
+      - id: claude-user-prompt
+        source: claude-code
+        event: UserPromptSubmit
+        internalEvent: agent.started
+      - id: claude-pre-tool-use
+        source: claude-code
+        event: PreToolUse
+        internalEvent: tool.executing
+      - id: claude-post-tool-use
+        source: claude-code
+        event: PostToolUse
+        internalEvent: agent.working
+      - id: claude-post-tool-failure
+        source: claude-code
+        event: PostToolUseFailure
+        internalEvent: agent.failed
+      - id: claude-notification
+        source: claude-code
+        event: Notification
+        internalEvent: notification
+      - id: claude-permission-request
+        source: claude-code
+        event: PermissionRequest
+        internalEvent: agent.waiting_input
+      - id: claude-stop
+        source: claude-code
+        event: Stop
+        internalEvent: agent.completed
+      - id: claude-stop-failure
+        source: claude-code
+        event: StopFailure
+        internalEvent: agent.failed
+    hardwareRules:
+      - id: agent-started-system-notification-output
+        internalEvent: agent.started
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} 开始处理任务"
+          notificationBody: "模型：{{model}}，事件：{{event}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 60
+      - id: agent-working-system-notification-output
+        internalEvent: agent.working
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} · {{internalEvent}}"
+          notificationBody: "模型：{{model}}，事件：{{event}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 60
+      - id: tool-executing-system-notification-output
+        internalEvent: tool.executing
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} 正在调用工具"
+          notificationBody: "工具：{{tool_name}}，模型：{{model}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 70
+      - id: agent-waiting-input-system-notification-output
+        internalEvent: agent.waiting_input
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} 等待输入"
+          notificationBody: "当前事件：{{internalEvent}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 80
+      - id: notification-system-notification-output
+        internalEvent: notification
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} 发出通知"
+          notificationBody: "事件：{{event}}，模型：{{model}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 75
+      - id: agent-completed-system-notification-output
+        internalEvent: agent.completed
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} 已完成任务"
+          notificationBody: "{{last_assistant_message}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 60
+      - id: agent-failed-system-notification-output
+        internalEvent: agent.failed
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} 任务异常"
+          notificationBody: "事件：{{event}}，模型：{{model}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 100
+
+  - id: advanced
+    name: 完整映射方案
+    description: 预设当前支持 AI 工具的完整 Hook 映射和输出规则，不启用任何 Hook。
+    recommended: false
+    aiEventMappings:
+      - id: codex-session-start
+        source: codex
+        event: SessionStart
+        internalEvent: agent.started
+      - id: codex-subagent-start
+        source: codex
+        event: SubagentStart
+        internalEvent: agent.working
+      - id: codex-pre-tool-use
+        source: codex
+        event: PreToolUse
+        internalEvent: tool.executing
+      - id: codex-permission-request
+        source: codex
+        event: PermissionRequest
+        internalEvent: agent.waiting_input
+      - id: codex-post-tool-use
+        source: codex
+        event: PostToolUse
+        internalEvent: agent.working
+      - id: codex-pre-compact
+        source: codex
+        event: PreCompact
+        internalEvent: context.compacting
+      - id: codex-post-compact
+        source: codex
+        event: PostCompact
+        internalEvent: agent.working
+      - id: codex-user-prompt
+        source: codex
+        event: UserPromptSubmit
+        internalEvent: agent.started
+      - id: codex-subagent-stop
+        source: codex
+        event: SubagentStop
+        internalEvent: agent.completed
+      - id: codex-stop
+        source: codex
+        event: Stop
+        internalEvent: agent.completed
+      - id: claude-session-start
+        source: claude-code
+        event: SessionStart
+        internalEvent: agent.started
+      - id: claude-user-prompt
+        source: claude-code
+        event: UserPromptSubmit
+        internalEvent: agent.started
+      - id: claude-pre-tool-use
+        source: claude-code
+        event: PreToolUse
+        internalEvent: tool.executing
+      - id: claude-post-tool-use
+        source: claude-code
+        event: PostToolUse
+        internalEvent: agent.working
+      - id: claude-post-tool-failure
+        source: claude-code
+        event: PostToolUseFailure
+        internalEvent: agent.failed
+      - id: claude-post-tool-batch
+        source: claude-code
+        event: PostToolBatch
+        internalEvent: agent.working
+      - id: claude-notification
+        source: claude-code
+        event: Notification
+        internalEvent: notification
+      - id: claude-permission-request
+        source: claude-code
+        event: PermissionRequest
+        internalEvent: agent.waiting_input
+      - id: claude-stop
+        source: claude-code
+        event: Stop
+        internalEvent: agent.completed
+      - id: claude-stop-failure
+        source: claude-code
+        event: StopFailure
+        internalEvent: agent.failed
+      - id: claude-subagent-start
+        source: claude-code
+        event: SubagentStart
+        internalEvent: agent.working
+      - id: claude-subagent-stop
+        source: claude-code
+        event: SubagentStop
+        internalEvent: agent.completed
+      - id: claude-task-created
+        source: claude-code
+        event: TaskCreated
+        internalEvent: agent.working
+      - id: claude-task-completed
+        source: claude-code
+        event: TaskCompleted
+        internalEvent: agent.completed
+      - id: claude-pre-compact
+        source: claude-code
+        event: PreCompact
+        internalEvent: context.compacting
+      - id: claude-post-compact
+        source: claude-code
+        event: PostCompact
+        internalEvent: agent.working
+    hardwareRules:
+      - id: agent-started-system-notification-output
+        internalEvent: agent.started
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} 开始处理任务"
+          notificationBody: "模型：{{model}}，事件：{{event}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 60
+      - id: agent-working-system-notification-output
+        internalEvent: agent.working
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} · {{internalEvent}}"
+          notificationBody: "模型：{{model}}，事件：{{event}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 60
+      - id: tool-executing-system-notification-output
+        internalEvent: tool.executing
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} 正在调用工具"
+          notificationBody: "工具：{{tool_name}}，模型：{{model}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 70
+      - id: agent-waiting-input-system-notification-output
+        internalEvent: agent.waiting_input
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} 等待输入"
+          notificationBody: "当前事件：{{internalEvent}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 80
+      - id: notification-system-notification-output
+        internalEvent: notification
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} 发出通知"
+          notificationBody: "事件：{{event}}，模型：{{model}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 75
+      - id: agent-completed-system-notification-output
+        internalEvent: agent.completed
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} 已完成任务"
+          notificationBody: "{{last_assistant_message}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 60
+      - id: agent-failed-system-notification-output
+        internalEvent: agent.failed
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} 任务异常"
+          notificationBody: "事件：{{event}}，模型：{{model}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 100
+      - id: context-compacting-system-notification-output
+        internalEvent: context.compacting
+        output:
+          type: system-notification
+          notificationLevel: info
+          notificationTitle: "{{source}} 正在压缩上下文"
+          notificationBody: "事件：{{event}}，模型：{{model}}"
+          notificationTitleMaxChars: 80
+          notificationBodyMaxChars: 300
+          notificationThrottleSeconds: 30
+          notificationSound: default
+        priority: 50
+
+  - id: blank
+    name: 空白方案
+    description: 从零开始自定义配置
+    recommended: false
+    aiEventMappings: []
+    hardwareRules: []

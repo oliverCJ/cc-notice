@@ -1,0 +1,465 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 199 89% 48%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 199 89% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  input.desktop-notice-range {
+    accent-color: hsl(var(--primary));
+  }
+
+  input.desktop-notice-range::-webkit-slider-runnable-track {
+    height: 0.5rem;
+    border-radius: 999px;
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+  }
+
+  input.desktop-notice-range::-webkit-slider-thumb {
+    margin-top: -0.35rem;
+    height: 1.2rem;
+    width: 1.2rem;
+    border-radius: 999px;
+    border: 2px solid hsl(var(--background));
+    background: hsl(var(--primary));
+    box-shadow: 0 0 0 1px hsl(var(--ring) / 0.45);
+  }
+
+  input.desktop-notice-range::-moz-range-track {
+    height: 0.5rem;
+    border-radius: 999px;
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+  }
+
+  input.desktop-notice-range::-moz-range-thumb {
+    height: 1.2rem;
+    width: 1.2rem;
+    border-radius: 999px;
+    border: 2px solid hsl(var(--background));
+    background: hsl(var(--primary));
+    box-shadow: 0 0 0 1px hsl(var(--ring) / 0.45);
+  }
+
+  .desktop-notice-breathing {
+    animation-name: desktop-notice-breathing;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  .desktop-notice-blink {
+    animation-name: desktop-notice-blink;
+    animation-timing-function: steps(2, jump-none);
+    animation-iteration-count: infinite;
+  }
+
+  .desktop-notice-scan {
+    animation-name: desktop-notice-scan;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    background-size: 220% 100%;
+  }
+
+  .desktop-notice-scan-overlay {
+    animation-name: desktop-notice-scan-overlay;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  .desktop-notice-scan-overlay-vertical {
+    animation-name: desktop-notice-scan-overlay-vertical;
+  }
+
+  .desktop-notice-edge-lightbar-connected-scan-overlay {
+    opacity: 0;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  .desktop-notice-edge-lightbar-connected-scan-overlay-2 {
+    animation-name: desktop-notice-edge-lightbar-connected-scan-2;
+  }
+
+  .desktop-notice-edge-lightbar-connected-scan-overlay-3 {
+    animation-name: desktop-notice-edge-lightbar-connected-scan-3;
+  }
+
+  .desktop-notice-edge-lightbar-connected-scan-overlay-4 {
+    animation-name: desktop-notice-edge-lightbar-connected-scan-4;
+  }
+
+  .desktop-notice-edge-lightbar-connected-scan-overlay-horizontal-forward {
+    --desktop-notice-connected-scan-from: translateX(-35%) skewX(-18deg);
+    --desktop-notice-connected-scan-to: translateX(350%) skewX(-18deg);
+  }
+
+  .desktop-notice-edge-lightbar-connected-scan-overlay-horizontal-reverse {
+    --desktop-notice-connected-scan-from: translateX(350%) skewX(-18deg);
+    --desktop-notice-connected-scan-to: translateX(-35%) skewX(-18deg);
+  }
+
+  .desktop-notice-edge-lightbar-connected-scan-overlay-vertical-forward {
+    --desktop-notice-connected-scan-from: translateY(-35%) skewY(-18deg);
+    --desktop-notice-connected-scan-to: translateY(350%) skewY(-18deg);
+  }
+
+  .desktop-notice-edge-lightbar-connected-scan-overlay-vertical-reverse {
+    --desktop-notice-connected-scan-from: translateY(350%) skewY(-18deg);
+    --desktop-notice-connected-scan-to: translateY(-35%) skewY(-18deg);
+  }
+
+  .desktop-notice-edge-breathing {
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    will-change: opacity;
+  }
+
+  .desktop-notice-edge-breathing-horizontal {
+    animation-name: desktop-notice-edge-breathing-horizontal;
+    transform-origin: 50% 100%;
+  }
+
+  .desktop-notice-edge-breathing-vertical {
+    animation-name: desktop-notice-edge-breathing-vertical;
+    transform-origin: 100% 50%;
+  }
+
+  .desktop-notice-edge-breathing-halo {
+    filter: blur(3px);
+  }
+
+  .desktop-notice-edge-breathing-line {
+    bottom: 1px;
+  }
+
+  .desktop-notice-fade {
+    animation-name: desktop-notice-fade;
+    animation-timing-function: ease-out;
+    animation-fill-mode: forwards;
+  }
+
+  .desktop-notice-rule-preview-breathing {
+    animation-name: desktop-notice-breathing;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  .desktop-notice-rule-preview-blink {
+    animation-name: desktop-notice-blink;
+    animation-timing-function: steps(2, jump-none);
+    animation-iteration-count: infinite;
+  }
+
+  .desktop-notice-rule-preview-scan {
+    animation-name: desktop-notice-scan;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    background-size: 220% 100%;
+  }
+
+  .desktop-notice-rule-preview-scan-overlay {
+    animation-name: desktop-notice-scan-overlay;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  .desktop-notice-rule-preview-scan-overlay-vertical {
+    animation-name: desktop-notice-scan-overlay-vertical;
+  }
+
+  .desktop-notice-rule-preview-edge-breathing {
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    will-change: opacity;
+  }
+
+  .desktop-notice-rule-preview-edge-breathing-horizontal {
+    animation-name: desktop-notice-edge-breathing-horizontal;
+    transform-origin: 50% 100%;
+  }
+
+  .desktop-notice-rule-preview-edge-breathing-vertical {
+    animation-name: desktop-notice-edge-breathing-vertical;
+    transform-origin: 100% 50%;
+  }
+
+  .desktop-notice-rule-preview-edge-breathing-halo {
+    filter: blur(3px);
+  }
+
+  .desktop-notice-rule-preview-edge-breathing-line {
+    bottom: 1px;
+  }
+
+  .desktop-notice-rule-preview-fade {
+    animation-name: desktop-notice-fade;
+    animation-timing-function: ease-out;
+    animation-fill-mode: forwards;
+  }
+}
+
+@keyframes desktop-notice-breathing {
+  0%,
+  100% {
+    opacity: var(--desktop-notice-opacity, 1);
+  }
+
+  50% {
+    opacity: var(--desktop-notice-breathing-dim-opacity, 0.35);
+  }
+}
+
+@keyframes desktop-notice-blink {
+  0%,
+  100% {
+    opacity: var(--desktop-notice-opacity, 1);
+  }
+
+  50% {
+    opacity: 0.12;
+  }
+}
+
+@keyframes desktop-notice-scan {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes desktop-notice-scan-overlay {
+  0% {
+    transform: translateX(-35%) skewX(-18deg);
+    opacity: 0.72;
+  }
+
+  12% {
+    opacity: 0.85;
+  }
+
+  50% {
+    opacity: 0.92;
+  }
+
+  88% {
+    opacity: 0.85;
+  }
+
+  100% {
+    transform: translateX(350%) skewX(-18deg);
+    opacity: 0.72;
+  }
+}
+
+@keyframes desktop-notice-scan-overlay-vertical {
+  0% {
+    transform: translateY(-35%) skewY(-18deg);
+    opacity: 0.72;
+  }
+
+  12% {
+    opacity: 0.85;
+  }
+
+  50% {
+    opacity: 0.92;
+  }
+
+  88% {
+    opacity: 0.85;
+  }
+
+  100% {
+    transform: translateY(350%) skewY(-18deg);
+    opacity: 0.72;
+  }
+}
+
+@keyframes desktop-notice-edge-lightbar-connected-scan-2 {
+  0% {
+    transform: var(--desktop-notice-connected-scan-from);
+    opacity: 0.72;
+  }
+
+  12% {
+    opacity: 0.85;
+  }
+
+  25% {
+    opacity: 0.92;
+  }
+
+  44% {
+    opacity: 0.85;
+  }
+
+  50% {
+    transform: var(--desktop-notice-connected-scan-to);
+    opacity: 0.72;
+  }
+
+  50.1%,
+  100% {
+    transform: var(--desktop-notice-connected-scan-to);
+    opacity: 0;
+  }
+}
+
+@keyframes desktop-notice-edge-lightbar-connected-scan-3 {
+  0% {
+    transform: var(--desktop-notice-connected-scan-from);
+    opacity: 0.72;
+  }
+
+  8% {
+    opacity: 0.85;
+  }
+
+  16.666% {
+    opacity: 0.92;
+  }
+
+  28% {
+    opacity: 0.85;
+  }
+
+  33.333% {
+    transform: var(--desktop-notice-connected-scan-to);
+    opacity: 0.72;
+  }
+
+  33.433%,
+  100% {
+    transform: var(--desktop-notice-connected-scan-to);
+    opacity: 0;
+  }
+}
+
+@keyframes desktop-notice-edge-lightbar-connected-scan-4 {
+  0% {
+    transform: var(--desktop-notice-connected-scan-from);
+    opacity: 0.72;
+  }
+
+  6% {
+    opacity: 0.85;
+  }
+
+  12.5% {
+    opacity: 0.92;
+  }
+
+  22% {
+    opacity: 0.85;
+  }
+
+  25% {
+    transform: var(--desktop-notice-connected-scan-to);
+    opacity: 0.72;
+  }
+
+  25.1%,
+  100% {
+    transform: var(--desktop-notice-connected-scan-to);
+    opacity: 0;
+  }
+}
+
+@keyframes desktop-notice-edge-breathing-horizontal {
+  0%,
+  100% {
+    opacity: var(--desktop-notice-breathing-dim-opacity, 0.48);
+  }
+
+  50% {
+    opacity: var(--desktop-notice-opacity, 1);
+  }
+}
+
+@keyframes desktop-notice-edge-breathing-vertical {
+  0%,
+  100% {
+    opacity: var(--desktop-notice-breathing-dim-opacity, 0.48);
+  }
+
+  50% {
+    opacity: var(--desktop-notice-opacity, 1);
+  }
+}
+
+@keyframes desktop-notice-fade {
+  0% {
+    opacity: var(--desktop-notice-opacity, 1);
+  }
+
+  100% {
+    opacity: 0;
+  }
+}

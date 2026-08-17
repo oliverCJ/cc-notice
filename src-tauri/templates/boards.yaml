@@ -1,0 +1,1753 @@
+boards:
+  - id: rp2040-pico
+    displayName: Raspberry Pi Pico
+    family: raspberry-pi-pico
+    chip: rp2040
+    mcu: rp2040
+    protocolVersion: 2
+    defaultTransport: serial
+    defaultBaudRate: 115200
+    supportedTransports: [serial]
+    supportedFlashStrategies: [uf2_mount_copy]
+    identity:
+      stableUid: required
+    pinCatalogId: rp2040-pico
+    defaultChannelTemplateIds:
+      - rp2040-digital-output
+      - rp2040-buzzer
+  - id: rp2040-pico-oled-096
+    displayName: Raspberry Pi Pico + OLED 0.96" 128x64
+    family: raspberry-pi-pico
+    chip: rp2040
+    mcu: rp2040
+    protocolVersion: 2
+    defaultTransport: serial
+    defaultBaudRate: 115200
+    supportedTransports: [serial]
+    supportedFlashStrategies: [uf2_mount_copy]
+    identity:
+      stableUid: required
+    deviceExtensions:
+      display:
+        status: true
+        card: false
+        lines: true
+        runtime: true
+        clear: true
+        sizeClass: small
+        statuses: [notice, working, success, warning, error]
+        titleMaxChars: 16
+        messageMaxChars: 16
+        textEncoding: ascii
+    pinCatalogId: rp2040-pico-oled-096
+    defaultChannelTemplateIds:
+      - rp2040-digital-output
+      - rp2040-buzzer
+  - id: rp2040-pico-oled-091
+    displayName: Raspberry Pi Pico + OLED 0.91" 128x32
+    family: raspberry-pi-pico
+    chip: rp2040
+    mcu: rp2040
+    protocolVersion: 2
+    defaultTransport: serial
+    defaultBaudRate: 115200
+    supportedTransports: [serial]
+    supportedFlashStrategies: [uf2_mount_copy]
+    identity:
+      stableUid: required
+    deviceExtensions:
+      display:
+        status: true
+        card: false
+        lines: true
+        runtime: true
+        clear: true
+        sizeClass: compact
+        statuses: [notice, working, success, warning, error]
+        titleMaxChars: 16
+        messageMaxChars: 16
+        textEncoding: ascii
+    pinCatalogId: rp2040-pico-oled-091
+    defaultChannelTemplateIds:
+      - rp2040-digital-output
+      - rp2040-buzzer
+  - id: arduino-leonardo
+    displayName: Arduino Leonardo
+    family: arduino-avr
+    chip: atmega32u4
+    mcu: atmega32u4
+    protocolVersion: 2
+    defaultTransport: serial
+    defaultBaudRate: 115200
+    supportedTransports: [serial]
+    supportedFlashStrategies: [arduino_cli_upload]
+    identity:
+      stableUid: limited
+    pinCatalogId: arduino-leonardo
+    defaultChannelTemplateIds:
+      - arduino-avr-digital-output
+      - arduino-avr-buzzer
+  - id: arduino-micro
+    displayName: Arduino Micro
+    family: arduino-avr
+    chip: atmega32u4
+    mcu: atmega32u4
+    protocolVersion: 2
+    defaultTransport: serial
+    defaultBaudRate: 115200
+    supportedTransports: [serial]
+    supportedFlashStrategies: [arduino_cli_upload]
+    identity:
+      stableUid: limited
+    pinCatalogId: arduino-micro
+    defaultChannelTemplateIds:
+      - arduino-avr-digital-output
+      - arduino-avr-buzzer
+  - id: sparkfun-pro-micro-32u4
+    displayName: SparkFun Pro Micro 32U4
+    family: arduino-avr
+    chip: atmega32u4
+    mcu: atmega32u4
+    protocolVersion: 2
+    defaultTransport: serial
+    defaultBaudRate: 115200
+    supportedTransports: [serial]
+    supportedFlashStrategies: [arduino_cli_upload]
+    identity:
+      stableUid: limited
+    pinCatalogId: sparkfun-pro-micro-32u4
+    defaultChannelTemplateIds:
+      - arduino-avr-digital-output
+      - arduino-avr-buzzer
+  - id: arduino-uno
+    displayName: Arduino Uno
+    family: arduino-avr
+    chip: atmega328p
+    mcu: atmega328p
+    protocolVersion: 2
+    defaultTransport: serial
+    defaultBaudRate: 115200
+    supportedTransports: [serial]
+    supportedFlashStrategies: [arduino_cli_upload]
+    identity:
+      stableUid: limited
+    pinCatalogId: arduino-uno
+    defaultChannelTemplateIds:
+      - arduino-avr-digital-output
+  - id: arduino-nano
+    displayName: Arduino Nano
+    family: arduino-avr
+    chip: atmega328p
+    mcu: atmega328p
+    protocolVersion: 2
+    defaultTransport: serial
+    defaultBaudRate: 115200
+    supportedTransports: [serial]
+    supportedFlashStrategies: [arduino_cli_upload]
+    identity:
+      stableUid: limited
+    pinCatalogId: arduino-nano
+    defaultChannelTemplateIds:
+      - arduino-avr-digital-output
+  - id: stm32f103cx-blue-pill
+    displayName: STM32F103C8T6/C6T6 Blue Pill
+    family: stm32
+    chip: stm32f103cx
+    mcu: stm32f103c6t6
+    protocolVersion: 2
+    defaultTransport: serial
+    defaultBaudRate: 115200
+    supportedTransports: [serial]
+    supportedFlashStrategies: [arduino_cli_upload]
+    identity:
+      stableUid: limited
+    pinCatalogId: stm32f103cx-blue-pill
+    defaultChannelTemplateIds:
+      - stm32-small-mcu-digital-output
+  - id: seeed-wio-terminal
+    displayName: Seeed Studio Wio Terminal
+    family: seeed-samd
+    chip: atsamd51p19a
+    mcu: atsamd51p19a
+    protocolVersion: 2
+    defaultTransport: serial
+    defaultBaudRate: 115200
+    supportedTransports: [serial]
+    supportedFlashStrategies: [arduino_cli_upload]
+    identity:
+      stableUid: required
+    deviceExtensions:
+      display:
+        status: true
+        card: true
+        lines: true
+        runtime: true
+        clear: true
+        sizeClass: medium
+        statuses: [notice, working, success, warning, error]
+        titleMaxChars: 39
+        messageMaxChars: 95
+        textEncoding: ascii
+      buzzer:
+        patterns: [notice, success, warning, error, working]
+      inputs:
+        buttons:
+          status: supported
+          controls: [button.a, button.b, button.c, fiveway.up, fiveway.down]
+    pinCatalogId: seeed-wio-terminal
+    defaultChannelTemplateIds:
+      - seeed-wio-terminal-digital-output
+      - seeed-wio-terminal-buzzer
+
+pinCatalogs:
+  - id: rp2040-pico
+    pins:
+      - id: gp0
+        label: GP0
+        physicalPin: 1
+        gpio: GP0
+        capabilities: [digital-output]
+      - id: gp1
+        label: GP1
+        physicalPin: 2
+        gpio: GP1
+        capabilities: [digital-output]
+      - id: gp2
+        label: GP2
+        physicalPin: 4
+        gpio: GP2
+        capabilities: [digital-output]
+      - id: gp3
+        label: GP3
+        physicalPin: 5
+        gpio: GP3
+        capabilities: [digital-output]
+      - id: gp4
+        label: GP4
+        physicalPin: 6
+        gpio: GP4
+        capabilities: [digital-output]
+      - id: gp5
+        label: GP5
+        physicalPin: 7
+        gpio: GP5
+        capabilities: [digital-output]
+      - id: gp6
+        label: GP6
+        physicalPin: 9
+        gpio: GP6
+        capabilities: [digital-output]
+      - id: gp7
+        label: GP7
+        physicalPin: 10
+        gpio: GP7
+        capabilities: [digital-output]
+      - id: gp8
+        label: GP8
+        physicalPin: 11
+        gpio: GP8
+        capabilities: [digital-output]
+      - id: gp9
+        label: GP9
+        physicalPin: 12
+        gpio: GP9
+        capabilities: [digital-output]
+      - id: gp10
+        label: GP10
+        physicalPin: 14
+        gpio: GP10
+        capabilities: [digital-output]
+      - id: gp11
+        label: GP11
+        physicalPin: 15
+        gpio: GP11
+        capabilities: [digital-output]
+      - id: gp12
+        label: GP12
+        physicalPin: 16
+        gpio: GP12
+        capabilities: [digital-output]
+      - id: gp13
+        label: GP13
+        physicalPin: 17
+        gpio: GP13
+        capabilities: [digital-output]
+      - id: gp14
+        label: GP14
+        physicalPin: 19
+        gpio: GP14
+        capabilities: [pwm-output]
+      - id: gp15
+        label: GP15
+        physicalPin: 20
+        gpio: GP15
+        capabilities: [pwm-output]
+      - id: gp16
+        label: GP16
+        physicalPin: 21
+        gpio: GP16
+        capabilities: [addressable-led]
+      - id: gp17
+        label: GP17
+        physicalPin: 22
+        gpio: GP17
+        capabilities: [addressable-led]
+      - id: gp18
+        label: GP18
+        physicalPin: 24
+        gpio: GP18
+        capabilities: [buzzer]
+      - id: gp19
+        label: GP19
+        physicalPin: 25
+        gpio: GP19
+        capabilities: [buzzer]
+      - id: gp20
+        label: GP20
+        physicalPin: 26
+        gpio: GP20
+        capabilities: [digital-output]
+      - id: gp21
+        label: GP21
+        physicalPin: 27
+        gpio: GP21
+        capabilities: [digital-output]
+      - id: gp22
+        label: GP22
+        physicalPin: 29
+        gpio: GP22
+        capabilities: [digital-output]
+      - id: gp26
+        label: GP26
+        physicalPin: 31
+        gpio: GP26
+        capabilities: [digital-output]
+      - id: gp27
+        label: GP27
+        physicalPin: 32
+        gpio: GP27
+        capabilities: [digital-output]
+      - id: gp28
+        label: GP28
+        physicalPin: 34
+        gpio: GP28
+        capabilities: [digital-output]
+  - id: rp2040-pico-oled-096
+    pins:
+      - id: gp0
+        label: GP0
+        physicalPin: 1
+        gpio: GP0
+        capabilities: [digital-output]
+      - id: gp1
+        label: GP1
+        physicalPin: 2
+        gpio: GP1
+        capabilities: [digital-output]
+      - id: gp2
+        label: GP2
+        physicalPin: 4
+        gpio: GP2
+        capabilities: [digital-output]
+      - id: gp3
+        label: GP3
+        physicalPin: 5
+        gpio: GP3
+        capabilities: [digital-output]
+      - id: gp4
+        label: GP4
+        physicalPin: 6
+        gpio: GP4
+        capabilities: [digital-output]
+      - id: gp5
+        label: GP5
+        physicalPin: 7
+        gpio: GP5
+        capabilities: [digital-output]
+      - id: gp6
+        label: GP6
+        physicalPin: 9
+        gpio: GP6
+        capabilities: [digital-output]
+      - id: gp7
+        label: GP7
+        physicalPin: 10
+        gpio: GP7
+        capabilities: [digital-output]
+      - id: gp8
+        label: GP8
+        physicalPin: 11
+        gpio: GP8
+        capabilities: [digital-output]
+      - id: gp9
+        label: GP9
+        physicalPin: 12
+        gpio: GP9
+        capabilities: [digital-output]
+      - id: gp10
+        label: GP10
+        physicalPin: 14
+        gpio: GP10
+        capabilities: [digital-output]
+      - id: gp11
+        label: GP11
+        physicalPin: 15
+        gpio: GP11
+        capabilities: [digital-output]
+      - id: gp12
+        label: GP12
+        physicalPin: 16
+        gpio: GP12
+        capabilities: [digital-output]
+      - id: gp13
+        label: GP13
+        physicalPin: 17
+        gpio: GP13
+        capabilities: [digital-output]
+      - id: gp14
+        label: GP14
+        physicalPin: 19
+        gpio: GP14
+        capabilities: [pwm-output]
+      - id: gp15
+        label: GP15
+        physicalPin: 20
+        gpio: GP15
+        capabilities: [pwm-output]
+      - id: gp16
+        label: GP16
+        physicalPin: 21
+        gpio: GP16
+        capabilities: [addressable-led]
+      - id: gp17
+        label: GP17
+        physicalPin: 22
+        gpio: GP17
+        capabilities: [addressable-led]
+      - id: gp18
+        label: GP18
+        physicalPin: 24
+        gpio: GP18
+        capabilities: [buzzer]
+      - id: gp19
+        label: GP19
+        physicalPin: 25
+        gpio: GP19
+        capabilities: [buzzer]
+      - id: gp20
+        label: GP20 / OLED SDA
+        physicalPin: 26
+        gpio: GP20
+        roles: [i2c-sda, oled]
+        capabilities: []
+      - id: gp21
+        label: GP21 / OLED SCL
+        physicalPin: 27
+        gpio: GP21
+        roles: [i2c-scl, oled]
+        capabilities: []
+      - id: gp22
+        label: GP22 / OLED RES
+        physicalPin: 29
+        gpio: GP22
+        roles: [oled-reset, oled]
+        capabilities: []
+      - id: gp26
+        label: GP26
+        physicalPin: 31
+        gpio: GP26
+        capabilities: [digital-output]
+      - id: gp27
+        label: GP27
+        physicalPin: 32
+        gpio: GP27
+        capabilities: [digital-output]
+      - id: gp28
+        label: GP28
+        physicalPin: 34
+        gpio: GP28
+        capabilities: [digital-output]
+  - id: rp2040-pico-oled-091
+    pins:
+      - id: gp0
+        label: GP0
+        physicalPin: 1
+        gpio: GP0
+        capabilities: [digital-output]
+      - id: gp1
+        label: GP1
+        physicalPin: 2
+        gpio: GP1
+        capabilities: [digital-output]
+      - id: gp2
+        label: GP2
+        physicalPin: 4
+        gpio: GP2
+        capabilities: [digital-output]
+      - id: gp3
+        label: GP3
+        physicalPin: 5
+        gpio: GP3
+        capabilities: [digital-output]
+      - id: gp4
+        label: GP4
+        physicalPin: 6
+        gpio: GP4
+        capabilities: [digital-output]
+      - id: gp5
+        label: GP5
+        physicalPin: 7
+        gpio: GP5
+        capabilities: [digital-output]
+      - id: gp6
+        label: GP6
+        physicalPin: 9
+        gpio: GP6
+        capabilities: [digital-output]
+      - id: gp7
+        label: GP7
+        physicalPin: 10
+        gpio: GP7
+        capabilities: [digital-output]
+      - id: gp8
+        label: GP8
+        physicalPin: 11
+        gpio: GP8
+        capabilities: [digital-output]
+      - id: gp9
+        label: GP9
+        physicalPin: 12
+        gpio: GP9
+        capabilities: [digital-output]
+      - id: gp10
+        label: GP10
+        physicalPin: 14
+        gpio: GP10
+        capabilities: [digital-output]
+      - id: gp11
+        label: GP11
+        physicalPin: 15
+        gpio: GP11
+        capabilities: [digital-output]
+      - id: gp12
+        label: GP12
+        physicalPin: 16
+        gpio: GP12
+        capabilities: [digital-output]
+      - id: gp13
+        label: GP13
+        physicalPin: 17
+        gpio: GP13
+        capabilities: [digital-output]
+      - id: gp14
+        label: GP14
+        physicalPin: 19
+        gpio: GP14
+        capabilities: [pwm-output]
+      - id: gp15
+        label: GP15
+        physicalPin: 20
+        gpio: GP15
+        capabilities: [pwm-output]
+      - id: gp16
+        label: GP16
+        physicalPin: 21
+        gpio: GP16
+        capabilities: [addressable-led]
+      - id: gp17
+        label: GP17
+        physicalPin: 22
+        gpio: GP17
+        capabilities: [addressable-led]
+      - id: gp18
+        label: GP18
+        physicalPin: 24
+        gpio: GP18
+        capabilities: [buzzer]
+      - id: gp19
+        label: GP19
+        physicalPin: 25
+        gpio: GP19
+        capabilities: [buzzer]
+      - id: gp20
+        label: GP20 / OLED SDA
+        physicalPin: 26
+        gpio: GP20
+        roles: [i2c-sda, oled]
+        capabilities: []
+      - id: gp21
+        label: GP21 / OLED SCL
+        physicalPin: 27
+        gpio: GP21
+        roles: [i2c-scl, oled]
+        capabilities: []
+      - id: gp22
+        label: GP22
+        physicalPin: 29
+        gpio: GP22
+        capabilities: [digital-output]
+      - id: gp26
+        label: GP26
+        physicalPin: 31
+        gpio: GP26
+        capabilities: [digital-output]
+      - id: gp27
+        label: GP27
+        physicalPin: 32
+        gpio: GP27
+        capabilities: [digital-output]
+      - id: gp28
+        label: GP28
+        physicalPin: 34
+        gpio: GP28
+        capabilities: [digital-output]
+  - id: arduino-leonardo
+    pins:
+      - id: d0
+        label: D0 / RX
+        physicalPin: null
+        gpio: PD2
+        arduinoPin: 0
+        roles: [serial-rx, header]
+        notes:
+          - Hardware serial RX. Avoid using while serial communication is active.
+        capabilities: [digital-output]
+      - id: d1
+        label: D1 / TX
+        physicalPin: null
+        gpio: PD3
+        arduinoPin: 1
+        roles: [serial-tx, header]
+        notes:
+          - Hardware serial TX. Avoid using while serial communication is active.
+        capabilities: [digital-output]
+      - id: d2
+        label: D2 / SDA
+        physicalPin: null
+        gpio: PD1
+        arduinoPin: 2
+        roles: [i2c-sda, header]
+        capabilities: [digital-output]
+      - id: d3
+        label: D3 / SCL / PWM
+        physicalPin: null
+        gpio: PD0
+        arduinoPin: 3
+        roles: [i2c-scl, pwm, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d4
+        label: D4 / A6
+        physicalPin: null
+        gpio: PD4
+        arduinoPin: 4
+        aliases: [a6]
+        analogChannel: A6
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d5
+        label: D5 / PWM
+        physicalPin: null
+        gpio: PC6
+        arduinoPin: 5
+        roles: [pwm, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d6
+        label: D6 / A7 / PWM
+        physicalPin: null
+        gpio: PD7
+        arduinoPin: 6
+        aliases: [a7]
+        analogChannel: A7
+        roles: [analog, pwm, header]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: d7
+        label: D7
+        physicalPin: null
+        gpio: PE6
+        arduinoPin: 7
+        roles: [header]
+        capabilities: [digital-output]
+      - id: d8
+        label: D8 / A8
+        physicalPin: null
+        gpio: PB4
+        arduinoPin: 8
+        aliases: [a8]
+        analogChannel: A8
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d9
+        label: D9 / A9 / PWM
+        physicalPin: null
+        gpio: PB5
+        arduinoPin: 9
+        aliases: [a9]
+        analogChannel: A9
+        roles: [analog, pwm, header]
+        capabilities: [digital-output, pwm-output, analog-input, buzzer]
+      - id: d10
+        label: D10 / A10 / PWM
+        physicalPin: null
+        gpio: PB6
+        arduinoPin: 10
+        aliases: [a10]
+        analogChannel: A10
+        roles: [analog, pwm, header]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: d11
+        label: D11 / PWM
+        physicalPin: null
+        gpio: PB7
+        arduinoPin: 11
+        roles: [pwm, header]
+        capabilities: [digital-output]
+      - id: d12
+        label: D12 / A11
+        physicalPin: null
+        gpio: PD6
+        arduinoPin: 12
+        aliases: [a11]
+        analogChannel: A11
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d13
+        label: D13 / PWM / LED
+        physicalPin: null
+        gpio: PC7
+        arduinoPin: 13
+        roles: [pwm, builtin-led, header]
+        notes:
+          - Connected to the built-in LED on many ATmega32U4 boards.
+        capabilities: [digital-output]
+      - id: d14
+        label: D14 / CIPO
+        physicalPin: null
+        gpio: PB3
+        arduinoPin: 14
+        roles: [spi, cipo, icsp]
+        capabilities: [digital-output]
+      - id: d15
+        label: D15 / SCK
+        physicalPin: null
+        gpio: PB1
+        arduinoPin: 15
+        roles: [spi, sck, icsp]
+        capabilities: [digital-output]
+      - id: d16
+        label: D16 / COPI
+        physicalPin: null
+        gpio: PB2
+        arduinoPin: 16
+        roles: [spi, copi, icsp]
+        capabilities: [digital-output]
+      - id: d17
+        label: D17 / SS
+        physicalPin: null
+        gpio: PB0
+        arduinoPin: 17
+        roles: [spi, ss]
+        capabilities: [digital-output]
+      - id: d18
+        label: A0 / D18
+        physicalPin: null
+        gpio: PF7
+        arduinoPin: 18
+        aliases: [a0]
+        analogChannel: A0
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d19
+        label: A1 / D19
+        physicalPin: null
+        gpio: PF6
+        arduinoPin: 19
+        aliases: [a1]
+        analogChannel: A1
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d20
+        label: A2 / D20
+        physicalPin: null
+        gpio: PF5
+        arduinoPin: 20
+        aliases: [a2]
+        analogChannel: A2
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d21
+        label: A3 / D21
+        physicalPin: null
+        gpio: PF4
+        arduinoPin: 21
+        aliases: [a3]
+        analogChannel: A3
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d22
+        label: A4 / D22
+        physicalPin: null
+        gpio: PF1
+        arduinoPin: 22
+        aliases: [a4]
+        analogChannel: A4
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d23
+        label: A5 / D23
+        physicalPin: null
+        gpio: PF0
+        arduinoPin: 23
+        aliases: [a5]
+        analogChannel: A5
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+  - id: arduino-micro
+    pins:
+      - id: d0
+        label: D0 / RX
+        physicalPin: null
+        gpio: PD2
+        arduinoPin: 0
+        roles: [serial-rx, header]
+        notes:
+          - Hardware serial RX. Avoid using while serial communication is active.
+        capabilities: [digital-output]
+      - id: d1
+        label: D1 / TX
+        physicalPin: null
+        gpio: PD3
+        arduinoPin: 1
+        roles: [serial-tx, header]
+        notes:
+          - Hardware serial TX. Avoid using while serial communication is active.
+        capabilities: [digital-output]
+      - id: d2
+        label: D2 / SDA
+        physicalPin: null
+        gpio: PD1
+        arduinoPin: 2
+        roles: [i2c-sda, header]
+        capabilities: [digital-output]
+      - id: d3
+        label: D3 / SCL / PWM
+        physicalPin: null
+        gpio: PD0
+        arduinoPin: 3
+        roles: [i2c-scl, pwm, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d4
+        label: D4 / A6
+        physicalPin: null
+        gpio: PD4
+        arduinoPin: 4
+        aliases: [a6]
+        analogChannel: A6
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d5
+        label: D5 / PWM
+        physicalPin: null
+        gpio: PC6
+        arduinoPin: 5
+        roles: [pwm, header]
+        capabilities: [digital-output]
+      - id: d6
+        label: D6 / A7 / PWM
+        physicalPin: null
+        gpio: PD7
+        arduinoPin: 6
+        aliases: [a7]
+        analogChannel: A7
+        roles: [analog, pwm, header]
+        capabilities: [digital-output, analog-input]
+      - id: d7
+        label: D7
+        physicalPin: null
+        gpio: PE6
+        arduinoPin: 7
+        roles: [header]
+        capabilities: [digital-output]
+      - id: d8
+        label: D8 / A8
+        physicalPin: null
+        gpio: PB4
+        arduinoPin: 8
+        aliases: [a8]
+        analogChannel: A8
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d9
+        label: D9 / A9 / PWM
+        physicalPin: null
+        gpio: PB5
+        arduinoPin: 9
+        aliases: [a9]
+        analogChannel: A9
+        roles: [analog, pwm, header]
+        capabilities: [digital-output, analog-input, buzzer]
+      - id: d10
+        label: D10 / A10 / PWM
+        physicalPin: null
+        gpio: PB6
+        arduinoPin: 10
+        aliases: [a10]
+        analogChannel: A10
+        roles: [analog, pwm, header]
+        capabilities: [digital-output, analog-input]
+      - id: d11
+        label: D11 / PWM
+        physicalPin: null
+        gpio: PB7
+        arduinoPin: 11
+        roles: [pwm, header]
+        capabilities: [digital-output]
+      - id: d12
+        label: D12 / A11
+        physicalPin: null
+        gpio: PD6
+        arduinoPin: 12
+        aliases: [a11]
+        analogChannel: A11
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d13
+        label: D13 / PWM / LED
+        physicalPin: null
+        gpio: PC7
+        arduinoPin: 13
+        roles: [pwm, builtin-led, header]
+        notes:
+          - Connected to the built-in LED on many ATmega32U4 boards.
+        capabilities: [digital-output]
+      - id: d14
+        label: D14 / CIPO
+        physicalPin: null
+        gpio: PB3
+        arduinoPin: 14
+        roles: [spi, cipo, icsp]
+        capabilities: [digital-output]
+      - id: d15
+        label: D15 / SCK
+        physicalPin: null
+        gpio: PB1
+        arduinoPin: 15
+        roles: [spi, sck, icsp]
+        capabilities: [digital-output]
+      - id: d16
+        label: D16 / COPI
+        physicalPin: null
+        gpio: PB2
+        arduinoPin: 16
+        roles: [spi, copi, icsp]
+        capabilities: [digital-output]
+      - id: d17
+        label: D17 / SS
+        physicalPin: null
+        gpio: PB0
+        arduinoPin: 17
+        roles: [spi, ss]
+        capabilities: [digital-output]
+      - id: d18
+        label: A0 / D18
+        physicalPin: null
+        gpio: PF7
+        arduinoPin: 18
+        aliases: [a0]
+        analogChannel: A0
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d19
+        label: A1 / D19
+        physicalPin: null
+        gpio: PF6
+        arduinoPin: 19
+        aliases: [a1]
+        analogChannel: A1
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d20
+        label: A2 / D20
+        physicalPin: null
+        gpio: PF5
+        arduinoPin: 20
+        aliases: [a2]
+        analogChannel: A2
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d21
+        label: A3 / D21
+        physicalPin: null
+        gpio: PF4
+        arduinoPin: 21
+        aliases: [a3]
+        analogChannel: A3
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d22
+        label: A4 / D22
+        physicalPin: null
+        gpio: PF1
+        arduinoPin: 22
+        aliases: [a4]
+        analogChannel: A4
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d23
+        label: A5 / D23
+        physicalPin: null
+        gpio: PF0
+        arduinoPin: 23
+        aliases: [a5]
+        analogChannel: A5
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+  - id: sparkfun-pro-micro-32u4
+    pins:
+      - id: d0
+        label: D0 / RX
+        physicalPin: null
+        gpio: PD2
+        arduinoPin: 0
+        roles: [serial-rx, header]
+        notes:
+          - Hardware serial RX. Avoid using while serial communication is active.
+        capabilities: [digital-output]
+      - id: d1
+        label: D1 / TX
+        physicalPin: null
+        gpio: PD3
+        arduinoPin: 1
+        roles: [serial-tx, header]
+        notes:
+          - Hardware serial TX. Avoid using while serial communication is active.
+        capabilities: [digital-output]
+      - id: d2
+        label: D2 / SDA
+        physicalPin: null
+        gpio: PD1
+        arduinoPin: 2
+        roles: [i2c-sda, header]
+        capabilities: [digital-output]
+      - id: d3
+        label: D3 / SCL / PWM
+        physicalPin: null
+        gpio: PD0
+        arduinoPin: 3
+        roles: [i2c-scl, pwm, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d4
+        label: D4 / A6
+        physicalPin: null
+        gpio: PD4
+        arduinoPin: 4
+        aliases: [a6]
+        analogChannel: A6
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d5
+        label: D5 / PWM
+        physicalPin: null
+        gpio: PC6
+        arduinoPin: 5
+        roles: [pwm, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d6
+        label: D6 / A7 / PWM
+        physicalPin: null
+        gpio: PD7
+        arduinoPin: 6
+        aliases: [a7]
+        analogChannel: A7
+        roles: [analog, pwm, header]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: d7
+        label: D7
+        physicalPin: null
+        gpio: PE6
+        arduinoPin: 7
+        roles: [header]
+        capabilities: [digital-output]
+      - id: d8
+        label: D8 / A8
+        physicalPin: null
+        gpio: PB4
+        arduinoPin: 8
+        aliases: [a8]
+        analogChannel: A8
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: d9
+        label: D9 / A9 / PWM
+        physicalPin: null
+        gpio: PB5
+        arduinoPin: 9
+        aliases: [a9]
+        analogChannel: A9
+        roles: [analog, pwm, header]
+        capabilities: [digital-output, pwm-output, analog-input, buzzer]
+      - id: d10
+        label: D10 / A10 / PWM
+        physicalPin: null
+        gpio: PB6
+        arduinoPin: 10
+        aliases: [a10]
+        analogChannel: A10
+        roles: [analog, pwm, header]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: d14
+        label: D14 / CIPO
+        physicalPin: null
+        gpio: PB3
+        arduinoPin: 14
+        roles: [spi, cipo, header]
+        capabilities: [digital-output]
+      - id: d15
+        label: D15 / SCK
+        physicalPin: null
+        gpio: PB1
+        arduinoPin: 15
+        roles: [spi, sck, header]
+        capabilities: [digital-output]
+      - id: d16
+        label: D16 / COPI
+        physicalPin: null
+        gpio: PB2
+        arduinoPin: 16
+        roles: [spi, copi, header]
+        capabilities: [digital-output]
+      - id: d17
+        label: D17 / RX_LED
+        physicalPin: null
+        gpio: PB0
+        arduinoPin: 17
+        roles: [rx-led, solder-pad]
+        notes:
+          - RX LED pad. Keep as board metadata instead of a normal external output channel.
+        capabilities: []
+      - id: a0
+        label: A0
+        physicalPin: null
+        gpio: PF7
+        arduinoPin: 18
+        aliases: [d18]
+        analogChannel: A0
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: a1
+        label: A1
+        physicalPin: null
+        gpio: PF6
+        arduinoPin: 19
+        aliases: [d19]
+        analogChannel: A1
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: a2
+        label: A2
+        physicalPin: null
+        gpio: PF5
+        arduinoPin: 20
+        aliases: [d20]
+        analogChannel: A2
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+      - id: a3
+        label: A3
+        physicalPin: null
+        gpio: PF4
+        arduinoPin: 21
+        aliases: [d21]
+        analogChannel: A3
+        roles: [analog, header]
+        capabilities: [digital-output, analog-input]
+  - id: arduino-uno
+    pins:
+      - id: d0
+        label: D0 / RX
+        physicalPin: null
+        gpio: PD0
+        arduinoPin: 0
+        roles: [serial-rx, header]
+        notes:
+          - Hardware serial RX. Avoid using while serial communication is active.
+        capabilities: []
+      - id: d1
+        label: D1 / TX
+        physicalPin: null
+        gpio: PD1
+        arduinoPin: 1
+        roles: [serial-tx, header]
+        notes:
+          - Hardware serial TX. Avoid using while serial communication is active.
+        capabilities: []
+      - id: d2
+        label: D2
+        physicalPin: null
+        gpio: PD2
+        arduinoPin: 2
+        roles: [header]
+        capabilities: [digital-output]
+      - id: d3
+        label: D3 / PWM
+        physicalPin: null
+        gpio: PD3
+        arduinoPin: 3
+        roles: [pwm, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d4
+        label: D4
+        physicalPin: null
+        gpio: PD4
+        arduinoPin: 4
+        roles: [header]
+        capabilities: [digital-output]
+      - id: d5
+        label: D5 / PWM
+        physicalPin: null
+        gpio: PD5
+        arduinoPin: 5
+        roles: [pwm, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d6
+        label: D6 / PWM
+        physicalPin: null
+        gpio: PD6
+        arduinoPin: 6
+        roles: [pwm, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d7
+        label: D7
+        physicalPin: null
+        gpio: PD7
+        arduinoPin: 7
+        roles: [header]
+        capabilities: [digital-output]
+      - id: d8
+        label: D8
+        physicalPin: null
+        gpio: PB0
+        arduinoPin: 8
+        roles: [header]
+        capabilities: [digital-output]
+      - id: d9
+        label: D9 / PWM
+        physicalPin: null
+        gpio: PB1
+        arduinoPin: 9
+        roles: [pwm, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d10
+        label: D10 / PWM / SS
+        physicalPin: null
+        gpio: PB2
+        arduinoPin: 10
+        roles: [pwm, spi, ss, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d11
+        label: D11 / PWM / COPI
+        physicalPin: null
+        gpio: PB3
+        arduinoPin: 11
+        roles: [pwm, spi, copi, header]
+        capabilities: []
+      - id: d12
+        label: D12 / CIPO
+        physicalPin: null
+        gpio: PB4
+        arduinoPin: 12
+        roles: [spi, cipo, header]
+        capabilities: []
+      - id: d13
+        label: D13 / SCK / LED
+        physicalPin: null
+        gpio: PB5
+        arduinoPin: 13
+        roles: [spi, sck, builtin-led, header]
+        notes:
+          - Connected to the built-in LED on many Arduino Uno boards.
+        capabilities: []
+      - id: a0
+        label: A0 / D14
+        physicalPin: null
+        gpio: PC0
+        arduinoPin: 14
+        aliases: [d14]
+        analogChannel: A0
+        roles: [analog, header]
+        capabilities: [analog-input]
+      - id: a1
+        label: A1 / D15
+        physicalPin: null
+        gpio: PC1
+        arduinoPin: 15
+        aliases: [d15]
+        analogChannel: A1
+        roles: [analog, header]
+        capabilities: [analog-input]
+      - id: a2
+        label: A2 / D16
+        physicalPin: null
+        gpio: PC2
+        arduinoPin: 16
+        aliases: [d16]
+        analogChannel: A2
+        roles: [analog, header]
+        capabilities: [analog-input]
+      - id: a3
+        label: A3 / D17
+        physicalPin: null
+        gpio: PC3
+        arduinoPin: 17
+        aliases: [d17]
+        analogChannel: A3
+        roles: [analog, header]
+        capabilities: [analog-input]
+      - id: a4
+        label: A4 / D18 / SDA
+        physicalPin: null
+        gpio: PC4
+        arduinoPin: 18
+        aliases: [d18]
+        analogChannel: A4
+        roles: [analog, i2c-sda, header]
+        capabilities: [analog-input]
+      - id: a5
+        label: A5 / D19 / SCL
+        physicalPin: null
+        gpio: PC5
+        arduinoPin: 19
+        aliases: [d19]
+        analogChannel: A5
+        roles: [analog, i2c-scl, header]
+        capabilities: [analog-input]
+  - id: arduino-nano
+    pins:
+      - id: d0
+        label: D0 / RX
+        physicalPin: null
+        gpio: PD0
+        arduinoPin: 0
+        roles: [serial-rx, header]
+        notes:
+          - Hardware serial RX. Avoid using while serial communication is active.
+        capabilities: []
+      - id: d1
+        label: D1 / TX
+        physicalPin: null
+        gpio: PD1
+        arduinoPin: 1
+        roles: [serial-tx, header]
+        notes:
+          - Hardware serial TX. Avoid using while serial communication is active.
+        capabilities: []
+      - id: d2
+        label: D2
+        physicalPin: null
+        gpio: PD2
+        arduinoPin: 2
+        roles: [header]
+        capabilities: [digital-output]
+      - id: d3
+        label: D3 / PWM
+        physicalPin: null
+        gpio: PD3
+        arduinoPin: 3
+        roles: [pwm, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d4
+        label: D4
+        physicalPin: null
+        gpio: PD4
+        arduinoPin: 4
+        roles: [header]
+        capabilities: [digital-output]
+      - id: d5
+        label: D5 / PWM
+        physicalPin: null
+        gpio: PD5
+        arduinoPin: 5
+        roles: [pwm, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d6
+        label: D6 / PWM
+        physicalPin: null
+        gpio: PD6
+        arduinoPin: 6
+        roles: [pwm, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d7
+        label: D7
+        physicalPin: null
+        gpio: PD7
+        arduinoPin: 7
+        roles: [header]
+        capabilities: [digital-output]
+      - id: d8
+        label: D8
+        physicalPin: null
+        gpio: PB0
+        arduinoPin: 8
+        roles: [header]
+        capabilities: [digital-output]
+      - id: d9
+        label: D9 / PWM
+        physicalPin: null
+        gpio: PB1
+        arduinoPin: 9
+        roles: [pwm, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d10
+        label: D10 / PWM / SS
+        physicalPin: null
+        gpio: PB2
+        arduinoPin: 10
+        roles: [pwm, spi, ss, header]
+        capabilities: [digital-output, pwm-output]
+      - id: d11
+        label: D11 / PWM / COPI
+        physicalPin: null
+        gpio: PB3
+        arduinoPin: 11
+        roles: [pwm, spi, copi, header]
+        capabilities: []
+      - id: d12
+        label: D12 / CIPO
+        physicalPin: null
+        gpio: PB4
+        arduinoPin: 12
+        roles: [spi, cipo, header]
+        capabilities: []
+      - id: d13
+        label: D13 / SCK / LED
+        physicalPin: null
+        gpio: PB5
+        arduinoPin: 13
+        roles: [spi, sck, builtin-led, header]
+        notes:
+          - Connected to the built-in LED on many Arduino Nano boards.
+        capabilities: []
+      - id: a0
+        label: A0 / D14
+        physicalPin: null
+        gpio: PC0
+        arduinoPin: 14
+        aliases: [d14]
+        analogChannel: A0
+        roles: [analog, header]
+        capabilities: [analog-input]
+      - id: a1
+        label: A1 / D15
+        physicalPin: null
+        gpio: PC1
+        arduinoPin: 15
+        aliases: [d15]
+        analogChannel: A1
+        roles: [analog, header]
+        capabilities: [analog-input]
+      - id: a2
+        label: A2 / D16
+        physicalPin: null
+        gpio: PC2
+        arduinoPin: 16
+        aliases: [d16]
+        analogChannel: A2
+        roles: [analog, header]
+        capabilities: [analog-input]
+      - id: a3
+        label: A3 / D17
+        physicalPin: null
+        gpio: PC3
+        arduinoPin: 17
+        aliases: [d17]
+        analogChannel: A3
+        roles: [analog, header]
+        capabilities: [analog-input]
+      - id: a4
+        label: A4 / D18 / SDA
+        physicalPin: null
+        gpio: PC4
+        arduinoPin: 18
+        aliases: [d18]
+        analogChannel: A4
+        roles: [analog, i2c-sda, header]
+        capabilities: [analog-input]
+      - id: a5
+        label: A5 / D19 / SCL
+        physicalPin: null
+        gpio: PC5
+        arduinoPin: 19
+        aliases: [d19]
+        analogChannel: A5
+        roles: [analog, i2c-scl, header]
+        capabilities: [analog-input]
+      - id: a6
+        label: A6
+        physicalPin: null
+        gpio: ADC6
+        arduinoPin: null
+        aliases: []
+        analogChannel: A6
+        roles: [analog]
+        capabilities: [analog-input]
+      - id: a7
+        label: A7
+        physicalPin: null
+        gpio: ADC7
+        arduinoPin: null
+        aliases: []
+        analogChannel: A7
+        roles: [analog]
+        capabilities: [analog-input]
+  - id: stm32f103cx-blue-pill
+    pins:
+      - id: pa0
+        label: PA0 / PWM
+        physicalPin: null
+        gpio: PA0
+        arduinoPin: 0
+        roles: [header, pwm, adc]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: pa1
+        label: PA1 / PWM
+        physicalPin: null
+        gpio: PA1
+        arduinoPin: 1
+        roles: [header, pwm, adc]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: pa2
+        label: PA2 / USART2 TX / PWM
+        physicalPin: null
+        gpio: PA2
+        arduinoPin: 2
+        roles: [header, pwm, serial-tx, adc]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: pa3
+        label: PA3 / USART2 RX / PWM
+        physicalPin: null
+        gpio: PA3
+        arduinoPin: 3
+        roles: [header, pwm, serial-rx, adc]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: pa4
+        label: PA4 / SPI1 NSS
+        physicalPin: null
+        gpio: PA4
+        arduinoPin: 4
+        roles: [header, spi, adc]
+        capabilities: [digital-output, analog-input]
+      - id: pa5
+        label: PA5 / SPI1 SCK
+        physicalPin: null
+        gpio: PA5
+        arduinoPin: 5
+        roles: [header, spi, adc]
+        capabilities: [digital-output, analog-input]
+      - id: pa6
+        label: PA6 / SPI1 MISO / PWM
+        physicalPin: null
+        gpio: PA6
+        arduinoPin: 6
+        roles: [header, spi, pwm, adc]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: pa7
+        label: PA7 / SPI1 MOSI / PWM
+        physicalPin: null
+        gpio: PA7
+        arduinoPin: 7
+        roles: [header, spi, pwm, adc]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: pb0
+        label: PB0 / PWM
+        physicalPin: null
+        gpio: PB0
+        arduinoPin: 8
+        roles: [header, pwm, adc]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: pb1
+        label: PB1 / PWM
+        physicalPin: null
+        gpio: PB1
+        arduinoPin: 9
+        roles: [header, pwm, adc]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: pb10
+        label: PB10 / I2C2 SCL / USART3 TX
+        physicalPin: null
+        gpio: PB10
+        arduinoPin: 10
+        roles: [header, i2c-scl, serial-tx]
+        capabilities: [digital-output]
+      - id: pb11
+        label: PB11 / I2C2 SDA / USART3 RX
+        physicalPin: null
+        gpio: PB11
+        arduinoPin: 11
+        roles: [header, i2c-sda, serial-rx]
+        capabilities: [digital-output]
+      - id: pa13
+        label: PA13 / SWDIO
+        physicalPin: null
+        gpio: PA13
+        arduinoPin: null
+        roles: [swd, debug]
+        notes:
+          - Reserved for SWD programming and debugging.
+        capabilities: []
+      - id: pa14
+        label: PA14 / SWCLK
+        physicalPin: null
+        gpio: PA14
+        arduinoPin: null
+        roles: [swd, debug]
+        notes:
+          - Reserved for SWD programming and debugging.
+        capabilities: []
+  - id: seeed-wio-terminal
+    pins:
+      - id: d0
+        label: D0 / BCM27 / A0 / PWM0
+        physicalPin: 13
+        gpio: BCM27
+        arduinoPin: 0
+        aliases: [A0, PWM0]
+        roles: [header, analog, pwm]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: d1
+        label: D1 / BCM22 / A1
+        physicalPin: 15
+        gpio: BCM22
+        arduinoPin: 1
+        aliases: [A1]
+        roles: [header, analog]
+        capabilities: [digital-output, analog-input]
+      - id: d2
+        label: D2 / BCM23 / A2 / PWM1
+        physicalPin: 16
+        gpio: BCM23
+        arduinoPin: 2
+        aliases: [A2, PWM1]
+        roles: [header, analog, pwm]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: d3
+        label: D3 / BCM24 / A3
+        physicalPin: 18
+        gpio: BCM24
+        arduinoPin: 3
+        aliases: [A3]
+        roles: [header, analog]
+        capabilities: [digital-output, analog-input]
+      - id: d4
+        label: D4 / BCM25 / A4
+        physicalPin: 22
+        gpio: BCM25
+        arduinoPin: 4
+        aliases: [A4]
+        roles: [header, analog]
+        capabilities: [digital-output, analog-input]
+      - id: d5
+        label: D5 / BCM12 / A5
+        physicalPin: 32
+        gpio: BCM12
+        arduinoPin: 5
+        aliases: [A5]
+        roles: [header, analog]
+        capabilities: [digital-output, analog-input]
+      - id: d6
+        label: D6 / BCM13 / A6 / PWM3
+        physicalPin: 33
+        gpio: BCM13
+        arduinoPin: 6
+        aliases: [A6, PWM3]
+        roles: [header, analog, pwm]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: d7
+        label: D7 / BCM16 / A7
+        physicalPin: 36
+        gpio: BCM16
+        arduinoPin: 7
+        aliases: [A7]
+        roles: [header, analog]
+        capabilities: [digital-output, analog-input]
+      - id: d8
+        label: D8 / BCM26 / A8 / PWM4
+        physicalPin: 37
+        gpio: BCM26
+        arduinoPin: 8
+        aliases: [A8, PWM4]
+        roles: [header, analog, pwm]
+        capabilities: [digital-output, pwm-output, analog-input]
+      - id: onboard
+        label: Onboard buzzer
+        physicalPin: null
+        gpio: WIO_BUZZER
+        arduinoPin: 12
+        roles: [onboard, buzzer]
+        capabilities: [buzzer]
+
+channelTemplates:
+  - id: rp2040-digital-output
+    channelKind: digital-output
+    compatiblePinCapabilities: [digital-output]
+    supportedActions: [activate, deactivate, blink, breathe, pulse]
+    hardwareGuideId: digital-output
+    recommendedPinIds: [gp0, gp1, gp2]
+  - id: rp2040-pwm-output
+    channelKind: pwm-output
+    compatiblePinCapabilities: [pwm-output]
+    supportedActions: [set-duty, pulse, clear]
+    hardwareGuideId: pwm-output
+    recommendedPinIds: []
+  - id: rp2040-buzzer
+    channelKind: buzzer
+    compatiblePinCapabilities: [buzzer]
+    supportedActions: [beep, tone, clear]
+    hardwareGuideId: buzzer
+    recommendedPinIds: []
+  - id: rp2040-ws2812
+    channelKind: addressable-led
+    compatiblePinCapabilities: [addressable-led]
+    supportedActions: [set-color, clear]
+    hardwareGuideId: addressable-led
+    recommendedPinIds: []
+  - id: arduino-avr-digital-output
+    channelKind: digital-output
+    compatiblePinCapabilities: [digital-output]
+    supportedActions: [activate, deactivate, blink, pulse]
+    hardwareGuideId: digital-output
+    recommendedPinIds: [d2, d3, d4]
+  - id: arduino-avr-pwm-output
+    channelKind: pwm-output
+    compatiblePinCapabilities: [pwm-output]
+    supportedActions: [set-duty, pulse, breathe, clear]
+    hardwareGuideId: pwm-output
+    recommendedPinIds: []
+  - id: arduino-avr-buzzer
+    channelKind: buzzer
+    compatiblePinCapabilities: [buzzer]
+    supportedActions: [beep, tone, clear]
+    hardwareGuideId: buzzer
+    recommendedPinIds: [d9]
+  - id: arduino-avr-ws2812
+    channelKind: addressable-led
+    compatiblePinCapabilities: [addressable-led]
+    supportedActions: [set-color, clear]
+    hardwareGuideId: addressable-led
+    recommendedPinIds: [d6]
+  - id: stm32-small-mcu-digital-output
+    channelKind: digital-output
+    compatiblePinCapabilities: [digital-output]
+    supportedActions: [activate, deactivate, blink, pulse]
+    hardwareGuideId: digital-output
+    recommendedPinIds: [pa0, pa1, pa2]
+  - id: seeed-wio-terminal-digital-output
+    channelKind: digital-output
+    compatiblePinCapabilities: [digital-output]
+    supportedActions: [activate, deactivate, blink, breathe, pulse]
+    hardwareGuideId: digital-output
+    recommendedPinIds: [d0, d1, d2]
+  - id: seeed-wio-terminal-buzzer
+    channelKind: buzzer
+    compatiblePinCapabilities: [buzzer]
+    supportedActions: [beep, tone, pattern, clear]
+    hardwareGuideId: buzzer
+    recommendedPinIds: [onboard]

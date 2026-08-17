@@ -1,0 +1,159 @@
+{
+  "id": "my-mascot",
+  "name": "我的精灵",
+  "version": "1.0.0",
+  "renderer": "gif",
+  "animations": {
+    "idle-sleep": "animations/idle-sleep.gif",
+    "idle-look-around": "animations/idle-look-around.gif",
+    "idle-thanks": "animations/idle-thanks.gif",
+    "task-wave": "animations/task-wave.gif",
+    "task-cheer": "animations/task-cheer.gif",
+    "task-fly": "animations/task-fly.gif",
+    "working": "animations/working.gif",
+    "working-call": "animations/working-call.gif",
+    "waiting-input": "animations/waiting-input.gif",
+    "thinking": "animations/thinking.gif",
+    "success": "animations/success.gif",
+    "success-hug": "animations/success-hug.gif",
+    "warning": "animations/warning.gif",
+    "error": "animations/error.gif"
+  },
+  "actions": [
+    {
+      "id": "idle.sleep",
+      "label": "空闲：睡觉",
+      "state": "idle",
+      "animation": "idle-sleep",
+      "loop": true,
+      "interruptible": true,
+      "playMode": "loop"
+    },
+    {
+      "id": "idle.look-around",
+      "label": "空闲：四处看看",
+      "state": "idle",
+      "animation": "idle-look-around",
+      "loop": false,
+      "interruptible": true,
+      "playMode": "once-then-idle"
+    },
+    {
+      "id": "idle.thanks",
+      "label": "空闲：感谢",
+      "state": "idle",
+      "animation": "idle-thanks",
+      "loop": false,
+      "interruptible": true,
+      "playMode": "once-then-idle"
+    },
+    {
+      "id": "task-received.wave",
+      "label": "收到任务：打招呼",
+      "state": "task-received",
+      "animation": "task-wave",
+      "loop": false,
+      "interruptible": true,
+      "playMode": "once-then-idle"
+    },
+    {
+      "id": "task-received.cheer",
+      "label": "收到任务：加油",
+      "state": "task-received",
+      "animation": "task-cheer",
+      "loop": false,
+      "interruptible": true,
+      "playMode": "once-then-idle"
+    },
+    {
+      "id": "task-received.fly",
+      "label": "收到任务：出发",
+      "state": "task-received",
+      "animation": "task-fly",
+      "loop": false,
+      "interruptible": true,
+      "playMode": "once-then-idle"
+    },
+    {
+      "id": "working.loop",
+      "label": "工作中",
+      "state": "working",
+      "animation": "working",
+      "loop": true,
+      "interruptible": true,
+      "playMode": "loop"
+    },
+    {
+      "id": "working.call",
+      "label": "工作中：呼叫",
+      "state": "working",
+      "animation": "working-call",
+      "loop": true,
+      "interruptible": true,
+      "playMode": "loop"
+    },
+    {
+      "id": "waiting-input.look-around",
+      "label": "等待输入",
+      "state": "waiting-input",
+      "animation": "waiting-input",
+      "loop": true,
+      "interruptible": true,
+      "playMode": "loop"
+    },
+    {
+      "id": "thinking.loop",
+      "label": "思考中",
+      "state": "thinking",
+      "animation": "thinking",
+      "loop": true,
+      "interruptible": true,
+      "playMode": "loop"
+    },
+    {
+      "id": "success.ok",
+      "label": "完成",
+      "state": "success",
+      "animation": "success",
+      "loop": false,
+      "interruptible": false,
+      "playMode": "once-then-hold"
+    },
+    {
+      "id": "success.hug",
+      "label": "完成：拥抱",
+      "state": "success",
+      "animation": "success-hug",
+      "loop": false,
+      "interruptible": false,
+      "playMode": "once-then-hold"
+    },
+    {
+      "id": "warning.notice",
+      "label": "提醒",
+      "state": "warning",
+      "animation": "warning",
+      "loop": false,
+      "interruptible": false,
+      "playMode": "once-then-hold"
+    },
+    {
+      "id": "error.cry",
+      "label": "出错",
+      "state": "error",
+      "animation": "error",
+      "loop": false,
+      "interruptible": false,
+      "playMode": "once-then-hold"
+    }
+  ],
+  "interactions": {
+    "hoverActionId": "idle.sleep",
+    "clickActionId": "task-received.wave"
+  },
+  "bubbleStyle": {
+    "maxLines": 2,
+    "maxCharsPerLine": 18,
+    "placements": ["top", "top-left", "top-right"]
+  }
+}

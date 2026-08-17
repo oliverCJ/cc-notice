@@ -1,0 +1,165 @@
+{
+  "firmware": [
+    {
+      "target_id": "arduino-uno-default",
+      "board_id": "arduino-uno",
+      "firmware_version": "0.2.2",
+      "protocol_version": 2,
+      "visible": true,
+      "toolchain": "arduino-cli",
+      "artifact_name": "cc-notice-arduino-uno.hex",
+      "artifact_type": "hex",
+      "flash_strategy": "arduino_cli_upload",
+      "flash_volume_name": "",
+      "relative_path": "arduino-uno/cc-notice-arduino-uno.hex",
+      "upload": {
+        "fqbn": "arduino:avr:uno",
+        "protocol": "stk500v1",
+        "speed": 115200,
+        "requires_1200bps_reset": false,
+        "bootloader_wait_ms": 2000,
+        "board_options": {}
+      }
+    },
+    {
+      "target_id": "arduino-nano-new-bootloader",
+      "board_id": "arduino-nano",
+      "firmware_version": "0.2.2",
+      "protocol_version": 2,
+      "visible": true,
+      "toolchain": "arduino-cli",
+      "artifact_name": "cc-notice-arduino-nano.hex",
+      "artifact_type": "hex",
+      "flash_strategy": "arduino_cli_upload",
+      "flash_volume_name": "",
+      "relative_path": "arduino-nano/cc-notice-arduino-nano.hex",
+      "upload": {
+        "fqbn": "arduino:avr:nano",
+        "protocol": "arduino",
+        "speed": 57600,
+        "requires_1200bps_reset": false,
+        "bootloader_wait_ms": 2000,
+        "board_options": {
+          "cpu": "atmega328"
+        }
+      }
+    },
+    {
+      "target_id": "arduino-nano-old-bootloader",
+      "board_id": "arduino-nano",
+      "firmware_version": "0.2.2",
+      "protocol_version": 2,
+      "visible": true,
+      "toolchain": "arduino-cli",
+      "artifact_name": "cc-notice-arduino-nano-old-bootloader.hex",
+      "artifact_type": "hex",
+      "flash_strategy": "arduino_cli_upload",
+      "flash_volume_name": "",
+      "relative_path": "arduino-nano/cc-notice-arduino-nano-old-bootloader.hex",
+      "upload": {
+        "fqbn": "arduino:avr:nano",
+        "protocol": "arduino",
+        "speed": 57600,
+        "requires_1200bps_reset": false,
+        "bootloader_wait_ms": 2000,
+        "board_options": {
+          "cpu": "atmega328old"
+        }
+      }
+    },
+    {
+      "target_id": "seeed-wio-terminal-default",
+      "board_id": "seeed-wio-terminal",
+      "firmware_version": "0.2.0",
+      "protocol_version": 2,
+      "visible": true,
+      "toolchain": "arduino-cli",
+      "artifact_name": "cc-notice-seeed-wio-terminal.bin",
+      "artifact_type": "bin",
+      "flash_strategy": "arduino_cli_upload",
+      "flash_volume_name": "",
+      "relative_path": "seeed-wio-terminal/cc-notice-seeed-wio-terminal.bin",
+      "upload": {
+        "fqbn": "Seeeduino:samd:seeed_wio_terminal",
+        "protocol": "sam-ba",
+        "speed": 921600,
+        "requires_1200bps_reset": true,
+        "bootloader_wait_ms": 8000,
+        "board_options": {}
+      }
+    },
+    {
+      "target_id": "stm32f103cx-blue-pill-default",
+      "board_id": "stm32f103cx-blue-pill",
+      "firmware_version": "0.2.0",
+      "protocol_version": 2,
+      "visible": true,
+      "toolchain": "arduino-cli",
+      "artifact_name": "cc-notice-stm32f103cx-blue-pill.bin",
+      "artifact_type": "bin",
+      "flash_strategy": "arduino_cli_upload",
+      "flash_volume_name": "",
+      "relative_path": "stm32f103cx-blue-pill/cc-notice-stm32f103cx-blue-pill.bin",
+      "upload": {
+        "fqbn": "STMicroelectronics:stm32:GenF1:pnum=BLUEPILL_F103C6",
+        "protocol": "serial",
+        "speed": 115200,
+        "requires_1200bps_reset": false,
+        "bootloader_wait_ms": 2000,
+        "board_options": {
+          "upload_method": "serialMethod",
+          "usb": "CDCgen"
+        }
+      }
+    },
+    {
+      "target_id": "sparkfun-pro-micro-32u4-default",
+      "board_id": "sparkfun-pro-micro-32u4",
+      "firmware_version": "0.2.0",
+      "protocol_version": 2,
+      "visible": true,
+      "toolchain": "arduino-cli",
+      "artifact_name": "cc-notice-sparkfun-pro-micro-32u4.hex",
+      "artifact_type": "hex",
+      "flash_strategy": "arduino_cli_upload",
+      "flash_volume_name": "",
+      "relative_path": "sparkfun-pro-micro-32u4/cc-notice-sparkfun-pro-micro-32u4.hex",
+      "upload": {
+        "fqbn": "SparkFun:avr:promicro",
+        "protocol": "avr109",
+        "speed": 57600,
+        "requires_1200bps_reset": true,
+        "bootloader_wait_ms": 8000,
+        "board_options": {
+          "cpu": "16MHzatmega32U4"
+        }
+      }
+    },
+    {
+      "target_id": "rp2040-pico-oled-091-128x32",
+      "board_id": "rp2040-pico-oled-091",
+      "firmware_version": "0.1.1",
+      "protocol_version": 2,
+      "visible": true,
+      "toolchain": "pico-sdk-cmake",
+      "artifact_name": "cc-notice-rp2040-pico-oled-091-128x32.uf2",
+      "artifact_type": "uf2",
+      "flash_strategy": "uf2_mount_copy",
+      "flash_volume_name": "RPI-RP2",
+      "relative_path": "rp2040-pico-oled-091/cc-notice-rp2040-pico-oled-091-128x32.uf2"
+    },
+    {
+      "target_id": "rp2040-pico-default",
+      "board_id": "rp2040-pico",
+      "firmware_version": "0.1.5",
+      "protocol_version": 2,
+      "visible": true,
+      "toolchain": "pico-sdk-cmake",
+      "artifact_name": "cc-notice-rp2040-pico.uf2",
+      "artifact_type": "uf2",
+      "flash_strategy": "uf2_mount_copy",
+      "flash_volume_name": "RPI-RP2",
+      "relative_path": "rp2040-pico/cc-notice-rp2040-pico.uf2"
+    }
+  ]
+}

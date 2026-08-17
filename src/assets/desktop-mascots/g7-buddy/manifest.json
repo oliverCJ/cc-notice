@@ -1,0 +1,204 @@
+{
+  "id": "g7-buddy",
+  "nameKey": "desktopNotice.mascot.packs.g7Buddy",
+  "version": "1.0.0",
+  "renderer": "gif",
+  "status": "ready",
+  "visualDirection": "g7-cartoon-buddy",
+  "animations": {
+    "idle": "animations/idle.gif",
+    "working": "animations/working.gif",
+    "thinking": "animations/thinking.gif",
+    "waiting-input": "animations/waiting-input.gif",
+    "success": "animations/success.gif",
+    "warning": "animations/warning.gif",
+    "error": "animations/error.gif",
+    "wave": "animations/wave.gif",
+    "hug": "animations/hug.gif",
+    "sleep": "animations/sleep.gif",
+    "call": "animations/call.gif",
+    "cheer": "animations/cheer.gif",
+    "fly": "animations/fly.gif",
+    "laugh": "animations/laugh.gif",
+    "flowers": "animations/flowers.gif",
+    "thanks": "animations/thanks.gif",
+    "love": "animations/love.gif",
+    "bye": "animations/bye.gif",
+    "red-packet": "animations/red-packet.gif"
+  },
+  "states": [
+    "task-received",
+    "working",
+    "waiting-input",
+    "thinking",
+    "success",
+    "warning",
+    "error",
+    "idle"
+  ],
+  "actions": [
+    {
+      "id": "task-received.wave",
+      "state": "task-received",
+      "animation": "wave",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "task-received.working",
+      "state": "task-received",
+      "animation": "working",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "task-received.cheer",
+      "state": "task-received",
+      "animation": "cheer",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "task-received.fly",
+      "state": "task-received",
+      "animation": "fly",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "working.loop",
+      "state": "working",
+      "animation": "working",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "working.cheer",
+      "state": "working",
+      "animation": "cheer",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "working.call",
+      "state": "working",
+      "animation": "call",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "waiting-input.surprised",
+      "state": "waiting-input",
+      "animation": "waiting-input",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "thinking.loop",
+      "state": "thinking",
+      "animation": "thinking",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "success.ok",
+      "state": "success",
+      "animation": "success",
+      "loop": true,
+      "interruptible": false
+    },
+    {
+      "id": "success.hug",
+      "state": "success",
+      "animation": "hug",
+      "loop": true,
+      "interruptible": false
+    },
+    {
+      "id": "success.flowers",
+      "state": "success",
+      "animation": "flowers",
+      "loop": true,
+      "interruptible": false
+    },
+    {
+      "id": "success.laugh",
+      "state": "success",
+      "animation": "laugh",
+      "loop": true,
+      "interruptible": false
+    },
+    {
+      "id": "success.red-packet",
+      "state": "success",
+      "animation": "red-packet",
+      "loop": true,
+      "interruptible": false
+    },
+    {
+      "id": "warning.surprised",
+      "state": "warning",
+      "animation": "warning",
+      "loop": true,
+      "interruptible": false
+    },
+    {
+      "id": "error.cry",
+      "state": "error",
+      "animation": "error",
+      "loop": true,
+      "interruptible": false
+    },
+    {
+      "id": "idle.sleep",
+      "state": "idle",
+      "animation": "sleep",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "idle.hi",
+      "state": "idle",
+      "animation": "wave",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "idle.laugh",
+      "state": "idle",
+      "animation": "laugh",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "idle.thanks",
+      "state": "idle",
+      "animation": "thanks",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "idle.love",
+      "state": "idle",
+      "animation": "love",
+      "loop": true,
+      "interruptible": true
+    },
+    {
+      "id": "idle.bye",
+      "state": "idle",
+      "animation": "bye",
+      "loop": true,
+      "interruptible": true
+    }
+  ],
+  "interactions": {
+    "hoverActionId": "idle.sleep",
+    "clickActionId": "task-received.wave"
+  },
+  "bubbleStyle": {
+    "maxLines": 2,
+    "maxCharsPerLine": 18,
+    "placements": ["top", "top-left", "top-right"]
+  }
+}

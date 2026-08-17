@@ -1,0 +1,16 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default desktop capability for CC Notice.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "autostart:allow-disable",
+    "autostart:allow-enable",
+    "autostart:allow-is-enabled",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "notification:default",
+    "shell:allow-open"
+  ]
+}

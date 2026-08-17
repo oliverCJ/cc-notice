@@ -1,0 +1,38 @@
+[package]
+name = "cc-notice"
+version = "1.1.1"
+description = "AI coding status notice desktop application"
+edition = "2021"
+default-run = "cc-notice"
+
+[lib]
+name = "cc_notice"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+anyhow = "1"
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+serialport = "4"
+signal-hook = "0.3"
+tauri = { version = "2", features = ["protocol-asset", "tray-icon", "image-png", "macos-private-api"] }
+tauri-plugin-dialog = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-shell = "2"
+thiserror = "2"
+time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
+tokio = { version = "1", features = ["time"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+tiny_http = "0.12"
+uuid = { version = "1", features = ["v4"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem"] }
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }

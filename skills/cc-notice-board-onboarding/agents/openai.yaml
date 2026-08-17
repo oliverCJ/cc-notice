@@ -1,0 +1,4 @@
+interface:
+  display_name: "CC Notice 板卡接入"
+  short_description: "接入 CC Notice 内置板卡、固件、输入输出通道和设备扩展能力"
+  default_prompt: "使用 $cc-notice-board-onboarding 在核对官方板卡资料后接入 CC Notice 内置板卡、固件、输入输出通道、设备注册和通信监控验证流程。"
