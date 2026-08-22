@@ -284,7 +284,7 @@ export type HookConfigTargetScope = 'global' | 'project';
 export type HookConfigTarget = {
   id: string;
   scope: HookConfigTargetScope;
-  source: 'codex' | 'claude-code';
+  source: string;
   label: string;
   projectPath?: string | null;
   enabled: boolean;
@@ -299,9 +299,18 @@ export type HookConfigTargetStatus = HookConfigTarget & {
 };
 
 export type HookEventFrontendState = {
+  tools?: AiToolFrontendDefinition[];
   catalog: HookEventDefinition[];
   selected: HookEventSelections;
   targets: HookConfigTargetStatus[];
+  legacyTargets?: HookConfigTargetStatus[];
+};
+
+export type AiToolFrontendDefinition = {
+  source: string;
+  displayName: string;
+  globalConfigPath: string;
+  canCreateProjectTarget: boolean;
 };
 
 export type HookConfigWritePreview = {

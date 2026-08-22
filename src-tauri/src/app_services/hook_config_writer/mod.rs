@@ -1,4 +1,7 @@
+pub mod codec;
+pub mod copilot_codec;
 pub mod events;
+pub mod flat_codec;
 pub mod handlers;
 pub mod io;
 pub mod merge;

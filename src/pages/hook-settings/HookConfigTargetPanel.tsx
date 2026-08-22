@@ -1,4 +1,4 @@
-import { FolderOpen, Plus } from 'lucide-react';
+import { FolderOpen } from 'lucide-react';
 import { HookConfigTargetStatus, HookConfigWriteResult } from '../../api/tauriApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,10 +55,6 @@ export function HookConfigTargetPanel({
               {t('hookSettings.targets.description')}
             </CardDescription>
           </div>
-          <Button onClick={onAddProjectTarget}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('hookSettings.targets.addProject')}
-          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -74,10 +70,6 @@ export function HookConfigTargetPanel({
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center">
             <FolderOpen className="mb-4 h-12 w-12 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">{t('hookSettings.targets.empty')}</p>
-            <Button variant="outline" size="sm" className="mt-4" onClick={onAddProjectTarget}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('hookSettings.targets.addProject')}
-            </Button>
           </div>
         ) : (
           <div className="grid gap-3">

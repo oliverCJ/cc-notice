@@ -274,6 +274,25 @@ mod tests {
         }
     }
 
+    #[test]
+    fn advanced_template_contains_new_tool_extension_mappings() {
+        let definition =
+            super::get_template(ProfileTemplate::Advanced).expect("advanced template should exist");
+        for (source, event) in [
+            ("gemini-cli", "PreCompress"),
+            ("cursor", "subagentStart"),
+            ("github-copilot-cli", "notification"),
+        ] {
+            assert!(
+                definition
+                    .ai_event_mappings
+                    .iter()
+                    .any(|mapping| mapping.source == source && mapping.event == event),
+                "advanced template missing {source} {event} mapping"
+            );
+        }
+    }
+
     fn claude_code_core_events() -> [&'static str; 9] {
         [
             "SessionStart",

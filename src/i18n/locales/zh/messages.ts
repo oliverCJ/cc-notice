@@ -927,6 +927,10 @@ export const zhMessages = {
       restoring: '恢复中...',
       removeTarget: '移除此目标'
     },
+    legacy: {
+      message: '检测到 {{count}} 个旧版项目 Hook，可能造成重复通知',
+      cleanup: '查看并清理'
+    },
     previewDialog: {
       title: '{{mode}}：{{targetLabel}}',
       writeMode: '配置预览',

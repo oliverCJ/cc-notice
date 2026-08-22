@@ -121,12 +121,21 @@ mod tests {
     fn loads_hook_event_yaml_sources() {
         let config = load_hook_event_config().expect("hook event yaml should parse");
 
-        assert_eq!(2, config.sources.len());
+        assert_eq!(5, config.sources.len());
         assert!(config.sources.iter().any(|source| source.id == "codex"));
         assert!(config
             .sources
             .iter()
             .any(|source| source.id == "claude-code"));
+        assert!(config
+            .sources
+            .iter()
+            .any(|source| source.id == "gemini-cli"));
+        assert!(config.sources.iter().any(|source| source.id == "cursor"));
+        assert!(config
+            .sources
+            .iter()
+            .any(|source| source.id == "github-copilot-cli"));
     }
 
     #[test]

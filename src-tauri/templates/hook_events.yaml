@@ -231,3 +231,213 @@ sources:
         scenario: 用于观察补充信息流程完成。
         defaultSelected: false
         mappedNoticeEvent: agent.working
+  - id: gemini-cli
+    events:
+      - event: SessionStart
+        title: 会话开始
+        description: Gemini CLI 会话启动、恢复或清理后触发。
+        scenario: 用于提示 Gemini CLI 已进入工作状态。
+        defaultSelected: true
+        mappedNoticeEvent: agent.started
+      - event: BeforeAgent
+        title: Agent 开始
+        description: 用户提交提示后、Agent 开始规划前触发。
+        scenario: 用于提示新一轮 Gemini CLI 工作开始。
+        defaultSelected: true
+        mappedNoticeEvent: agent.started
+      - event: BeforeTool
+        title: 工具调用前
+        description: Gemini CLI 即将调用工具前触发。
+        scenario: 用于提示 Gemini CLI 正在执行工具。
+        defaultSelected: true
+        mappedNoticeEvent: tool.executing
+      - event: AfterTool
+        title: 工具调用后
+        description: Gemini CLI 工具调用完成后触发。
+        scenario: 用于观察工具执行完成。
+        defaultSelected: true
+        mappedNoticeEvent: agent.working
+      - event: Notification
+        title: 通知
+        description: Gemini CLI 发出系统通知时触发。
+        scenario: 用于提示权限或状态通知。
+        defaultSelected: true
+        mappedNoticeEvent: agent.waiting_input
+      - event: AfterAgent
+        title: Agent 完成
+        description: Gemini CLI 完成当前轮次响应后触发。
+        scenario: 用于提示当前任务轮次完成。
+        defaultSelected: true
+        mappedNoticeEvent: agent.completed
+      - event: SessionEnd
+        title: 会话结束
+        description: Gemini CLI 会话退出或清理时触发。
+        scenario: 用于观察会话结束。
+        defaultSelected: false
+        mappedNoticeEvent: agent.completed
+      - event: PreCompress
+        title: 压缩前
+        description: Gemini CLI 即将压缩上下文前触发。
+        scenario: 用于观察上下文整理。
+        defaultSelected: false
+        mappedNoticeEvent: context.compacting
+      - event: BeforeModel
+        title: 模型调用前
+        description: Gemini CLI 向模型发送请求前触发。
+        scenario: 用于诊断模型请求频率。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: BeforeToolSelection
+        title: 工具选择前
+        description: Gemini CLI 选择可用工具前触发。
+        scenario: 用于诊断工具选择。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: AfterModel
+        title: 模型调用后
+        description: Gemini CLI 收到模型响应片段后触发。
+        scenario: 用于诊断模型响应，不建议默认通知。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+  - id: cursor
+    events:
+      - event: sessionStart
+        title: 会话开始
+        description: Cursor 新建 Agent 会话时触发。
+        scenario: 用于提示 Cursor 已进入工作状态。
+        defaultSelected: true
+        mappedNoticeEvent: agent.started
+      - event: beforeSubmitPrompt
+        title: 提示提交前
+        description: 用户提交提示、Cursor 发送请求前触发。
+        scenario: 用于提示新一轮 Cursor 工作开始。
+        defaultSelected: true
+        mappedNoticeEvent: agent.started
+      - event: preToolUse
+        title: 工具调用前
+        description: Cursor Agent 调用工具前触发。
+        scenario: 用于提示 Cursor 正在执行工具。
+        defaultSelected: true
+        mappedNoticeEvent: tool.executing
+      - event: postToolUse
+        title: 工具调用后
+        description: Cursor 工具成功后触发。
+        scenario: 用于观察工具执行完成。
+        defaultSelected: true
+        mappedNoticeEvent: agent.working
+      - event: postToolUseFailure
+        title: 工具调用失败
+        description: Cursor 工具失败、超时或权限拒绝时触发。
+        scenario: 用于提示 Cursor 操作失败。
+        defaultSelected: true
+        mappedNoticeEvent: agent.failed
+      - event: stop
+        title: Agent 完成
+        description: Cursor Agent loop 结束时触发。
+        scenario: 用于提示当前任务轮次完成。
+        defaultSelected: true
+        mappedNoticeEvent: agent.completed
+      - event: sessionEnd
+        title: 会话结束
+        description: Cursor Composer 会话结束时触发。
+        scenario: 用于观察会话结束。
+        defaultSelected: false
+        mappedNoticeEvent: agent.completed
+      - event: subagentStart
+        title: 子代理开始
+        description: Cursor 子代理开始时触发。
+        scenario: 用于观察子代理活动。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: subagentStop
+        title: 子代理结束
+        description: Cursor 子代理完成时触发。
+        scenario: 用于观察子代理结束。
+        defaultSelected: false
+        mappedNoticeEvent: agent.completed
+      - event: preCompact
+        title: 压缩前
+        description: Cursor 即将压缩上下文前触发。
+        scenario: 用于观察上下文整理。
+        defaultSelected: false
+        mappedNoticeEvent: context.compacting
+  - id: github-copilot-cli
+    events:
+      - event: sessionStart
+        title: 会话开始
+        description: GitHub Copilot CLI 新建或恢复会话时触发。
+        scenario: 用于提示 Copilot CLI 已进入工作状态。
+        defaultSelected: true
+        mappedNoticeEvent: agent.started
+      - event: userPromptSubmitted
+        title: 提示提交
+        description: 用户向 GitHub Copilot CLI 提交提示时触发。
+        scenario: 用于提示新一轮 Copilot 工作开始。
+        defaultSelected: true
+        mappedNoticeEvent: agent.started
+      - event: preToolUse
+        title: 工具调用前
+        description: GitHub Copilot CLI 调用工具前触发。
+        scenario: 用于提示 Copilot 正在执行工具。
+        defaultSelected: true
+        mappedNoticeEvent: tool.executing
+      - event: postToolUse
+        title: 工具调用后
+        description: GitHub Copilot CLI 工具成功后触发。
+        scenario: 用于观察工具执行完成。
+        defaultSelected: true
+        mappedNoticeEvent: agent.working
+      - event: postToolUseFailure
+        title: 工具调用失败
+        description: GitHub Copilot CLI 工具失败后触发。
+        scenario: 用于提示 Copilot 操作失败。
+        defaultSelected: true
+        mappedNoticeEvent: agent.failed
+      - event: permissionRequest
+        title: 权限请求
+        description: GitHub Copilot CLI 处理权限前触发。
+        scenario: 用于提示用户处理授权。
+        defaultSelected: true
+        mappedNoticeEvent: agent.waiting_input
+      - event: agentStop
+        title: Agent 完成
+        description: GitHub Copilot CLI 主 Agent 完成当前轮次时触发。
+        scenario: 用于提示当前任务轮次完成。
+        defaultSelected: true
+        mappedNoticeEvent: agent.completed
+      - event: errorOccurred
+        title: 执行错误
+        description: GitHub Copilot CLI 执行期间发生错误时触发。
+        scenario: 用于提示任务发生异常。
+        defaultSelected: true
+        mappedNoticeEvent: agent.failed
+      - event: sessionEnd
+        title: 会话结束
+        description: GitHub Copilot CLI 会话终止时触发。
+        scenario: 用于观察会话结束。
+        defaultSelected: false
+        mappedNoticeEvent: agent.completed
+      - event: subagentStart
+        title: 子代理开始
+        description: GitHub Copilot CLI 子代理开始时触发。
+        scenario: 用于观察子代理活动。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: subagentStop
+        title: 子代理结束
+        description: GitHub Copilot CLI 子代理完成时触发。
+        scenario: 用于观察子代理结束。
+        defaultSelected: false
+        mappedNoticeEvent: agent.completed
+      - event: preCompact
+        title: 压缩前
+        description: GitHub Copilot CLI 即将压缩上下文前触发。
+        scenario: 用于观察上下文整理。
+        defaultSelected: false
+        mappedNoticeEvent: context.compacting
+      - event: notification
+        title: 通知
+        description: GitHub Copilot CLI 发出通知时触发。
+        scenario: 用于观察权限和空闲通知。
+        defaultSelected: false
+        mappedNoticeEvent: notification

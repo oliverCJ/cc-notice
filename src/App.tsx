@@ -39,6 +39,7 @@ import {
   WindowCloseBehavior,
   WindowStartupMode,
   aiTools,
+  syncAiToolsFromBackend,
   PageId
 } from './state/appStore';
 import { AppShell } from '@/components/app/AppShell';
@@ -104,6 +105,11 @@ export default function App() {
     setProfileState
   } = useAppBootstrap();
   const deviceRegistry = useDeviceRuntimeRegistry();
+  useEffect(() => {
+    if (hookEventState?.tools) {
+      syncAiToolsFromBackend(hookEventState.tools);
+    }
+  }, [hookEventState?.tools]);
   useDeviceRuntimeAutomation(deviceRegistry);
   const appConfigRef = useRef(appConfig);
   const activePageRef = useRef(activePage);

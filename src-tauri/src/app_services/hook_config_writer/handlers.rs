@@ -13,7 +13,7 @@ pub(crate) fn managed_handler_with_relay(
         "type": "command",
         "command": format!(
             "{} --source {source} --event {event}{debug_flag}",
-            shell_quote_path(relay_path),
+            quote_relay_path(relay_path),
         ),
         "statusMessage": format!("CC Notice: {event}")
     })
@@ -81,7 +81,7 @@ pub(crate) fn command_has_debug(command: &str) -> bool {
     shell_words(command).iter().any(|arg| arg == "--debug")
 }
 
-fn shell_quote_path(path: &Path) -> String {
+pub(crate) fn quote_relay_path(path: &Path) -> String {
     let raw = path.to_string_lossy();
     if raw
         .chars()

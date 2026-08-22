@@ -945,6 +945,10 @@ export const enMessages = {
       restoring: 'Restoring...',
       removeTarget: 'Remove Target'
     },
+    legacy: {
+      message: '{{count}} legacy project Hook(s) may cause duplicate notifications',
+      cleanup: 'Review and clean up'
+    },
     previewDialog: {
       title: '{{mode}}: {{targetLabel}}',
       writeMode: 'Config Preview',

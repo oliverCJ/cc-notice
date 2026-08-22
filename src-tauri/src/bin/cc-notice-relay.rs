@@ -18,7 +18,12 @@ fn main() {
     if let Err(error) = &result {
         tracing::error!("cc-notice-relay failed: {error}");
     }
+    let _ = write_noop_output(&mut std::io::stdout());
     std::process::exit(exit_code_for_run_result(result));
+}
+
+fn write_noop_output(writer: &mut impl Write) -> std::io::Result<()> {
+    writer.write_all(b"{}\n")
 }
 
 fn run() -> Result<(), String> {
@@ -125,7 +130,7 @@ fn exit_code_for_run_result(result: Result<(), String>) -> i32 {
 
 #[cfg(test)]
 mod tests {
-    use super::{exit_code_for_run_result, relay_log_writer};
+    use super::{exit_code_for_run_result, relay_log_writer, write_noop_output};
     use std::io::Write;
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -140,6 +145,15 @@ mod tests {
     #[test]
     fn relay_success_uses_success_exit_code() {
         assert_eq!(0, exit_code_for_run_result(Ok(())));
+    }
+
+    #[test]
+    fn relay_writes_single_noop_json_output() {
+        let mut output = Vec::new();
+
+        write_noop_output(&mut output).expect("relay output should be writable");
+
+        assert_eq!(b"{}\n", output.as_slice());
     }
 
     #[test]

@@ -13,7 +13,7 @@ import {
 import type { DesktopNoticeInstance, DesktopNoticeRuleTarget } from '@/domain/desktopNotice';
 import type { DeviceRuntimeErrorCode } from '@/api/tauriApi';
 
-export type AiToolId = 'codex' | 'claude-code';
+export type AiToolId = string;
 export type PageId =
   | 'setup'
   | 'monitor'
@@ -166,7 +166,15 @@ export const navItems: NavItem[] = [
   { id: 'debug', labelKey: 'nav.debug', icon: Bug }
 ];
 
-export const aiTools: AiToolOption[] = [
+export let aiTools: AiToolOption[] = [
   { id: 'codex', name: 'Codex' },
   { id: 'claude-code', name: 'Claude Code' }
 ];
+
+export function syncAiToolsFromBackend(
+  tools: Array<{ source: string; displayName: string }>
+) {
+  if (tools.length > 0) {
+    aiTools = tools.map((tool) => ({ id: tool.source, name: tool.displayName }));
+  }
+}

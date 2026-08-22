@@ -886,7 +886,7 @@ test('logs warning when device runtime listener fails to initialize', async () =
   warnSpy.mockRestore();
 });
 
-test('hook settings selects events, previews, writes and adds a project target', async () => {
+test('hook settings selects events, previews and writes global target only', async () => {
   await renderApp();
 
   fireEvent.click(screen.getByRole('button', { name: 'Hook 设置' }));
@@ -941,24 +941,8 @@ test('hook settings selects events, previews, writes and adds a project target',
     })
   );
 
-  await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: '添加项目目录' }));
-  });
-  expect(openMock).toHaveBeenCalledWith({ directory: true, multiple: false });
-  expect(await screen.findByText('project-a')).toBeInTheDocument();
-  const debugSwitches = screen.getAllByLabelText('Debug');
-  expect(debugSwitches.at(-1)).toHaveAttribute('aria-checked', 'true');
-  expect(screen.getAllByText(/Debug 模式会写入 --debug/).length).toBeGreaterThan(0);
-
-  await act(async () => {
-    fireEvent.click(screen.getAllByRole('switch', { name: '启用' }).at(-1)!);
-  });
-  await waitFor(() =>
-    expect(invokeMock).toHaveBeenCalledWith('write_hook_config_target', {
-      targetId: 'project-codex-abc',
-      debug: true
-    })
-  );
+  expect(screen.queryByRole('button', { name: '添加项目目录' })).not.toBeInTheDocument();
+  expect(screen.queryByText('project-a')).not.toBeInTheDocument();
 });
 
 test('hook settings previews managed hook restore before confirming file changes', async () => {
@@ -1067,7 +1051,7 @@ test('hook settings previews warning before enabling global target switch', asyn
   ).toBeInTheDocument();
 });
 
-test('hook settings initializes project debug switch from parsed target status', async () => {
+test('hook settings hides legacy project target from normal target list', async () => {
   invokeMock.mockImplementation((command, args) => {
     if (command === 'hook_event_state') {
       return Promise.resolve({
@@ -1144,22 +1128,8 @@ test('hook settings initializes project debug switch from parsed target status',
   await renderApp();
 
   fireEvent.click(screen.getByRole('button', { name: 'Hook 设置' }));
-  expect(await screen.findByText('project-debug')).toBeInTheDocument();
-  expect(screen.getAllByRole('switch', { name: 'Debug' }).at(-1)).toHaveAttribute(
-    'aria-checked',
-    'true'
-  );
-
-  await act(async () => {
-    fireEvent.click(screen.getAllByRole('button', { name: '预览' }).at(-1)!);
-  });
-
-  await waitFor(() =>
-    expect(invokeMock).toHaveBeenCalledWith('preview_hook_config_target', {
-      targetId: 'project-codex-debug',
-      debug: true
-    })
-  );
+  expect(screen.queryByText('project-debug')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '添加项目目录' })).not.toBeInTheDocument();
 });
 
 test('debug page submits test event refreshes state and clears log', async () => {
