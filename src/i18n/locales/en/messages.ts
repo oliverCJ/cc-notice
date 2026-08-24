@@ -1257,6 +1257,7 @@ export const enMessages = {
       beep: 'Beep',
       tone: 'Tone',
       pattern: 'Pattern',
+      'display-face': 'Screen Face',
       'set-color': 'Set Color'
     },
     testAction: {
@@ -1285,6 +1286,9 @@ export const enMessages = {
       title: 'Device Extensions',
       description: 'Send device-level test commands for extension capabilities declared by the current device.',
       display: 'Display Test',
+      displayFace: 'Screen Face',
+      displayFaceDurationMs: 'Duration (ms)',
+      testDisplayFace: 'Test Face',
       buzzerPatterns: 'Buzzer Patterns',
       testRuntime: 'Test Runtime',
       clearDisplay: 'Clear Display',
@@ -2394,6 +2398,8 @@ export const enMessages = {
       validationBrightnessRequired: 'Set Color action requires brightness.',
       validationIntervalRequired: 'Blink or breathe action requires interval.',
       validationPatternRequired: 'Pattern action requires a pattern.',
+      validationDisplayFaceTemplateRequired: 'Select a screen face.',
+      validationDisplayFaceTemplateUnsupported: 'This screen face is not supported.',
       validationDisplayDeviceRequired: 'Select a device that supports display output.',
       validationDisplayStatusRequired: 'Select a display status.',
       validationDisplayTitleRequired: 'Enter a display title template.',
@@ -2528,6 +2534,29 @@ export const enMessages = {
       titleMaxChars: 'Max Title Chars',
       messageMaxChars: 'Max Message Chars'
     },
+    displayFace: {
+      template: 'Screen Face',
+      intensity: 'Expression Intensity',
+      intensityOptions: {
+        subtle: 'Subtle',
+        standard: 'Standard',
+        strong: 'Strong'
+      },
+      templates: {
+        idleSleep: 'Sleeping',
+        idleBored: 'Bored',
+        workingFocus: 'Focused',
+        workingBusy: 'Busy',
+        waitingCall: 'Calling',
+        waitingWait: 'Waiting',
+        successHappy: 'Happy',
+        successSurprise: 'Surprised',
+        warningShock: 'Shocked',
+        warningSweat: 'Sweating',
+        errorAwkward: 'Awkward',
+        errorPanic: 'Panic'
+      }
+    },
     deviceChannel: {
       defaultRp2040: 'Default RP2040 Pico',
       device: 'Device',
@@ -2569,6 +2598,7 @@ export const enMessages = {
         tone: 'Tone',
         pattern: 'Pattern',
         'display-status': 'Display Status',
+        'display-face': 'Screen Face',
         'set-color': 'Set Color'
       }
     },

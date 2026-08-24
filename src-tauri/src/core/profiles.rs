@@ -205,6 +205,10 @@ pub struct DeviceChannelRuleAction {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pattern: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_face_template_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_face_intensity: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub display_template_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub display_accent: Option<String>,
@@ -582,6 +586,13 @@ fn validate_device_channel_action_parameters(
             )?;
             Ok(())
         }
+        DeviceChannelActionType::DisplayFace => {
+            validate_display_face_template_id(
+                action.display_face_template_id.as_deref(),
+                rule_id,
+            )?;
+            validate_display_face_intensity(action.display_face_intensity.as_deref(), rule_id)
+        }
         DeviceChannelActionType::SetColor => {
             require_device_channel_field(
                 action
@@ -609,6 +620,58 @@ fn validate_device_channel_action_parameters(
         | DeviceChannelActionType::Deactivate
         | DeviceChannelActionType::Pulse
         | DeviceChannelActionType::Clear => Ok(()),
+    }
+}
+
+fn validate_display_face_template_id(
+    template_id: Option<&str>,
+    rule_id: &str,
+) -> Result<(), String> {
+    let Some(template_id) = template_id.map(str::trim).filter(|value| !value.is_empty()) else {
+        return Err(format!(
+            "device-channel rule {} display-face action requires display_face_template_id",
+            rule_id
+        ));
+    };
+
+    if matches!(
+        template_id,
+        "idle-sleep"
+            | "idle-bored"
+            | "working-focus"
+            | "working-busy"
+            | "waiting-call"
+            | "waiting-wait"
+            | "success-happy"
+            | "success-surprise"
+            | "warning-shock"
+            | "warning-sweat"
+            | "error-awkward"
+            | "error-panic"
+    ) {
+        Ok(())
+    } else {
+        Err(format!(
+            "device-channel rule {} has unsupported display_face_template_id: {}",
+            rule_id, template_id
+        ))
+    }
+}
+
+fn validate_display_face_intensity(
+    intensity: Option<&str>,
+    rule_id: &str,
+) -> Result<(), String> {
+    let Some(intensity) = intensity.map(str::trim).filter(|value| !value.is_empty()) else {
+        return Ok(());
+    };
+    if matches!(intensity, "subtle" | "standard" | "strong") {
+        Ok(())
+    } else {
+        Err(format!(
+            "device-channel rule {} has unsupported display_face_intensity: {}",
+            rule_id, intensity
+        ))
     }
 }
 

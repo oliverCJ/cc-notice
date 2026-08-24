@@ -80,6 +80,10 @@ pub struct ProtocolCommandV2 {
     #[serde(skip_serializing_if = "Option::is_none")]
     lines: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    face: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    intensity: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pattern: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     mode: Option<&'static str>,
@@ -195,6 +199,17 @@ impl ProtocolCommandV2 {
                 }))
             }
             DeviceExtensionActionType::DisplayClear => Ok(Self::base_command("display_clear")),
+            DeviceExtensionActionType::DisplayFace => {
+                Ok(trim_display_command_to_firmware_budget(Self {
+                    face: Some(required_non_blank_option(
+                        action.face_template.as_deref(),
+                        "face",
+                    )?),
+                    intensity: optional_non_blank_string(action.face_intensity.as_deref()),
+                    duration_ms: action.duration_ms,
+                    ..Self::base_command("display_face")
+                }))
+            }
             DeviceExtensionActionType::BuzzerPattern => Ok(Self {
                 channel: action.channel_id.clone().unwrap_or_default(),
                 pattern: Some(required_non_blank_option(
@@ -250,6 +265,9 @@ impl ProtocolCommandV2 {
                     "display-status action must be sent as device extension action".to_string(),
                 )
             }
+            DeviceChannelActionType::DisplayFace => {
+                return Err("display-face action must be sent as device extension action".to_string())
+            }
             DeviceChannelActionType::SetColor => Self::addressable_led_set(action)?,
         };
 
@@ -274,6 +292,8 @@ impl ProtocolCommandV2 {
             message: None,
             icon: None,
             lines: None,
+            face: None,
+            intensity: None,
             pattern: None,
             mode: None,
             pull: None,
@@ -546,6 +566,8 @@ mod tests {
             color: None,
             brightness_percent: None,
             pattern: None,
+            display_face_template_id: None,
+            display_face_intensity: None,
             priority: 50,
         }
     }
@@ -560,6 +582,9 @@ mod tests {
             message: None,
             icon: None,
             lines: None,
+            face_template: None,
+            face_intensity: None,
+            duration_ms: None,
             pattern: None,
             control: None,
             active: None,
@@ -910,6 +935,9 @@ mod tests {
             message: None,
             icon: None,
             lines: None,
+            face_template: None,
+            face_intensity: None,
+            duration_ms: None,
             pattern: Some("success".to_string()),
             control: None,
             active: None,
@@ -937,6 +965,9 @@ mod tests {
             message: None,
             icon: None,
             lines: None,
+            face_template: None,
+            face_intensity: None,
+            duration_ms: None,
             pattern: Some("error".to_string()),
             control: None,
             active: None,
@@ -970,5 +1001,25 @@ mod tests {
         assert_eq!("ws2812.gp16", value["channel"]);
         assert_eq!("#33cc99", value["color"]);
         assert_eq!(40, value["brightness_percent"]);
+    }
+
+    #[test]
+    fn serializes_display_face_extension_action() {
+        let mut action = test_extension_action(DeviceExtensionActionType::DisplayFace);
+        action.face_template = Some("success-happy".to_string());
+        action.face_intensity = Some("strong".to_string());
+        action.duration_ms = Some(5000);
+
+        let line = ProtocolCommandV2::from_device_extension_action(&action)
+            .expect("display face extension should convert")
+            .to_json_line()
+            .expect("protocol command should serialize");
+
+        let value: serde_json::Value = serde_json::from_str(line.trim()).expect("json line");
+        assert_eq!("display_face", value["type"]);
+        assert_eq!("success-happy", value["face"]);
+        assert_eq!("strong", value["intensity"]);
+        assert_eq!(5000, value["duration_ms"]);
+        assert!(value.get("channel").is_none());
     }
 }

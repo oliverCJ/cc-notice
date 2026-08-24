@@ -55,6 +55,8 @@ mod tests {
             color: None,
             brightness_percent: None,
             pattern: None,
+            display_face_template_id: None,
+            display_face_intensity: None,
             priority: 50,
         };
 
@@ -81,6 +83,8 @@ mod tests {
             color: None,
             brightness_percent: None,
             pattern: None,
+            display_face_template_id: None,
+            display_face_intensity: None,
             priority: 50,
         };
 

@@ -4,16 +4,30 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import {
   DeviceBuzzerPattern,
   DeviceDisplayCapabilities,
   DeviceExtensionAction,
-  DeviceExtensionStatus,
   DeviceRuntimeState
 } from '@/api/tauriApi';
 import { getBoardDeviceExtensions } from '@/domain/boards/boardCatalog';
-import { isAsciiDisplayText } from '@/domain/display/displayTemplateValidation';
+import {
+  clampOptionalNumber,
+  deviceChannelParameterConstraints
+} from '@/domain/deviceChannels/deviceChannelActionParameters';
+import {
+  DISPLAY_FACE_TEMPLATE_IDS,
+  DisplayFaceTemplateId,
+  defaultDisplayFaceTemplateId,
+  displayFaceTemplateLabelKey
+} from '@/domain/display/displayFaceTemplates';
 import { DeviceActionStatus } from '@/hooks/useDeviceRuntimeRegistry';
 import { useI18n } from '@/i18n';
 
@@ -22,73 +36,6 @@ type DeviceExtensionPanelProps = {
   actionStatus: DeviceActionStatus;
   onSend: (request: DeviceExtensionAction) => void;
 };
-
-const statusActions: Array<{
-  status: DeviceExtensionStatus;
-  titleKey: string;
-  messageKey: string;
-  compactTitleKey: string;
-  compactMessageKey: string;
-}> = [
-  {
-    status: 'success',
-    titleKey: 'successTitle',
-    messageKey: 'successMessage',
-    compactTitleKey: 'successTitle',
-    compactMessageKey: 'successMessage'
-  },
-  {
-    status: 'working',
-    titleKey: 'workingTitle',
-    messageKey: 'workingMessage',
-    compactTitleKey: 'workingTitle',
-    compactMessageKey: 'workingMessage'
-  },
-  {
-    status: 'warning',
-    titleKey: 'warningTitle',
-    messageKey: 'warningMessage',
-    compactTitleKey: 'warningTitle',
-    compactMessageKey: 'warningMessage'
-  },
-  {
-    status: 'error',
-    titleKey: 'errorTitle',
-    messageKey: 'errorMessage',
-    compactTitleKey: 'errorTitle',
-    compactMessageKey: 'errorMessage'
-  }
-];
-
-function selectStatusPayload(
-  displayCapabilities: DeviceDisplayCapabilities,
-  t: ReturnType<typeof useI18n>,
-  titleKey: string,
-  messageKey: string,
-  compactTitleKey: string,
-  compactMessageKey: string
-) {
-  if (displayCapabilities.sizeClass === 'compact') {
-    return {
-      title: t(`devices.deviceExtension.statusPayloadCompact.${compactTitleKey}`),
-      message: t(`devices.deviceExtension.statusPayloadCompact.${compactMessageKey}`)
-    };
-  }
-
-  const title = t(`devices.deviceExtension.statusPayload.${titleKey}`);
-  const message = t(`devices.deviceExtension.statusPayload.${messageKey}`);
-  if (
-    title.length <= displayCapabilities.titleMaxChars &&
-    message.length <= displayCapabilities.messageMaxChars
-  ) {
-    return { title, message };
-  }
-
-  return {
-    title: t(`devices.deviceExtension.statusPayloadCompact.${compactTitleKey}`),
-    message: t(`devices.deviceExtension.statusPayloadCompact.${compactMessageKey}`)
-  };
-}
 
 export function DeviceExtensionPanel({
   selectedState,
@@ -99,48 +46,19 @@ export function DeviceExtensionPanel({
   const boardExtensions = getBoardDeviceExtensions(selectedState?.boardId ?? '');
   const displayCapabilities = boardExtensions?.display ?? null;
   const buzzerPatterns = boardExtensions?.buzzer?.patterns ?? [];
-  const [customTitle, setCustomTitle] = useState(t('devices.deviceExtension.customDisplay.defaultTitle'));
-  const [customMessage, setCustomMessage] = useState(
-    t('devices.deviceExtension.customDisplay.defaultMessage')
+  const [selectedFaceTemplateId, setSelectedFaceTemplateId] = useState<string>(
+    defaultDisplayFaceTemplateId
+  );
+  const [displayFaceDurationMs, setDisplayFaceDurationMs] = useState<string>(
+    String(deviceChannelParameterConstraints.durationMs.defaultValue)
   );
   const deviceId = selectedState?.deviceId ?? null;
   const connected = selectedState?.status === 'connected';
   const busy = actionStatus === 'sending';
   const disabled = !deviceId || !connected || busy;
-  const customDisplayHasUnsupportedText =
-    !isAsciiDisplayText(customTitle) || !isAsciiDisplayText(customMessage);
-  const customDisplayDisabled =
-    disabled || !customTitle.trim() || !customMessage.trim() || customDisplayHasUnsupportedText;
 
   if (!displayCapabilities && buzzerPatterns.length === 0) {
     return null;
-  }
-
-  function sendStatus(
-    status: DeviceExtensionStatus,
-    titleKey: string,
-    messageKey: string,
-    compactTitleKey: string,
-    compactMessageKey: string
-  ) {
-    if (!deviceId || !displayCapabilities) {
-      return;
-    }
-    const payload = selectStatusPayload(
-      displayCapabilities,
-      t,
-      titleKey,
-      messageKey,
-      compactTitleKey,
-      compactMessageKey
-    );
-    onSend({
-      deviceId,
-      action: 'display-status',
-      status,
-      title: payload.title,
-      message: payload.message
-    });
   }
 
   function sendClear() {
@@ -150,33 +68,16 @@ export function DeviceExtensionPanel({
     onSend({ deviceId, action: 'display-clear' });
   }
 
-  function sendCustomDisplay() {
-    if (!deviceId || customDisplayDisabled) {
+  function sendDisplayFace(faceTemplateId: string, durationMs: number) {
+    if (!deviceId || !displayCapabilities?.face) {
       return;
     }
     onSend({
       deviceId,
-      action: 'display-status',
-      status: 'notice',
-      title: customTitle.trim(),
-      message: customMessage.trim()
-    });
-  }
-
-  function sendRuntimeDisplay() {
-    if (!deviceId || !displayCapabilities?.runtime) {
-      return;
-    }
-    onSend({
-      deviceId,
-      action: 'display-runtime',
-      status: 'working',
-      title: t('devices.deviceExtension.runtimePayload.title'),
-      message: t('devices.deviceExtension.runtimePayload.message'),
-      lines: [
-        t('devices.deviceExtension.runtimePayload.line1'),
-        t('devices.deviceExtension.runtimePayload.line2')
-      ]
+      action: 'display-face',
+      faceTemplate: faceTemplateId,
+      faceIntensity: 'standard',
+      durationMs
     });
   }
 
@@ -204,16 +105,12 @@ export function DeviceExtensionPanel({
         {displayCapabilities ? (
           <DisplayTestControls
             displayCapabilities={displayCapabilities}
-            customTitle={customTitle}
-            customMessage={customMessage}
             disabled={disabled}
-            customDisplayDisabled={customDisplayDisabled}
-            customDisplayHasUnsupportedText={customDisplayHasUnsupportedText}
-            onCustomTitleChange={setCustomTitle}
-            onCustomMessageChange={setCustomMessage}
-            onSendCustomDisplay={sendCustomDisplay}
-            onSendRuntimeDisplay={sendRuntimeDisplay}
-            onSendStatus={sendStatus}
+            selectedFaceTemplateId={selectedFaceTemplateId}
+            displayFaceDurationMs={displayFaceDurationMs}
+            onSelectedFaceTemplateIdChange={setSelectedFaceTemplateId}
+            onDisplayFaceDurationMsChange={setDisplayFaceDurationMs}
+            onSendDisplayFace={sendDisplayFace}
             onClear={sendClear}
           />
         ) : null}
@@ -263,133 +160,100 @@ export function DeviceExtensionPanel({
 
 type DisplayTestControlsProps = {
   displayCapabilities: DeviceDisplayCapabilities;
-  customTitle: string;
-  customMessage: string;
   disabled: boolean;
-  customDisplayDisabled: boolean;
-  customDisplayHasUnsupportedText: boolean;
-  onCustomTitleChange: (value: string) => void;
-  onCustomMessageChange: (value: string) => void;
-  onSendCustomDisplay: () => void;
-  onSendRuntimeDisplay: () => void;
-  onSendStatus: (
-    status: DeviceExtensionStatus,
-    titleKey: string,
-    messageKey: string,
-    compactTitleKey: string,
-    compactMessageKey: string
-  ) => void;
+  selectedFaceTemplateId: string;
+  displayFaceDurationMs: string;
+  onSelectedFaceTemplateIdChange: (value: string) => void;
+  onDisplayFaceDurationMsChange: (value: string) => void;
+  onSendDisplayFace: (faceTemplateId: string, durationMs: number) => void;
   onClear: () => void;
 };
 
 function DisplayTestControls({
   displayCapabilities,
-  customTitle,
-  customMessage,
   disabled,
-  customDisplayDisabled,
-  customDisplayHasUnsupportedText,
-  onCustomTitleChange,
-  onCustomMessageChange,
-  onSendCustomDisplay,
-  onSendRuntimeDisplay,
-  onSendStatus,
+  selectedFaceTemplateId,
+  displayFaceDurationMs,
+  onSelectedFaceTemplateIdChange,
+  onDisplayFaceDurationMsChange,
+  onSendDisplayFace,
   onClear
 }: DisplayTestControlsProps) {
   const t = useI18n();
-  const supportedStatuses = new Set(displayCapabilities.statuses);
-  const visibleStatusActions = statusActions.filter((item) => supportedStatuses.has(item.status));
+  const faceTemplateIds = DISPLAY_FACE_TEMPLATE_IDS.filter((templateId) =>
+    displayCapabilities.faceTemplates?.length
+      ? displayCapabilities.faceTemplates.includes(templateId)
+      : true
+  );
+  const selectedFaceTemplate = faceTemplateIds.includes(
+    selectedFaceTemplateId as DisplayFaceTemplateId
+  )
+    ? selectedFaceTemplateId
+    : (faceTemplateIds[0] ?? defaultDisplayFaceTemplateId);
+  const parsedDurationMs = clampOptionalNumber(
+    displayFaceDurationMs,
+    deviceChannelParameterConstraints.durationMs
+  );
+  const effectiveDurationMs =
+    parsedDurationMs ?? deviceChannelParameterConstraints.durationMs.defaultValue;
+
+  function normalizeDisplayFaceDuration() {
+    onDisplayFaceDurationMsChange(String(effectiveDurationMs));
+  }
 
   return (
     <>
-      {displayCapabilities.status ? (
-        <div className="grid gap-3 rounded-lg border bg-muted/20 p-3 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="device-display-title">
-              {t('devices.deviceExtension.customDisplay.title')}
-            </Label>
-            <Input
-              id="device-display-title"
-              value={customTitle}
-              maxLength={displayCapabilities.titleMaxChars}
-              disabled={disabled}
-              onChange={(event) => onCustomTitleChange(event.target.value)}
-            />
-          </div>
-          <div className="space-y-2 md:row-span-2">
-            <Label htmlFor="device-display-message">
-              {t('devices.deviceExtension.customDisplay.message')}
-            </Label>
-            <Textarea
-              id="device-display-message"
-              value={customMessage}
-              maxLength={displayCapabilities.messageMaxChars}
-              rows={3}
-              disabled={disabled}
-              onChange={(event) => onCustomMessageChange(event.target.value)}
-            />
-          </div>
-          <div className="flex items-end">
-            <Button
-              type="button"
-              variant="default"
-              size="sm"
-              disabled={customDisplayDisabled}
-              onClick={onSendCustomDisplay}
-            >
-              <Monitor className="mr-2 h-4 w-4" />
-              {t('devices.deviceExtension.customDisplay.send')}
-            </Button>
-          </div>
-          {customDisplayHasUnsupportedText ? (
-            <p className="text-xs text-destructive md:col-span-2">
-              {t('devices.deviceExtension.customDisplay.asciiValidation')}
-            </p>
-          ) : null}
-          <p className="text-xs text-muted-foreground md:col-span-2">
-            {t('devices.deviceExtension.customDisplay.asciiNote')}
-          </p>
-        </div>
-      ) : null}
-
       <div className="space-y-2">
         <p className="text-sm font-medium">{t('devices.deviceExtension.display')}</p>
         <div className="flex flex-wrap gap-2">
-          {displayCapabilities.runtime ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={disabled}
-              onClick={onSendRuntimeDisplay}
-            >
-              <Monitor className="mr-2 h-4 w-4" />
-              {t('devices.deviceExtension.testRuntime')}
-            </Button>
-          ) : null}
-          {displayCapabilities.status
-            ? visibleStatusActions.map((item) => (
-                <Button
-                  key={item.status}
-                  type="button"
-                  variant="secondary"
-                  size="sm"
+          {displayCapabilities.face ? (
+            <div className="flex min-w-[260px] flex-wrap items-end gap-2 rounded-md border border-border/70 p-2">
+              <div className="min-w-[160px] flex-1 space-y-1">
+                <Label htmlFor="device-display-face-template">
+                  {t('devices.deviceExtension.displayFace')}
+                </Label>
+                <Select
+                  value={selectedFaceTemplate}
+                  onValueChange={onSelectedFaceTemplateIdChange}
                   disabled={disabled}
-                  onClick={() =>
-                    onSendStatus(
-                      item.status,
-                      item.titleKey,
-                      item.messageKey,
-                      item.compactTitleKey,
-                      item.compactMessageKey
-                    )
-                  }
                 >
-                  <Monitor className="mr-2 h-4 w-4" />
-                  {t(`devices.deviceExtension.status.${item.status}`)}
-                </Button>
-              ))
-            : null}
+                  <SelectTrigger id="device-display-face-template">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {faceTemplateIds.map((templateId) => (
+                      <SelectItem key={templateId} value={templateId}>
+                        {t(displayFaceTemplateLabelKey(templateId))}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-32 space-y-1">
+                <Label htmlFor="device-display-face-duration">
+                  {t('devices.deviceExtension.displayFaceDurationMs')}
+                </Label>
+                <Input
+                  id="device-display-face-duration"
+                  inputMode="numeric"
+                  value={displayFaceDurationMs}
+                  disabled={disabled}
+                  onChange={(event) => onDisplayFaceDurationMsChange(event.target.value)}
+                  onBlur={normalizeDisplayFaceDuration}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={disabled || faceTemplateIds.length === 0}
+                onClick={() => onSendDisplayFace(selectedFaceTemplate, effectiveDurationMs)}
+              >
+                <Monitor className="mr-2 h-4 w-4" />
+                {t('devices.deviceExtension.testDisplayFace')}
+              </Button>
+            </div>
+          ) : null}
           {displayCapabilities.clear ? (
             <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={onClear}>
               <Eraser className="mr-2 h-4 w-4" />

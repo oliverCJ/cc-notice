@@ -673,7 +673,8 @@ fn extension_action_channel_id(action: DeviceExtensionActionType) -> &'static st
         | DeviceExtensionActionType::DisplayCard
         | DeviceExtensionActionType::DisplayLines
         | DeviceExtensionActionType::DisplayRuntime
-        | DeviceExtensionActionType::DisplayClear => "display",
+        | DeviceExtensionActionType::DisplayClear
+        | DeviceExtensionActionType::DisplayFace => "display",
         DeviceExtensionActionType::BuzzerPattern => "buzzer",
         DeviceExtensionActionType::DeviceControl => "device",
     }
@@ -685,7 +686,8 @@ fn extension_action_output_type(action: DeviceExtensionActionType) -> DeviceComm
         | DeviceExtensionActionType::DisplayCard
         | DeviceExtensionActionType::DisplayLines
         | DeviceExtensionActionType::DisplayRuntime
-        | DeviceExtensionActionType::DisplayClear => DeviceCommandOutputType::Display,
+        | DeviceExtensionActionType::DisplayClear
+        | DeviceExtensionActionType::DisplayFace => DeviceCommandOutputType::Display,
         DeviceExtensionActionType::BuzzerPattern => DeviceCommandOutputType::Buzzer,
         DeviceExtensionActionType::DeviceControl => DeviceCommandOutputType::DeviceControl,
     }

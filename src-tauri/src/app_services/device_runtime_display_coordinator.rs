@@ -26,6 +26,9 @@ impl DeviceRuntimeDisplayCoordinator {
                     message: Some(runtime_message(snapshot, &display)),
                     icon: None,
                     lines: Some(runtime_lines(snapshot)),
+                    face_template: None,
+                    face_intensity: None,
+                    duration_ms: None,
                     pattern: None,
                     control: None,
                     active: None,
@@ -44,6 +47,15 @@ fn runtime_display_capabilities(board_id: &str) -> Option<DeviceDisplayCapabilit
                 .and_then(|board| board.device_extensions()?.display.clone())
         })
         .filter(|display| display.runtime)
+        .filter(|display| !is_face_first_small_display(display))
+}
+
+fn is_face_first_small_display(display: &DeviceDisplayCapabilities) -> bool {
+    display.face
+        && matches!(
+            display.size_class,
+            DeviceDisplaySizeClass::Compact | DeviceDisplaySizeClass::Small
+        )
 }
 
 fn runtime_status(snapshot: &RuntimeMonitorSnapshot) -> &'static str {

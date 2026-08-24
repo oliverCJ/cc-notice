@@ -318,6 +318,129 @@ fn device_channel_display_status_action_builds_display_extension_action() {
 }
 
 #[test]
+fn device_channel_display_face_action_builds_display_face_extension_action() {
+    let mut action = device_channel_action(
+        "a1",
+        "desk-wio",
+        "display",
+        DeviceChannelActionType::DisplayFace,
+    );
+    action.duration_ms = Some(5000);
+    action.display_face_template_id = Some("success-happy".to_string());
+    action.display_face_intensity = Some("strong".to_string());
+
+    let profile = profile_with_rules(vec![HardwareRule {
+        id: "agent-completed-device-display-face-output".to_string(),
+        internal_event: "agent.completed".to_string(),
+        priority: 80,
+        enabled: true,
+        output: HardwareOutput {
+            channel_actions: vec![action],
+            ..output_with_type(HardwareOutputType::DeviceChannel)
+        },
+    }]);
+
+    let device_board_ids =
+        HashMap::from([("desk-wio".to_string(), "seeed-wio-terminal".to_string())]);
+    let plan = OutputPlanService::build_plan_with_context_and_device_boards(
+        &profile,
+        "agent.completed",
+        &OutputTemplateContext::default(),
+        &device_board_ids,
+    );
+
+    assert_eq!(1, plan.actions.len());
+    match &plan.actions[0] {
+        OutputExecutionAction::DeviceExtension(action) => {
+            assert_eq!("desk-wio", action.device_id);
+            assert_eq!(DeviceExtensionActionType::DisplayFace, action.action);
+            assert_eq!(None, action.channel_id.as_deref());
+            assert_eq!(Some("success-happy"), action.face_template.as_deref());
+            assert_eq!(Some("strong"), action.face_intensity.as_deref());
+            assert_eq!(Some(5000), action.duration_ms);
+        }
+        other => panic!("expected display face extension action, got {other:?}"),
+    }
+}
+
+#[test]
+fn device_channel_display_face_action_uses_default_duration_when_missing() {
+    let mut action = device_channel_action(
+        "a1",
+        "desk-wio",
+        "display",
+        DeviceChannelActionType::DisplayFace,
+    );
+    action.duration_ms = None;
+    action.display_face_template_id = Some("success-happy".to_string());
+    action.display_face_intensity = Some("standard".to_string());
+
+    let profile = profile_with_rules(vec![HardwareRule {
+        id: "agent-completed-device-display-face-default-duration".to_string(),
+        internal_event: "agent.completed".to_string(),
+        priority: 80,
+        enabled: true,
+        output: HardwareOutput {
+            channel_actions: vec![action],
+            ..output_with_type(HardwareOutputType::DeviceChannel)
+        },
+    }]);
+
+    let device_board_ids =
+        HashMap::from([("desk-wio".to_string(), "seeed-wio-terminal".to_string())]);
+    let plan = OutputPlanService::build_plan_with_context_and_device_boards(
+        &profile,
+        "agent.completed",
+        &OutputTemplateContext::default(),
+        &device_board_ids,
+    );
+
+    match &plan.actions[0] {
+        OutputExecutionAction::DeviceExtension(action) => {
+            assert_eq!(DeviceExtensionActionType::DisplayFace, action.action);
+            assert_eq!(Some(5000), action.duration_ms);
+        }
+        other => panic!("expected display face extension action, got {other:?}"),
+    }
+}
+
+#[test]
+fn device_channel_display_face_action_is_skipped_when_template_is_not_declared_by_board() {
+    let mut action = device_channel_action(
+        "a1",
+        "desk-partial-face",
+        "display",
+        DeviceChannelActionType::DisplayFace,
+    );
+    action.display_face_template_id = Some("working-focus".to_string());
+    action.display_face_intensity = Some("standard".to_string());
+
+    let profile = profile_with_rules(vec![HardwareRule {
+        id: "agent-running-device-display-face-output".to_string(),
+        internal_event: "agent.running".to_string(),
+        priority: 80,
+        enabled: true,
+        output: HardwareOutput {
+            channel_actions: vec![action],
+            ..output_with_type(HardwareOutputType::DeviceChannel)
+        },
+    }]);
+
+    let device_board_ids = HashMap::from([(
+        "desk-partial-face".to_string(),
+        "partial-face-test-board".to_string(),
+    )]);
+    let plan = OutputPlanService::build_plan_with_context_and_device_boards(
+        &profile,
+        "agent.running",
+        &OutputTemplateContext::default(),
+        &device_board_ids,
+    );
+
+    assert!(plan.actions.is_empty());
+}
+
+#[test]
 fn display_template_action_renders_to_display_status_for_legacy_firmware() {
     let mut action = device_channel_action(
         "a1",
@@ -1135,6 +1258,8 @@ fn device_channel_action(
         color: None,
         brightness_percent: None,
         pattern: None,
+        display_face_template_id: None,
+        display_face_intensity: None,
         display_template_id: None,
         display_accent: None,
         display_icon: None,

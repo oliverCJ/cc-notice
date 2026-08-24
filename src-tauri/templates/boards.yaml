@@ -33,6 +33,21 @@ boards:
         card: false
         lines: true
         runtime: true
+        face: true
+        faceStyleVersion: no-brow-warm-v1
+        faceTemplates:
+          - idle-sleep
+          - idle-bored
+          - working-focus
+          - working-busy
+          - waiting-call
+          - waiting-wait
+          - success-happy
+          - success-surprise
+          - warning-shock
+          - warning-sweat
+          - error-awkward
+          - error-panic
         clear: true
         sizeClass: small
         statuses: [notice, working, success, warning, error]
@@ -61,6 +76,21 @@ boards:
         card: false
         lines: true
         runtime: true
+        face: true
+        faceStyleVersion: no-brow-warm-v1
+        faceTemplates:
+          - idle-sleep
+          - idle-bored
+          - working-focus
+          - working-busy
+          - waiting-call
+          - waiting-wait
+          - success-happy
+          - success-surprise
+          - warning-shock
+          - warning-sweat
+          - error-awkward
+          - error-panic
         clear: true
         sizeClass: compact
         statuses: [notice, working, success, warning, error]
@@ -182,6 +212,21 @@ boards:
         card: true
         lines: true
         runtime: true
+        face: true
+        faceStyleVersion: no-brow-warm-v1
+        faceTemplates:
+          - idle-sleep
+          - idle-bored
+          - working-focus
+          - working-busy
+          - waiting-call
+          - waiting-wait
+          - success-happy
+          - success-surprise
+          - warning-shock
+          - warning-sweat
+          - error-awkward
+          - error-panic
         clear: true
         sizeClass: medium
         statuses: [notice, working, success, warning, error]

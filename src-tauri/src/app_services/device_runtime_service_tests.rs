@@ -894,6 +894,8 @@ fn test_action(
         color: None,
         brightness_percent: None,
         pattern: None,
+        display_face_template_id: None,
+        display_face_intensity: None,
         priority: 50,
     }
 }
@@ -908,6 +910,9 @@ fn test_display_card_action(device_id: &str) -> DeviceExtensionAction {
         message: Some("Codex / Finished".to_string()),
         icon: Some("check".to_string()),
         lines: Some(vec!["Codex".to_string(), "Finished".to_string()]),
+        face_template: None,
+        face_intensity: None,
+        duration_ms: None,
         pattern: None,
         control: None,
         active: None,
@@ -924,6 +929,9 @@ fn test_display_lines_action(device_id: &str) -> DeviceExtensionAction {
         message: None,
         icon: None,
         lines: Some(vec!["Codex".to_string(), "Waiting".to_string()]),
+        face_template: None,
+        face_intensity: None,
+        duration_ms: None,
         pattern: None,
         control: None,
         active: None,

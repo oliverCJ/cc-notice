@@ -86,6 +86,13 @@ describe('boardCatalog', () => {
     expect(channels.some((channel) => channel.id === 'buzzer.gp18')).toBe(true);
   });
 
+  it('declares display face capability for screen devices', () => {
+    expect(getBoardDeviceExtensions('seeed-wio-terminal')?.display?.face).toBe(true);
+    expect(getBoardDeviceExtensions('rp2040-pico-oled-091')?.display?.face).toBe(true);
+    expect(getBoardDeviceExtensions('rp2040-pico-oled-096')?.display?.face).toBe(true);
+    expect(getBoardDeviceExtensions('rp2040-pico')?.display?.face).toBeUndefined();
+  });
+
   it('exposes pattern action on Pico buzzer channels without board-level buzzer extension', () => {
     const channels = getBoardAvailableChannels('rp2040-pico');
     const extensions = getBoardDeviceExtensions('rp2040-pico');

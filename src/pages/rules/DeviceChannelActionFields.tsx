@@ -3,6 +3,7 @@ import {
   DeviceChannelKind,
   DeviceChannelRuleAction
 } from '../../api/tauriApi';
+import { useEffect } from 'react';
 import { HardwareGuideButton } from '@/components/hardware-guides/HardwareGuideButton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -80,6 +81,17 @@ export function DeviceChannelActionFields({
   const pinReuseWarning = selectedChannel
     ? findPinReuseWarning(selectedChannel, effectiveChannelOptions)
     : null;
+
+  useEffect(() => {
+    if (!selectedAction || action.channelAction === selectedAction) {
+      return;
+    }
+    onChange({
+      ...action,
+      channelAction: selectedAction,
+      ...defaultParametersForDeviceChannelAction(selectedAction)
+    });
+  }, [action, onChange, selectedAction]);
 
   function updateAction(patch: Partial<DeviceChannelRuleAction>) {
     onChange({

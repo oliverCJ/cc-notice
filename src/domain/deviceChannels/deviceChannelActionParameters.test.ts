@@ -1,7 +1,36 @@
 import { describe, expect, test } from 'vitest';
-import { validateDeviceChannelActionParameters } from './deviceChannelActionParameters';
+import {
+  defaultParametersForDeviceChannelAction,
+  validateDeviceChannelActionParameters
+} from './deviceChannelActionParameters';
 
 describe('deviceChannelActionParameters', () => {
+  test('uses default display face parameters', () => {
+    expect(defaultParametersForDeviceChannelAction('display-face')).toMatchObject({
+      durationMs: 5000,
+      displayFaceTemplateId: 'idle-sleep',
+      displayFaceIntensity: 'standard'
+    });
+  });
+
+  test('rejects empty display-face template', () => {
+    expect(
+      validateDeviceChannelActionParameters({
+        channelAction: 'display-face',
+        dutyPercent: null,
+        frequencyHz: null,
+        color: null,
+        brightnessPercent: null,
+        intervalMs: null,
+        pattern: null,
+        displayFaceTemplateId: null,
+        displayStatus: null,
+        displayTitleTemplate: null,
+        displayMessageTemplate: null
+      })
+    ).toBe('rules.outputRules.validationDisplayFaceTemplateRequired');
+  });
+
   test('rejects non ASCII display-status custom templates', () => {
     expect(
       validateDeviceChannelActionParameters({

@@ -164,6 +164,9 @@ pub(crate) fn send_device_test_action_impl(
                 message: None,
                 icon: None,
                 lines: None,
+                face_template: None,
+                face_intensity: None,
+                duration_ms: None,
                 pattern: request.pattern,
                 control: None,
                 active: None,
@@ -182,6 +185,8 @@ pub(crate) fn send_device_test_action_impl(
         color: request.color,
         brightness_percent: request.brightness_percent,
         pattern: request.pattern,
+        display_face_template_id: None,
+        display_face_intensity: None,
         priority: 100,
     };
     let prepared = {
@@ -219,6 +224,9 @@ pub(crate) fn send_device_extension_action_impl(
         message: request.message,
         icon: request.icon,
         lines: request.lines,
+        face_template: request.face_template,
+        face_intensity: request.face_intensity,
+        duration_ms: request.duration_ms,
         pattern: request.pattern,
         control: request.control,
         active: request.active,

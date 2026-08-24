@@ -1352,7 +1352,7 @@ describe('DevicesPage', () => {
     );
   });
 
-  test('shows device extension panel for Pico OLED display devices', () => {
+  test('shows screen face extension panel for Pico OLED display devices', () => {
     const sendExtensionAction = vi.fn();
     const picoOledState: DeviceRuntimeRegistryState = {
       ...registryState,
@@ -1374,50 +1374,13 @@ describe('DevicesPage', () => {
     expect(screen.queryByText('提示音模式')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '静音' })).not.toBeInTheDocument();
 
-    expect(screen.getByLabelText('测试内容')).toHaveValue('Test message');
-
-    fireEvent.click(screen.getByRole('button', { name: '成功' }));
-    expect(sendExtensionAction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        deviceId: 'desk-pico-oled',
-        action: 'display-status',
-        status: 'success',
-        title: 'Done',
-        message: 'OK'
-      })
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: '工作中' }));
-    fireEvent.click(screen.getByRole('button', { name: '警告' }));
-    fireEvent.click(screen.getByRole('button', { name: '错误' }));
-
-    expect(sendExtensionAction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        deviceId: 'desk-pico-oled',
-        action: 'display-status',
-        status: 'working',
-        title: 'Working',
-        message: 'Running'
-      })
-    );
-    expect(sendExtensionAction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        deviceId: 'desk-pico-oled',
-        action: 'display-status',
-        status: 'warning',
-        title: 'Warning',
-        message: 'Check'
-      })
-    );
-    expect(sendExtensionAction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        deviceId: 'desk-pico-oled',
-        action: 'display-status',
-        status: 'error',
-        title: 'Failed',
-        message: 'Error'
-      })
-    );
+    expect(screen.queryByLabelText('测试内容')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '成功' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '工作中' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '警告' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '错误' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '测试表情' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '清屏' })).toBeInTheDocument();
   });
 
   test('sends status and runtime display tests for Pico OLED 0.91 display devices', () => {
@@ -1439,30 +1402,40 @@ describe('DevicesPage', () => {
 
     expect(screen.getByText('设备扩展能力')).toBeInTheDocument();
     expect(screen.getByText('屏幕测试')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '测试事件覆盖页' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '成功' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '测试事件覆盖页' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '成功' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '测试运行态' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '清屏' })).toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: '成功' }));
+  test('sends display face test for Pico OLED display devices', () => {
+    const sendExtensionAction = vi.fn();
+    const picoOledState: DeviceRuntimeRegistryState = {
+      ...registryState,
+      sendExtensionAction,
+      states: [
+        {
+          ...registryState.states[0],
+          deviceId: 'desk-pico-oled',
+          status: 'connected',
+          boardId: 'rp2040-pico-oled-096'
+        }
+      ]
+    };
+
+    renderDevicesPage(picoOledState);
+
+    expect(screen.getByLabelText('屏幕表情')).toHaveTextContent('休眠');
+    fireEvent.change(screen.getByLabelText('持续时长(ms)'), { target: { value: '10000' } });
+    fireEvent.click(screen.getByRole('button', { name: '测试表情' }));
+
     expect(sendExtensionAction).toHaveBeenCalledWith(
       expect.objectContaining({
-        deviceId: 'desk-pico-oled-091',
-        action: 'display-status',
-        status: 'success',
-        title: 'Done',
-        message: 'OK'
-      })
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: '测试运行态' }));
-
-    expect(sendExtensionAction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        deviceId: 'desk-pico-oled-091',
-        action: 'display-runtime',
-        status: 'working',
-        title: 'Working',
-        message: 'E/O 12/34',
-        lines: ['Last codex hook', 'OK 33 / Err 1']
+        deviceId: 'desk-pico-oled',
+        action: 'display-face',
+        faceTemplate: 'idle-sleep',
+        faceIntensity: 'standard',
+        durationMs: 10000
       })
     );
   });
@@ -1488,19 +1461,11 @@ describe('DevicesPage', () => {
     expect(screen.getByText('屏幕测试')).toBeInTheDocument();
     expect(screen.getByText('提示音模式')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '静音' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '成功' }));
-    expect(sendExtensionAction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        deviceId: 'desk-wio',
-        action: 'display-status',
-        status: 'success',
-        title: 'Task Done',
-        message: 'CC Notice received a success state'
-      })
-    );
+    expect(screen.queryByRole('button', { name: '成功' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '清屏' })).toBeInTheDocument();
   });
 
-  test('sends ascii Wio display overlay test content from extension panel', () => {
+  test('hides ascii Wio display overlay test content from extension panel', () => {
     const sendExtensionAction = vi.fn();
     const wioState: DeviceRuntimeRegistryState = {
       ...registryState,
@@ -1517,26 +1482,13 @@ describe('DevicesPage', () => {
 
     renderDevicesPage(wioState);
 
-    fireEvent.change(screen.getByLabelText('测试标题'), {
-      target: { value: 'Rule Test' }
-    });
-    fireEvent.change(screen.getByLabelText('测试内容'), {
-      target: { value: 'This is a display overlay test' }
-    });
-    fireEvent.click(screen.getByRole('button', { name: '测试事件覆盖页' }));
-
-    expect(sendExtensionAction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        deviceId: 'desk-wio',
-        action: 'display-status',
-        status: 'notice',
-        title: 'Rule Test',
-        message: 'This is a display overlay test'
-      })
-    );
+    expect(screen.queryByLabelText('测试标题')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('测试内容')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '测试事件覆盖页' })).not.toBeInTheDocument();
+    expect(sendExtensionAction).not.toHaveBeenCalled();
   });
 
-  test('blocks non ascii Wio display overlay test content', () => {
+  test('hides non ascii Wio display overlay validation when text test is hidden', () => {
     const sendExtensionAction = vi.fn();
     const wioState: DeviceRuntimeRegistryState = {
       ...registryState,
@@ -1553,15 +1505,8 @@ describe('DevicesPage', () => {
 
     renderDevicesPage(wioState);
 
-    fireEvent.change(screen.getByLabelText('测试标题'), {
-      target: { value: '规则测试' }
-    });
-    fireEvent.change(screen.getByLabelText('测试内容'), {
-      target: { value: '这是一条自定义屏幕测试内容' }
-    });
-
-    expect(screen.getByText('当前屏幕暂不支持中文，请使用英文、数字或常用符号。')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '测试事件覆盖页' })).toBeDisabled();
+    expect(screen.queryByText('当前屏幕暂不支持中文，请使用英文、数字或常用符号。')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '测试事件覆盖页' })).not.toBeInTheDocument();
     expect(sendExtensionAction).not.toHaveBeenCalled();
   });
 

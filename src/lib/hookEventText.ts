@@ -1,5 +1,12 @@
-import { HookEventDefinition } from '@/api/tauriApi';
 import { Translator } from '@/i18n';
+
+type HookEventTextSource = {
+  source: string;
+  event: string;
+  title: string;
+  description: string;
+  scenario: string;
+};
 
 const HOOK_EVENT_KEY_BY_SOURCE_EVENT: Record<string, string> = {
   'codex/SessionStart': 'codex.sessionStart',
@@ -42,19 +49,19 @@ const HOOK_EVENT_KEY_BY_SOURCE_EVENT: Record<string, string> = {
   'claude-code/ElicitationResult': 'claudeCode.elicitationResult'
 };
 
-export function hookEventTitle(event: HookEventDefinition, t: Translator) {
+export function hookEventTitle(event: HookEventTextSource, t: Translator) {
   return hookEventText(event, t, 'title', event.title);
 }
 
-export function hookEventDescription(event: HookEventDefinition, t: Translator) {
+export function hookEventDescription(event: HookEventTextSource, t: Translator) {
   return hookEventText(event, t, 'description', event.description);
 }
 
-export function hookEventScenario(event: HookEventDefinition, t: Translator) {
+export function hookEventScenario(event: HookEventTextSource, t: Translator) {
   return hookEventText(event, t, 'scenario', event.scenario);
 }
 
-export function hookEventSearchText(event: HookEventDefinition, t: Translator) {
+export function hookEventSearchText(event: HookEventTextSource, t: Translator) {
   return [
     event.event,
     hookEventTitle(event, t),
@@ -66,7 +73,7 @@ export function hookEventSearchText(event: HookEventDefinition, t: Translator) {
 }
 
 function hookEventText(
-  event: HookEventDefinition,
+  event: HookEventTextSource,
   t: Translator,
   field: 'title' | 'description' | 'scenario',
   fallback: string

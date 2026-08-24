@@ -33,6 +33,10 @@ import {
   displayIconForTemplate,
   displayStatusForTemplate
 } from '@/domain/display/displayTemplates';
+import {
+  DISPLAY_FACE_TEMPLATE_IDS,
+  displayFaceTemplateLabelKey
+} from '@/domain/display/displayFaceTemplates';
 import { validateAsciiDisplayTemplate } from './displayTemplateValidation';
 import { DeferredNumberInput } from './DeferredNumberInput';
 
@@ -69,6 +73,11 @@ export function DeviceChannelActionParameterFields({
     value.displayMessageMaxChars,
     displayMessageConstraint
   );
+  const displayFaceTemplateIds = DISPLAY_FACE_TEMPLATE_IDS.filter((templateId) =>
+    displayCapabilities?.faceTemplates?.length
+      ? displayCapabilities.faceTemplates.includes(templateId)
+      : true
+  );
 
   useEffect(() => {
     if (action !== 'display-status') {
@@ -92,6 +101,13 @@ export function DeviceChannelActionParameterFields({
     value.displayMessageMaxChars,
     value.displayTitleMaxChars
   ]);
+
+  useEffect(() => {
+    if (action !== 'display-face' || value.displayFaceIntensity === 'standard') {
+      return;
+    }
+    onChange({ displayFaceIntensity: 'standard' });
+  }, [action, onChange, value.displayFaceIntensity]);
 
   if (!action) {
     return null;
@@ -253,6 +269,33 @@ export function DeviceChannelActionParameterFields({
               ))}
             </SelectContent>
           </Select>
+        </div>
+      ) : null}
+
+      {action === 'display-face' ? (
+        <div className="grid gap-3 md:col-span-2 md:grid-cols-2 xl:col-span-3">
+          <div className="space-y-2">
+            <Label htmlFor={`device-display-face-template-${actionDomId}`}>
+              {t('rules.displayFace.template')}
+            </Label>
+            <Select
+              value={value.displayFaceTemplateId ?? 'idle-sleep'}
+              onValueChange={(displayFaceTemplateId) =>
+                onChange({ displayFaceTemplateId })
+              }
+            >
+              <SelectTrigger id={`device-display-face-template-${actionDomId}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {displayFaceTemplateIds.map((templateId) => (
+                  <SelectItem key={templateId} value={templateId}>
+                    {t(displayFaceTemplateLabelKey(templateId))}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       ) : null}
 
@@ -437,5 +480,15 @@ function NumberField({
 }
 
 function shouldShowDuration(action: DeviceChannelActionType): boolean {
-  return ['activate', 'blink', 'breathe', 'pulse', 'set-duty', 'beep', 'tone', 'set-color'].includes(action);
+  return [
+    'activate',
+    'blink',
+    'breathe',
+    'pulse',
+    'set-duty',
+    'beep',
+    'tone',
+    'set-color',
+    'display-face'
+  ].includes(action);
 }

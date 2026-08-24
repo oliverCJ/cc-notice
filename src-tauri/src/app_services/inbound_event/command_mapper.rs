@@ -77,6 +77,8 @@ mod tests {
                     color: None,
                     brightness_percent: None,
                     pattern: None,
+                    display_face_template_id: None,
+                    display_face_intensity: None,
                     display_template_id: None,
                     display_accent: None,
                     display_icon: None,

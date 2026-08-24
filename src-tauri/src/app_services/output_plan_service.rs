@@ -145,6 +145,9 @@ fn device_channel_rule_to_actions(
                         message: None,
                         icon: None,
                         lines: None,
+                        face_template: None,
+                        face_intensity: None,
+                        duration_ms: None,
                         pattern: action.pattern.clone(),
                         control: None,
                         active: None,
@@ -232,6 +235,48 @@ fn device_channel_rule_to_actions(
                         message,
                         icon: action.display_icon.clone(),
                         lines: Some(lines).filter(|lines| !lines.is_empty()),
+                        face_template: None,
+                        face_intensity: None,
+                        duration_ms: None,
+                        pattern: None,
+                        control: None,
+                        active: None,
+                    },
+                ));
+            }
+            if action.channel_action == DeviceChannelActionType::DisplayFace {
+                let device_id = action.device_id.trim();
+                let board_id = device_board_ids
+                    .get(device_id)
+                    .map(String::as_str)
+                    .unwrap_or(fallback_board_id);
+                let display_capabilities = display_capabilities_for_board(board_id);
+                if display_capabilities.as_ref().is_some_and(|display| !display.face) {
+                    return None;
+                }
+                if let (Some(display), Some(template)) = (
+                    display_capabilities.as_ref(),
+                    action.display_face_template_id.as_deref().map(str::trim),
+                ) {
+                    if !display.face_templates.is_empty()
+                        && !display.face_templates.iter().any(|item| item == template)
+                    {
+                        return None;
+                    }
+                }
+                return Some(OutputExecutionAction::DeviceExtension(
+                    DeviceExtensionAction {
+                        device_id: device_id.to_string(),
+                        channel_id: None,
+                        action: DeviceExtensionActionType::DisplayFace,
+                        status: None,
+                        title: None,
+                        message: None,
+                        icon: None,
+                        lines: None,
+                        face_template: action.display_face_template_id.clone(),
+                        face_intensity: action.display_face_intensity.clone(),
+                        duration_ms: Some(display_face_duration_ms(action.duration_ms)),
                         pattern: None,
                         control: None,
                         active: None,
@@ -249,6 +294,8 @@ fn device_channel_rule_to_actions(
                 color: action.color.clone(),
                 brightness_percent: action.brightness_percent,
                 pattern: None,
+                display_face_template_id: None,
+                display_face_intensity: None,
                 priority: rule.priority,
             }))
         })
@@ -342,10 +389,17 @@ fn display_rule_to_action(
         message,
         icon: output.display_icon.clone(),
         lines: Some(lines).filter(|lines| !lines.is_empty()),
+        face_template: None,
+        face_intensity: None,
+        duration_ms: None,
         pattern: None,
         control: None,
         active: None,
     })
+}
+
+fn display_face_duration_ms(duration_ms: Option<u32>) -> u64 {
+    u64::from(duration_ms.unwrap_or(5_000))
 }
 
 fn uses_channelized_buzzer_pattern(board_id: &str) -> bool {
@@ -390,11 +444,32 @@ fn display_capabilities_for_board(board_id: &str) -> Option<DeviceDisplayCapabil
             lines: true,
             runtime: false,
             clear: true,
+            face: false,
+            face_style_version: None,
+            face_templates: Vec::new(),
             size_class: DeviceDisplaySizeClass::Medium,
             statuses: Vec::new(),
             title_max_chars: 80,
             message_max_chars: 160,
             text_encoding: DeviceDisplayTextEncoding::Unicode,
+        });
+    }
+    #[cfg(test)]
+    if board_id == "partial-face-test-board" {
+        return Some(DeviceDisplayCapabilities {
+            status: true,
+            card: false,
+            lines: true,
+            runtime: false,
+            clear: true,
+            face: true,
+            face_style_version: Some("no-brow-warm-v1".to_string()),
+            face_templates: vec!["success-happy".to_string()],
+            size_class: DeviceDisplaySizeClass::Small,
+            statuses: Vec::new(),
+            title_max_chars: 16,
+            message_max_chars: 16,
+            text_encoding: DeviceDisplayTextEncoding::Ascii,
         });
     }
 

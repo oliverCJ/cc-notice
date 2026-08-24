@@ -1809,6 +1809,16 @@ fn device_channel_action(
         } else {
             None
         },
+        display_face_template_id: if action == DeviceChannelActionType::DisplayFace {
+            Some("idle-sleep".to_string())
+        } else {
+            None
+        },
+        display_face_intensity: if action == DeviceChannelActionType::DisplayFace {
+            Some("standard".to_string())
+        } else {
+            None
+        },
         display_template_id: None,
         display_accent: None,
         display_icon: None,

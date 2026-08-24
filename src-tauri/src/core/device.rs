@@ -406,6 +406,12 @@ pub struct DeviceDisplayCapabilities {
     pub lines: bool,
     #[serde(default)]
     pub runtime: bool,
+    #[serde(default)]
+    pub face: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub face_style_version: Option<String>,
+    #[serde(default)]
+    pub face_templates: Vec<String>,
     pub clear: bool,
     #[serde(default)]
     pub size_class: DeviceDisplaySizeClass,
@@ -511,6 +517,7 @@ pub enum DeviceChannelActionType {
     Tone,
     Pattern,
     DisplayStatus,
+    DisplayFace,
     SetColor,
 }
 
@@ -527,6 +534,10 @@ pub struct DeviceChannelAction {
     pub color: Option<String>,
     pub brightness_percent: Option<u8>,
     pub pattern: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_face_template_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_face_intensity: Option<String>,
     pub priority: u8,
 }
 
@@ -538,6 +549,7 @@ pub enum DeviceExtensionActionType {
     DisplayLines,
     DisplayRuntime,
     DisplayClear,
+    DisplayFace,
     BuzzerPattern,
     DeviceControl,
 }
@@ -553,6 +565,12 @@ pub struct DeviceExtensionAction {
     pub message: Option<String>,
     pub icon: Option<String>,
     pub lines: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub face_template: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub face_intensity: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub duration_ms: Option<u64>,
     pub pattern: Option<String>,
     pub control: Option<String>,
     pub active: Option<bool>,
@@ -821,6 +839,8 @@ mod tests {
             color: Some("#00ff88".to_string()),
             brightness_percent: Some(30),
             pattern: None,
+            display_face_template_id: None,
+            display_face_intensity: None,
             priority: 80,
         };
 

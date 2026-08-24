@@ -1234,6 +1234,7 @@ export const zhMessages = {
       beep: '蜂鸣',
       tone: '播放音调',
       pattern: '提示音模式',
+      'display-face': '屏幕表情',
       'set-color': '设置颜色'
     },
     testAction: {
@@ -1262,6 +1263,9 @@ export const zhMessages = {
       title: '设备扩展能力',
       description: '向当前设备声明支持的屏幕、提示音等扩展能力发送设备级测试命令。',
       display: '屏幕测试',
+      displayFace: '屏幕表情',
+      displayFaceDurationMs: '持续时长(ms)',
+      testDisplayFace: '测试表情',
       buzzerPatterns: '提示音模式',
       testRuntime: '测试运行态',
       clearDisplay: '清屏',
@@ -2334,6 +2338,8 @@ export const zhMessages = {
       validationBrightnessRequired: '设置颜色动作需要填写亮度。',
       validationIntervalRequired: '闪烁或呼吸动作需要填写间隔时间。',
       validationPatternRequired: '提示音模式动作需要选择提示音。',
+      validationDisplayFaceTemplateRequired: '请选择屏幕表情。',
+      validationDisplayFaceTemplateUnsupported: '当前屏幕表情不受支持。',
       validationDisplayDeviceRequired: '请选择支持屏幕输出的设备。',
       validationDisplayStatusRequired: '请选择屏幕显示状态。',
       validationDisplayTitleRequired: '请输入屏幕标题模板。',
@@ -2466,6 +2472,29 @@ export const zhMessages = {
       titleMaxChars: '标题最大字符数',
       messageMaxChars: '内容最大字符数'
     },
+    displayFace: {
+      template: '屏幕表情',
+      intensity: '表情强度',
+      intensityOptions: {
+        subtle: '轻微',
+        standard: '标准',
+        strong: '强烈'
+      },
+      templates: {
+        idleSleep: '休眠',
+        idleBored: '无聊',
+        workingFocus: '认真',
+        workingBusy: '繁忙',
+        waitingCall: '呼喊',
+        waitingWait: '等待',
+        successHappy: '开心',
+        successSurprise: '惊喜',
+        warningShock: '惊讶',
+        warningSweat: '流汗',
+        errorAwkward: '尴尬',
+        errorPanic: '惊慌'
+      }
+    },
     deviceChannel: {
       defaultRp2040: 'RP2040 Pico 默认设备',
       device: '设备',
@@ -2507,6 +2536,7 @@ export const zhMessages = {
         tone: '播放音调',
         pattern: '提示音模式',
         'display-status': '显示状态',
+        'display-face': '屏幕表情',
         'set-color': '设置颜色'
       }
     },

@@ -90,14 +90,21 @@ export function enrichDeviceChannelsForRule(device: DeviceSelectOption): Channel
     });
 
   if (
-    device.deviceExtensions?.display?.status &&
+    (device.deviceExtensions?.display?.status || device.deviceExtensions?.display?.face) &&
     !channels.some((channel) => channel.value === 'display')
   ) {
+    const supportedActions: DeviceChannelActionType[] = [];
+    if (device.deviceExtensions?.display?.status && !device.deviceExtensions.display.face) {
+      supportedActions.push('display-status');
+    }
+    if (device.deviceExtensions?.display?.face) {
+      supportedActions.push('display-face');
+    }
     channels.push({
       value: 'display',
       label: '屏幕',
       kind: 'display',
-      supportedActions: ['display-status'],
+      supportedActions,
       hardwareGuideId: null,
       boardId: device.boardId ?? null,
       sourceChannel: null

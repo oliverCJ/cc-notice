@@ -7,6 +7,11 @@ import {
   defaultLinesForDisplayTemplate,
   displayStatusForTemplate
 } from '@/domain/display/displayTemplates';
+import {
+  DISPLAY_FACE_TEMPLATE_IDS,
+  DisplayFaceTemplateId,
+  defaultDisplayFaceTemplateId
+} from '@/domain/display/displayFaceTemplates';
 
 export type NumericParameterConstraint = {
   min: number;
@@ -51,6 +56,8 @@ export function defaultParametersForDeviceChannelAction(
         ? deviceChannelParameterConstraints.brightnessPercent.defaultValue
         : null,
     pattern: action === 'pattern' ? 'notice' : null,
+    displayFaceTemplateId: action === 'display-face' ? defaultDisplayFaceTemplateId : null,
+    displayFaceIntensity: action === 'display-face' ? 'standard' : null,
     displayTemplateId: action === 'display-status' ? defaultDisplayTemplateId : null,
     displayAccent: action === 'display-status' ? displayStatusForTemplate(defaultDisplayTemplateId) : null,
     displayIcon: action === 'display-status' ? 'info' : null,
@@ -71,6 +78,8 @@ export type DeviceChannelActionParameterValidationKey =
   | 'rules.outputRules.validationBrightnessRequired'
   | 'rules.outputRules.validationIntervalRequired'
   | 'rules.outputRules.validationPatternRequired'
+  | 'rules.outputRules.validationDisplayFaceTemplateRequired'
+  | 'rules.outputRules.validationDisplayFaceTemplateUnsupported'
   | 'rules.outputRules.validationDisplayStatusRequired'
   | 'rules.outputRules.validationDisplayTitleRequired'
   | 'rules.outputRules.validationDisplayMessageRequired'
@@ -86,6 +95,7 @@ export function validateDeviceChannelActionParameters(
     | 'brightnessPercent'
     | 'intervalMs'
     | 'pattern'
+    | 'displayFaceTemplateId'
     | 'displayStatus'
     | 'displayTitleTemplate'
     | 'displayMessageTemplate'
@@ -115,6 +125,13 @@ export function validateDeviceChannelActionParameters(
         : null;
     case 'pattern':
       return action.pattern?.trim() ? null : 'rules.outputRules.validationPatternRequired';
+    case 'display-face':
+      if (!action.displayFaceTemplateId?.trim()) {
+        return 'rules.outputRules.validationDisplayFaceTemplateRequired';
+      }
+      return DISPLAY_FACE_TEMPLATE_IDS.includes(action.displayFaceTemplateId as DisplayFaceTemplateId)
+        ? null
+        : 'rules.outputRules.validationDisplayFaceTemplateUnsupported';
     case 'display-status':
       if (!action.displayStatus?.trim()) {
         return 'rules.outputRules.validationDisplayStatusRequired';
@@ -151,7 +168,7 @@ export function clampOptionalNumber(
 function defaultDurationForAction(
   action: DeviceChannelActionType | null | undefined
 ): number | null {
-  if (['activate', 'blink', 'breathe', 'set-duty', 'set-color'].includes(action ?? '')) {
+  if (['activate', 'blink', 'breathe', 'set-duty', 'set-color', 'display-face'].includes(action ?? '')) {
     return deviceChannelParameterConstraints.durationMs.defaultValue;
   }
   if (['pulse', 'beep', 'tone'].includes(action ?? '')) {

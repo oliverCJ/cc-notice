@@ -130,6 +130,21 @@ const wioTerminalButtonInputs = [
   { id: 'fiveway.down', label: '5-way Down' }
 ];
 
+const noBrowWarmFaceTemplates = [
+  'idle-sleep',
+  'idle-bored',
+  'working-focus',
+  'working-busy',
+  'waiting-call',
+  'waiting-wait',
+  'success-happy',
+  'success-surprise',
+  'warning-shock',
+  'warning-sweat',
+  'error-awkward',
+  'error-panic'
+];
+
 // 当前为后端 boards.yaml 的前端展示镜像，后续由 Tauri catalog 命令提供。
 const boardCatalog: BoardCatalogEntry[] = [
   {
@@ -150,6 +165,9 @@ const boardCatalog: BoardCatalogEntry[] = [
         card: false,
         lines: true,
         runtime: true,
+        face: true,
+        faceStyleVersion: 'no-brow-warm-v1',
+        faceTemplates: noBrowWarmFaceTemplates,
         clear: true,
         sizeClass: 'small',
         statuses: ['notice', 'working', 'success', 'warning', 'error'],
@@ -171,6 +189,9 @@ const boardCatalog: BoardCatalogEntry[] = [
         card: false,
         lines: true,
         runtime: true,
+        face: true,
+        faceStyleVersion: 'no-brow-warm-v1',
+        faceTemplates: noBrowWarmFaceTemplates,
         clear: true,
         sizeClass: 'compact',
         statuses: ['notice', 'working', 'success', 'warning', 'error'],
@@ -234,6 +255,9 @@ const boardCatalog: BoardCatalogEntry[] = [
         card: true,
         lines: true,
         runtime: true,
+        face: true,
+        faceStyleVersion: 'no-brow-warm-v1',
+        faceTemplates: noBrowWarmFaceTemplates,
         clear: true,
         sizeClass: 'medium',
         statuses: ['notice', 'working', 'success', 'warning', 'error'],

@@ -1281,7 +1281,8 @@ fn extension_action_channel_id(action: DeviceExtensionActionType) -> &'static st
         | DeviceExtensionActionType::DisplayCard
         | DeviceExtensionActionType::DisplayLines
         | DeviceExtensionActionType::DisplayRuntime
-        | DeviceExtensionActionType::DisplayClear => "display",
+        | DeviceExtensionActionType::DisplayClear
+        | DeviceExtensionActionType::DisplayFace => "display",
         DeviceExtensionActionType::BuzzerPattern => "buzzer",
         DeviceExtensionActionType::DeviceControl => "device",
     }
@@ -1293,7 +1294,8 @@ fn extension_action_output_type(action: DeviceExtensionActionType) -> DeviceComm
         | DeviceExtensionActionType::DisplayCard
         | DeviceExtensionActionType::DisplayLines
         | DeviceExtensionActionType::DisplayRuntime
-        | DeviceExtensionActionType::DisplayClear => DeviceCommandOutputType::Display,
+        | DeviceExtensionActionType::DisplayClear
+        | DeviceExtensionActionType::DisplayFace => DeviceCommandOutputType::Display,
         DeviceExtensionActionType::BuzzerPattern => DeviceCommandOutputType::Buzzer,
         DeviceExtensionActionType::DeviceControl => DeviceCommandOutputType::DeviceControl,
     }
@@ -1321,6 +1323,9 @@ fn display_status_fallback_action(action: &DeviceExtensionAction) -> Option<Devi
             message: action.message.clone(),
             icon: None,
             lines: None,
+            face_template: None,
+            face_intensity: None,
+            duration_ms: None,
             pattern: None,
             control: None,
             active: None,
@@ -1346,6 +1351,9 @@ fn display_status_fallback_action(action: &DeviceExtensionAction) -> Option<Devi
             message: Some(display_lines_fallback_message(action.lines.as_ref())?),
             icon: None,
             lines: None,
+            face_template: None,
+            face_intensity: None,
+            duration_ms: None,
             pattern: None,
             control: None,
             active: None,

@@ -381,6 +381,7 @@ export type DeviceChannelActionType =
   | 'tone'
   | 'pattern'
   | 'display-status'
+  | 'display-face'
   | 'set-color';
 
 export type DigitalOutputConfig = {
@@ -574,6 +575,7 @@ export type DeviceExtensionActionType =
   | 'display-lines'
   | 'display-runtime'
   | 'display-clear'
+  | 'display-face'
   | 'buzzer-pattern'
   | 'device-control';
 
@@ -600,6 +602,9 @@ export type DeviceExtensionAction = {
   message?: string | null;
   icon?: string | null;
   lines?: string[] | null;
+  faceTemplate?: string | null;
+  faceIntensity?: 'subtle' | 'standard' | 'strong' | null;
+  durationMs?: number | null;
   pattern?: DeviceBuzzerPattern | null;
   control?: 'mute' | null;
   active?: boolean | null;
@@ -667,6 +672,9 @@ export type DeviceDisplayCapabilities = {
   card?: boolean;
   lines?: boolean;
   runtime?: boolean;
+  face?: boolean;
+  faceStyleVersion?: string | null;
+  faceTemplates?: string[];
   clear: boolean;
   sizeClass?: 'compact' | 'small' | 'medium' | 'large';
   statuses: string[];
@@ -847,6 +855,8 @@ export type DeviceChannelRuleAction = {
   displayMessageTemplate?: string | null;
   displayTitleMaxChars?: number | null;
   displayMessageMaxChars?: number | null;
+  displayFaceTemplateId?: string | null;
+  displayFaceIntensity?: 'subtle' | 'standard' | 'strong' | null;
 };
 
 export type HardwareOutput = {

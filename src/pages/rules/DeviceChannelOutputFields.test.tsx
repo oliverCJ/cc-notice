@@ -500,7 +500,7 @@ describe('DeviceChannelOutputFields', () => {
     expect(screen.getByRole('option', { name: '提示音模式' })).toBeInTheDocument();
   });
 
-  test('shows display status action only for devices with display capability', () => {
+  test('hides display status action for screen face devices', () => {
     const onChange = vi.fn();
     render(
       <DeviceChannelOutputFields
@@ -521,6 +521,9 @@ describe('DeviceChannelOutputFields', () => {
             deviceExtensions: {
               display: {
                 status: true,
+                face: true,
+                faceStyleVersion: 'no-brow-warm-v1',
+                faceTemplates: ['working-focus'],
                 clear: true,
                 statuses: ['notice', 'working', 'success', 'warning', 'error'],
                 titleMaxChars: 39,
@@ -540,12 +543,157 @@ describe('DeviceChannelOutputFields', () => {
     fireEvent.click(screen.getByRole('option', { name: '显示屏' }));
 
     fireEvent.click(screen.getByRole('combobox', { name: '动作' }));
-    fireEvent.click(screen.getByRole('option', { name: '显示状态' }));
-
-    expect(screen.getByRole('button', { name: '打开变量助手' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: '显示状态' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '屏幕表情' })).toBeInTheDocument();
   });
 
-  test('shows display status action for Pico OLED 0.91 display devices', () => {
+  test('normalizes legacy display status action to display face for screen face devices', async () => {
+    const onChange = vi.fn();
+    render(
+      <DeviceChannelOutputFields
+        internalEvent="agent.running"
+        output={outputWithAction({
+          deviceId: 'desk-wio',
+          channelId: 'display',
+          channelAction: 'display-status',
+          displayStatus: 'notice',
+          displayTitleTemplate: '{{source}}',
+          displayMessageTemplate: '{{last_assistant_message}}'
+        })}
+        deviceOptions={[
+          {
+            value: 'desk-wio',
+            label: 'Desk Wio',
+            boardId: 'seeed-wio-terminal',
+            deviceExtensions: {
+              display: {
+                status: true,
+                face: true,
+                faceStyleVersion: 'no-brow-warm-v1',
+                faceTemplates: ['working-focus'],
+                clear: true,
+                statuses: ['notice', 'working', 'success', 'warning', 'error'],
+                titleMaxChars: 39,
+                messageMaxChars: 95
+              },
+              buzzer: null,
+              inputs: null
+            },
+            channels: []
+          }
+        ]}
+        onChange={onChange}
+      />
+    );
+
+    await waitFor(() =>
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          channelActions: [
+            expect.objectContaining({
+              channelAction: 'display-face',
+              displayFaceTemplateId: expect.any(String),
+              displayFaceIntensity: 'standard'
+            })
+          ]
+        })
+      )
+    );
+  });
+
+  test('shows display face action only when display declares face capability', () => {
+    render(
+      <DeviceChannelOutputFields
+        internalEvent="agent.running"
+        output={outputWithAction({
+          deviceId: 'desk-wio',
+          channelId: 'display',
+          channelAction: 'display-face',
+          displayFaceTemplateId: 'working-focus',
+          displayFaceIntensity: 'standard'
+        })}
+        deviceOptions={[
+          {
+            value: 'desk-wio',
+            label: 'Desk Wio',
+            boardId: 'seeed-wio-terminal',
+            deviceExtensions: {
+              display: {
+                status: true,
+                face: true,
+                faceStyleVersion: 'no-brow-warm-v1',
+                faceTemplates: ['working-focus'],
+                clear: true,
+                statuses: ['notice', 'working', 'success', 'warning', 'error'],
+                titleMaxChars: 39,
+                messageMaxChars: 95
+              },
+              buzzer: null,
+              inputs: null
+            },
+            channels: []
+          }
+        ]}
+        onChange={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('combobox', { name: '通道类型' }));
+    fireEvent.click(screen.getByRole('option', { name: '显示屏' }));
+    fireEvent.click(screen.getByRole('combobox', { name: '动作' }));
+
+    expect(screen.getByRole('option', { name: '屏幕表情' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: '显示状态' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('option', { name: '屏幕表情' }));
+    fireEvent.click(screen.getByRole('combobox', { name: '屏幕表情' }));
+
+    expect(screen.getByRole('option', { name: '认真' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: '开心' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: '表情强度' })).not.toBeInTheDocument();
+  });
+
+  test('does not show display face action for text-only display capability', () => {
+    render(
+      <DeviceChannelOutputFields
+        internalEvent="agent.running"
+        output={outputWithAction({
+          deviceId: 'desk-display',
+          channelId: 'display',
+          channelAction: 'display-status'
+        })}
+        deviceOptions={[
+          {
+            value: 'desk-display',
+            label: 'Text Display',
+            boardId: 'text-display',
+            deviceExtensions: {
+              display: {
+                status: true,
+                face: false,
+                clear: true,
+                statuses: ['notice', 'working', 'success', 'warning', 'error'],
+                titleMaxChars: 39,
+                messageMaxChars: 95
+              },
+              buzzer: null,
+              inputs: null
+            },
+            channels: []
+          }
+        ]}
+        onChange={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('combobox', { name: '通道类型' }));
+    fireEvent.click(screen.getByRole('option', { name: '显示屏' }));
+    fireEvent.click(screen.getByRole('combobox', { name: '动作' }));
+
+    expect(screen.queryByRole('option', { name: '屏幕表情' })).not.toBeInTheDocument();
+  });
+
+  test('hides display status action for Pico OLED 0.91 face display devices', () => {
     render(
       <DeviceChannelOutputFields
         internalEvent="agent.running"
@@ -565,6 +713,9 @@ describe('DeviceChannelOutputFields', () => {
             deviceExtensions: {
               display: {
                 status: true,
+                face: true,
+                faceStyleVersion: 'no-brow-warm-v1',
+                faceTemplates: ['idle-sleep'],
                 clear: true,
                 statuses: ['notice', 'working', 'success', 'warning', 'error'],
                 titleMaxChars: 16,
@@ -586,7 +737,8 @@ describe('DeviceChannelOutputFields', () => {
     fireEvent.click(screen.getByRole('option', { name: '显示屏' }));
     fireEvent.click(screen.getByRole('combobox', { name: '动作' }));
 
-    expect(screen.getByRole('option', { name: '显示状态' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: '显示状态' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '屏幕表情' })).toBeInTheDocument();
   });
 
   test('uses selected small display capability for display text limits', () => {
