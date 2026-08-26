@@ -35,6 +35,7 @@ boards:
         runtime: true
         face: true
         faceStyleVersion: no-brow-warm-v1
+        faceRendererProfile: oled-128x64-v1
         faceTemplates:
           - idle-sleep
           - idle-bored
@@ -50,6 +51,8 @@ boards:
           - error-panic
         clear: true
         sizeClass: small
+        pixelWidth: 128
+        pixelHeight: 64
         statuses: [notice, working, success, warning, error]
         titleMaxChars: 16
         messageMaxChars: 16
@@ -78,6 +81,7 @@ boards:
         runtime: true
         face: true
         faceStyleVersion: no-brow-warm-v1
+        faceRendererProfile: oled-128x32-v1
         faceTemplates:
           - idle-sleep
           - idle-bored
@@ -93,6 +97,8 @@ boards:
           - error-panic
         clear: true
         sizeClass: compact
+        pixelWidth: 128
+        pixelHeight: 32
         statuses: [notice, working, success, warning, error]
         titleMaxChars: 16
         messageMaxChars: 16
@@ -214,6 +220,7 @@ boards:
         runtime: true
         face: true
         faceStyleVersion: no-brow-warm-v1
+        faceRendererProfile: wio-320x240-v1
         faceTemplates:
           - idle-sleep
           - idle-bored
@@ -229,6 +236,8 @@ boards:
           - error-panic
         clear: true
         sizeClass: medium
+        pixelWidth: 320
+        pixelHeight: 240
         statuses: [notice, working, success, warning, error]
         titleMaxChars: 39
         messageMaxChars: 95

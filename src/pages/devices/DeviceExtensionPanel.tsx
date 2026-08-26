@@ -1,6 +1,7 @@
 import { Bell, Eraser, Monitor, Volume2, VolumeX } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { DisplayFacePreview } from '@/components/display/DisplayFacePreview';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -207,51 +208,57 @@ function DisplayTestControls({
         <p className="text-sm font-medium">{t('devices.deviceExtension.display')}</p>
         <div className="flex flex-wrap gap-2">
           {displayCapabilities.face ? (
-            <div className="flex min-w-[260px] flex-wrap items-end gap-2 rounded-md border border-border/70 p-2">
-              <div className="min-w-[160px] flex-1 space-y-1">
-                <Label htmlFor="device-display-face-template">
-                  {t('devices.deviceExtension.displayFace')}
-                </Label>
-                <Select
-                  value={selectedFaceTemplate}
-                  onValueChange={onSelectedFaceTemplateIdChange}
-                  disabled={disabled}
+            <div className="grid min-w-[260px] flex-1 items-center gap-3 rounded-md border border-border/70 p-3 lg:grid-cols-[minmax(260px,1fr)_minmax(220px,320px)]">
+              <div className="flex min-w-0 flex-wrap items-end gap-2">
+                <div className="min-w-[160px] flex-1 space-y-1">
+                  <Label htmlFor="device-display-face-template">
+                    {t('devices.deviceExtension.displayFace')}
+                  </Label>
+                  <Select
+                    value={selectedFaceTemplate}
+                    onValueChange={onSelectedFaceTemplateIdChange}
+                  >
+                    <SelectTrigger id="device-display-face-template">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {faceTemplateIds.map((templateId) => (
+                        <SelectItem key={templateId} value={templateId}>
+                          {t(displayFaceTemplateLabelKey(templateId))}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-32 space-y-1">
+                  <Label htmlFor="device-display-face-duration">
+                    {t('devices.deviceExtension.displayFaceDurationMs')}
+                  </Label>
+                  <Input
+                    id="device-display-face-duration"
+                    inputMode="numeric"
+                    value={displayFaceDurationMs}
+                    disabled={disabled}
+                    onChange={(event) => onDisplayFaceDurationMsChange(event.target.value)}
+                    onBlur={normalizeDisplayFaceDuration}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={disabled || faceTemplateIds.length === 0}
+                  onClick={() => onSendDisplayFace(selectedFaceTemplate, effectiveDurationMs)}
                 >
-                  <SelectTrigger id="device-display-face-template">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {faceTemplateIds.map((templateId) => (
-                      <SelectItem key={templateId} value={templateId}>
-                        {t(displayFaceTemplateLabelKey(templateId))}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <Monitor className="mr-2 h-4 w-4" />
+                  {t('devices.deviceExtension.testDisplayFace')}
+                </Button>
               </div>
-              <div className="w-32 space-y-1">
-                <Label htmlFor="device-display-face-duration">
-                  {t('devices.deviceExtension.displayFaceDurationMs')}
-                </Label>
-                <Input
-                  id="device-display-face-duration"
-                  inputMode="numeric"
-                  value={displayFaceDurationMs}
-                  disabled={disabled}
-                  onChange={(event) => onDisplayFaceDurationMsChange(event.target.value)}
-                  onBlur={normalizeDisplayFaceDuration}
-                />
-              </div>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={disabled || faceTemplateIds.length === 0}
-                onClick={() => onSendDisplayFace(selectedFaceTemplate, effectiveDurationMs)}
-              >
-                <Monitor className="mr-2 h-4 w-4" />
-                {t('devices.deviceExtension.testDisplayFace')}
-              </Button>
+              <DisplayFacePreview
+                className="mx-auto w-full"
+                displayCapabilities={displayCapabilities}
+                templateId={selectedFaceTemplate}
+              />
             </div>
           ) : null}
           {displayCapabilities.clear ? (

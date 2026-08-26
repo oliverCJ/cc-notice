@@ -410,11 +410,17 @@ pub struct DeviceDisplayCapabilities {
     pub face: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub face_style_version: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub face_renderer_profile: Option<String>,
     #[serde(default)]
     pub face_templates: Vec<String>,
     pub clear: bool,
     #[serde(default)]
     pub size_class: DeviceDisplaySizeClass,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pixel_width: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pixel_height: Option<u32>,
     #[serde(default)]
     pub statuses: Vec<String>,
     pub title_max_chars: u32,

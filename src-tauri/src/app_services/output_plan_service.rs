@@ -251,7 +251,10 @@ fn device_channel_rule_to_actions(
                     .map(String::as_str)
                     .unwrap_or(fallback_board_id);
                 let display_capabilities = display_capabilities_for_board(board_id);
-                if display_capabilities.as_ref().is_some_and(|display| !display.face) {
+                if display_capabilities
+                    .as_ref()
+                    .is_some_and(|display| !display.face)
+                {
                     return None;
                 }
                 if let (Some(display), Some(template)) = (
@@ -446,8 +449,11 @@ fn display_capabilities_for_board(board_id: &str) -> Option<DeviceDisplayCapabil
             clear: true,
             face: false,
             face_style_version: None,
+            face_renderer_profile: None,
             face_templates: Vec::new(),
             size_class: DeviceDisplaySizeClass::Medium,
+            pixel_width: None,
+            pixel_height: None,
             statuses: Vec::new(),
             title_max_chars: 80,
             message_max_chars: 160,
@@ -464,8 +470,11 @@ fn display_capabilities_for_board(board_id: &str) -> Option<DeviceDisplayCapabil
             clear: true,
             face: true,
             face_style_version: Some("no-brow-warm-v1".to_string()),
+            face_renderer_profile: None,
             face_templates: vec!["success-happy".to_string()],
             size_class: DeviceDisplaySizeClass::Small,
+            pixel_width: None,
+            pixel_height: None,
             statuses: Vec::new(),
             title_max_chars: 16,
             message_max_chars: 16,

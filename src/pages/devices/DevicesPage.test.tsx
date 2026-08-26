@@ -8,6 +8,15 @@ import { DeviceDiscoveryState } from '@/hooks/useDeviceDiscovery';
 import { DeviceCandidateResource } from '@/api/tauriApi';
 import { getBoardAvailableChannels } from '@/domain/boards/boardCatalog';
 
+vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+  clearRect: vi.fn(),
+  fillRect: vi.fn(),
+  imageSmoothingEnabled: true,
+  fillStyle: ''
+} as unknown as CanvasRenderingContext2D);
+vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1));
+vi.stubGlobal('cancelAnimationFrame', vi.fn());
+
 const tauriEventHandlers = vi.hoisted(
   () => new Map<string, (event: { payload: unknown }) => void>()
 );
@@ -1381,6 +1390,12 @@ describe('DevicesPage', () => {
     expect(screen.queryByRole('button', { name: '错误' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '测试表情' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '清屏' })).toBeInTheDocument();
+    expect(screen.getByTestId('pixel-display-canvas')).toHaveAttribute('width', '128');
+    expect(screen.getByTestId('pixel-display-canvas')).toHaveAttribute('height', '64');
+
+    fireEvent.click(screen.getByRole('combobox', { name: '屏幕表情' }));
+    fireEvent.click(screen.getByRole('option', { name: '认真' }));
+    expect(sendExtensionAction).not.toHaveBeenCalled();
   });
 
   test('sends status and runtime display tests for Pico OLED 0.91 display devices', () => {
@@ -1406,6 +1421,8 @@ describe('DevicesPage', () => {
     expect(screen.queryByRole('button', { name: '成功' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '测试运行态' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '清屏' })).toBeInTheDocument();
+    expect(screen.getByTestId('pixel-display-canvas')).toHaveAttribute('width', '128');
+    expect(screen.getByTestId('pixel-display-canvas')).toHaveAttribute('height', '32');
   });
 
   test('sends display face test for Pico OLED display devices', () => {
@@ -1463,6 +1480,8 @@ describe('DevicesPage', () => {
     expect(screen.getByRole('button', { name: '静音' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '成功' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '清屏' })).toBeInTheDocument();
+    expect(screen.getByTestId('pixel-display-canvas')).toHaveAttribute('width', '320');
+    expect(screen.getByTestId('pixel-display-canvas')).toHaveAttribute('height', '240');
   });
 
   test('hides ascii Wio display overlay test content from extension panel', () => {

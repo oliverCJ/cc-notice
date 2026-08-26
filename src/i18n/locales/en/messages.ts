@@ -2537,6 +2537,8 @@ export const enMessages = {
     displayFace: {
       template: 'Screen Face',
       intensity: 'Expression Intensity',
+      previewLabel: 'Pixel screen face preview',
+      previewUnavailable: 'This device has no valid screen resolution',
       intensityOptions: {
         subtle: 'Subtle',
         standard: 'Standard',

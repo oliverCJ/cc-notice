@@ -121,6 +121,65 @@ channelTemplates: []
 }
 
 #[test]
+fn bundled_board_catalog_requires_positive_display_pixel_resolution() {
+    let yaml =
+        include_str!("../../templates/boards.yaml").replacen("        pixelWidth: 128\n", "", 1);
+
+    let error = load_bundled_board_catalog_from_str(&yaml)
+        .expect_err("bundled display must declare pixel resolution");
+
+    assert!(error.contains("display extension must declare positive pixelWidth and pixelHeight"));
+}
+
+#[test]
+fn bundled_face_displays_expose_real_pixel_resolution() {
+    let catalog = load_bundled_board_catalog_from_str(include_str!("../../templates/boards.yaml"))
+        .expect("bundled board catalog should load");
+
+    for (board_id, width, height) in [
+        ("rp2040-pico-oled-096", 128, 64),
+        ("rp2040-pico-oled-091", 128, 32),
+        ("seeed-wio-terminal", 320, 240),
+    ] {
+        let display = catalog
+            .boards
+            .iter()
+            .find(|board| board.id == board_id)
+            .and_then(|board| board.device_extensions.as_ref())
+            .and_then(|extensions| extensions.display.as_ref())
+            .expect("display capability should exist");
+
+        assert_eq!(Some(width), display.pixel_width);
+        assert_eq!(Some(height), display.pixel_height);
+    }
+}
+
+#[test]
+fn bundled_face_displays_expose_renderer_profiles() {
+    let catalog = load_bundled_board_catalog_from_str(include_str!("../../templates/boards.yaml"))
+        .expect("bundled board catalog should load");
+
+    for (board_id, renderer_profile) in [
+        ("rp2040-pico-oled-091", "oled-128x32-v1"),
+        ("rp2040-pico-oled-096", "oled-128x64-v1"),
+        ("seeed-wio-terminal", "wio-320x240-v1"),
+    ] {
+        let display = catalog
+            .boards
+            .iter()
+            .find(|board| board.id == board_id)
+            .and_then(|board| board.device_extensions.as_ref())
+            .and_then(|extensions| extensions.display.as_ref())
+            .expect("display capability should exist");
+
+        assert_eq!(
+            Some(renderer_profile),
+            display.face_renderer_profile.as_deref()
+        );
+    }
+}
+
+#[test]
 fn bundled_board_catalog_contains_usb_stable_priority_boards() {
     let content = include_str!("../../templates/boards.yaml");
     let catalog =

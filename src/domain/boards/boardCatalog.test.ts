@@ -93,6 +93,29 @@ describe('boardCatalog', () => {
     expect(getBoardDeviceExtensions('rp2040-pico')?.display?.face).toBeUndefined();
   });
 
+  it.each([
+    ['rp2040-pico-oled-096', 128, 64],
+    ['rp2040-pico-oled-091', 128, 32],
+    ['seeed-wio-terminal', 320, 240]
+  ])(
+    'declares real display resolution for %s',
+    (boardId, pixelWidth, pixelHeight) => {
+      expect(getBoardDeviceExtensions(boardId)?.display).toEqual(
+        expect.objectContaining({ pixelWidth, pixelHeight })
+      );
+    }
+  );
+
+  it.each([
+    ['rp2040-pico-oled-091', 'oled-128x32-v1'],
+    ['rp2040-pico-oled-096', 'oled-128x64-v1'],
+    ['seeed-wio-terminal', 'wio-320x240-v1']
+  ])('declares renderer profile for %s', (boardId, faceRendererProfile) => {
+    expect(getBoardDeviceExtensions(boardId)?.display).toEqual(
+      expect.objectContaining({ faceRendererProfile })
+    );
+  });
+
   it('exposes pattern action on Pico buzzer channels without board-level buzzer extension', () => {
     const channels = getBoardAvailableChannels('rp2040-pico');
     const extensions = getBoardDeviceExtensions('rp2040-pico');

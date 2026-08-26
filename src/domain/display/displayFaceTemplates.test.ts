@@ -36,4 +36,14 @@ describe('displayFaceTemplates', () => {
       'rules.displayFace.templates.successHappy'
     );
   });
+
+  test('derives explicit tracks from the generated renderer contract', () => {
+    for (const id of DISPLAY_FACE_TEMPLATE_IDS) {
+      const definition = displayFaceTemplateById(id);
+      expect(definition?.tracks.length).toBeGreaterThan(0);
+      expect(definition?.primitives.motion).toEqual(
+        definition?.tracks.map((track) => track.kind)
+      );
+    }
+  });
 });

@@ -1,113 +1,61 @@
-export type DisplayFaceTemplateId =
-  | 'idle-sleep'
-  | 'idle-bored'
-  | 'working-focus'
-  | 'working-busy'
-  | 'waiting-call'
-  | 'waiting-wait'
-  | 'success-happy'
-  | 'success-surprise'
-  | 'warning-shock'
-  | 'warning-sweat'
-  | 'error-awkward'
-  | 'error-panic';
+import { DISPLAY_FACE_CONTRACT } from './generated/displayFaceContract.generated';
 
-export type DisplayFaceSemanticState =
-  | 'idle'
-  | 'working'
-  | 'waiting-input'
-  | 'success'
-  | 'warning'
-  | 'error';
-
-export type DisplayFacePrimitiveSet = {
-  eyes: string[];
-  mouth: string;
-  symbols: string[];
-  motion: string[];
-  brows: string[];
-};
+export type DisplayFaceTemplateId = typeof DISPLAY_FACE_CONTRACT.templates[number]['id'];
+export type DisplayFaceSemanticState = 'idle' | 'working' | 'waiting-input' | 'success' | 'warning' | 'error';
+export type DisplayFaceMotionKind = typeof DISPLAY_FACE_CONTRACT.templates[number]['tracks'][number]['kind'];
 
 export type DisplayFaceTemplateDefinition = {
   id: DisplayFaceTemplateId;
   state: DisplayFaceSemanticState;
   labelKey: string;
   descriptionKey: string;
-  primitives: DisplayFacePrimitiveSet;
+  primitives: {
+    eyes: string[];
+    mouth: string;
+    symbols: string[];
+    motion: string[];
+    brows: string[];
+  };
+  tracks: readonly {
+    target: string;
+    kind: string;
+    cycleMs: number;
+    frames: readonly { durationMs: number; value: number }[];
+  }[];
 };
 
 export const defaultDisplayFaceTemplateId: DisplayFaceTemplateId = 'idle-sleep';
+export const DISPLAY_FACE_TEMPLATE_IDS = DISPLAY_FACE_CONTRACT.templates.map(
+  (template) => template.id
+) as DisplayFaceTemplateId[];
 
-export const DISPLAY_FACE_TEMPLATE_IDS: DisplayFaceTemplateId[] = [
-  'idle-sleep',
-  'idle-bored',
-  'working-focus',
-  'working-busy',
-  'waiting-call',
-  'waiting-wait',
-  'success-happy',
-  'success-surprise',
-  'warning-shock',
-  'warning-sweat',
-  'error-awkward',
-  'error-panic'
-];
-
-const templates: Record<DisplayFaceTemplateId, DisplayFaceTemplateDefinition> = {
-  'idle-sleep': template('idle-sleep', 'idle', ['closed'], 'smile', ['zzz'], ['breath']),
-  'idle-bored': template('idle-bored', 'idle', ['focus'], 'flat', ['ellipsis'], ['look-around']),
-  'working-focus': template('working-focus', 'working', ['soft-open'], 'flat', [], ['pulse']),
-  'working-busy': template('working-busy', 'working', ['round'], 'flat', ['busy'], ['shake-light']),
-  'waiting-call': template('waiting-call', 'waiting-input', ['round'], 'call', ['call-wave'], ['pulse']),
-  'waiting-wait': template(
-    'waiting-wait',
-    'waiting-input',
-    ['soft-open'],
-    'o',
-    ['ellipsis'],
-    ['look-around']
-  ),
-  'success-happy': template('success-happy', 'success', ['happy-arc'], 'smile-arc', ['heart'], ['bounce']),
-  'success-surprise': template('success-surprise', 'success', ['round'], 'o', ['spark'], ['pop']),
-  'warning-shock': template('warning-shock', 'warning', ['shock-outline'], 'o', ['bang'], ['shake-light']),
-  'warning-sweat': template('warning-sweat', 'warning', ['focus'], 'sad', ['sweat-dots'], ['pulse']),
-  'error-awkward': template('error-awkward', 'error', ['closed'], 'sad', ['awkward-lines'], ['shake-light']),
-  'error-panic': template('error-panic', 'error', ['shock-outline'], 'sad', ['sweat-dots', 'bang'], ['shake'])
-};
+const templates = new Map<DisplayFaceTemplateId, DisplayFaceTemplateDefinition>(
+  DISPLAY_FACE_CONTRACT.templates.map((template) => {
+    const suffix = template.id.replace(/-([a-z])/g, (_, value: string) => value.toUpperCase());
+    const state = template.color === 'waiting' ? 'waiting-input' : template.color;
+    return [template.id, {
+      id: template.id,
+      state: state as DisplayFaceSemanticState,
+      labelKey: `rules.displayFace.templates.${suffix}`,
+      descriptionKey: `rules.displayFace.templateDescriptions.${suffix}`,
+      primitives: {
+        eyes: [template.eyes],
+        mouth: template.mouth,
+        symbols: [...template.symbols],
+        motion: template.tracks.map((track) => track.kind),
+        brows: []
+      },
+      tracks: template.tracks
+    }];
+  })
+);
 
 export function displayFaceTemplateById(
   id: string | null | undefined
 ): DisplayFaceTemplateDefinition | null {
-  if (!id || !DISPLAY_FACE_TEMPLATE_IDS.includes(id as DisplayFaceTemplateId)) {
-    return null;
-  }
-  return templates[id as DisplayFaceTemplateId];
+  return id ? templates.get(id as DisplayFaceTemplateId) ?? null : null;
 }
 
 export function displayFaceTemplateLabelKey(id: DisplayFaceTemplateId): string {
-  return templates[id].labelKey;
-}
-
-function template(
-  id: DisplayFaceTemplateId,
-  state: DisplayFaceSemanticState,
-  eyes: string[],
-  mouth: string,
-  symbols: string[],
-  motion: string[]
-): DisplayFaceTemplateDefinition {
-  const suffix = id.replace(/-([a-z])/g, (_, value: string) => value.toUpperCase());
-  return {
-    id,
-    state,
-    labelKey: `rules.displayFace.templates.${suffix}`,
-    descriptionKey: `rules.displayFace.templateDescriptions.${suffix}`,
-    primitives: {
-      eyes,
-      mouth,
-      symbols,
-      motion,
-      brows: []
-    }
-  };
+  return templates.get(id)?.labelKey ?? `rules.displayFace.templates.${id}`;
 }

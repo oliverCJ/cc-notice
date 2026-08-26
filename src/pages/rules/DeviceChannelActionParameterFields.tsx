@@ -6,6 +6,7 @@ import {
 } from '../../api/tauriApi';
 import { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { DisplayFacePreview } from '@/components/display/DisplayFacePreview';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -295,6 +296,13 @@ export function DeviceChannelActionParameterFields({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex min-w-0 items-center justify-center">
+            <DisplayFacePreview
+              className="w-full"
+              displayCapabilities={displayCapabilities}
+              templateId={value.displayFaceTemplateId}
+            />
           </div>
         </div>
       ) : null}

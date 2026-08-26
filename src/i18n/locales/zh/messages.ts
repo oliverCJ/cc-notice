@@ -2475,6 +2475,8 @@ export const zhMessages = {
     displayFace: {
       template: '屏幕表情',
       intensity: '表情强度',
+      previewLabel: '屏幕表情像素预览',
+      previewUnavailable: '当前设备缺少有效的屏幕分辨率',
       intensityOptions: {
         subtle: '轻微',
         standard: '标准',

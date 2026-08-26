@@ -674,9 +674,12 @@ export type DeviceDisplayCapabilities = {
   runtime?: boolean;
   face?: boolean;
   faceStyleVersion?: string | null;
+  faceRendererProfile?: string | null;
   faceTemplates?: string[];
   clear: boolean;
   sizeClass?: 'compact' | 'small' | 'medium' | 'large';
+  pixelWidth?: number | null;
+  pixelHeight?: number | null;
   statuses: string[];
   titleMaxChars: number;
   messageMaxChars: number;

@@ -5,6 +5,15 @@ import { DeviceChannelOutputFields } from './DeviceChannelOutputFields';
 import { getBoardAvailableChannels } from '@/domain/boards/boardCatalog';
 import { toChannelSelectOption } from './deviceChannelOptions';
 
+vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+  clearRect: vi.fn(),
+  fillRect: vi.fn(),
+  imageSmoothingEnabled: true,
+  fillStyle: ''
+} as unknown as CanvasRenderingContext2D);
+vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1));
+vi.stubGlobal('cancelAnimationFrame', vi.fn());
+
 const output: HardwareOutput = {
   type: 'device-channel',
   durationMs: null,
@@ -525,6 +534,9 @@ describe('DeviceChannelOutputFields', () => {
                 faceStyleVersion: 'no-brow-warm-v1',
                 faceTemplates: ['working-focus'],
                 clear: true,
+                pixelWidth: 320,
+                pixelHeight: 240,
+                faceRendererProfile: 'wio-320x240-v1',
                 statuses: ['notice', 'working', 'success', 'warning', 'error'],
                 titleMaxChars: 39,
                 messageMaxChars: 95
@@ -572,6 +584,9 @@ describe('DeviceChannelOutputFields', () => {
                 faceStyleVersion: 'no-brow-warm-v1',
                 faceTemplates: ['working-focus'],
                 clear: true,
+                pixelWidth: 320,
+                pixelHeight: 240,
+                faceRendererProfile: 'wio-320x240-v1',
                 statuses: ['notice', 'working', 'success', 'warning', 'error'],
                 titleMaxChars: 39,
                 messageMaxChars: 95
@@ -624,6 +639,9 @@ describe('DeviceChannelOutputFields', () => {
                 faceStyleVersion: 'no-brow-warm-v1',
                 faceTemplates: ['working-focus'],
                 clear: true,
+                pixelWidth: 320,
+                pixelHeight: 240,
+                faceRendererProfile: 'wio-320x240-v1',
                 statuses: ['notice', 'working', 'success', 'warning', 'error'],
                 titleMaxChars: 39,
                 messageMaxChars: 95
@@ -651,6 +669,8 @@ describe('DeviceChannelOutputFields', () => {
     expect(screen.getByRole('option', { name: '认真' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: '开心' })).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: '表情强度' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('pixel-display-canvas')).toHaveAttribute('width', '320');
+    expect(screen.getByTestId('pixel-display-canvas')).toHaveAttribute('height', '240');
   });
 
   test('does not show display face action for text-only display capability', () => {
@@ -691,6 +711,7 @@ describe('DeviceChannelOutputFields', () => {
     fireEvent.click(screen.getByRole('combobox', { name: '动作' }));
 
     expect(screen.queryByRole('option', { name: '屏幕表情' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('pixel-display-canvas')).not.toBeInTheDocument();
   });
 
   test('hides display status action for Pico OLED 0.91 face display devices', () => {
