@@ -5,6 +5,7 @@ use tauri::Manager;
 use tauri_plugin_autostart::MacosLauncher;
 
 use crate::app_services::app_config_service::AppConfigService;
+use crate::app_services::custom_face_library::CustomFaceLibraryService;
 use crate::app_services::custom_internal_event_service::CustomInternalEventService;
 use crate::app_services::desktop_notice_service::DesktopNoticeService;
 use crate::app_services::device_input_service::DeviceInputService;
@@ -241,6 +242,9 @@ pub fn run() {
                 app_config_service: Mutex::new(app_config_service),
                 profile_service: Mutex::new(profile_service),
                 custom_internal_event_service: Mutex::new(custom_internal_event_service),
+                custom_face_library_service: Mutex::new(CustomFaceLibraryService::new(
+                    app_home.clone(),
+                )),
                 local_hook_server_status: hook_server_status,
                 hook_auth_token: auth_token,
                 output_executor,
@@ -341,6 +345,19 @@ pub fn run() {
             commands::app_config::get_app_config,
             commands::app_config::save_app_config,
             commands::app_config::reset_configuration,
+            commands::custom_faces::custom_face_groups,
+            commands::custom_faces::custom_face_group,
+            commands::custom_faces::save_custom_face_group,
+            commands::custom_faces::delete_custom_face_group,
+            commands::custom_faces::save_custom_face_recovery,
+            commands::custom_faces::custom_face_recovery,
+            commands::custom_faces::clear_custom_face_recovery,
+            commands::custom_faces::export_custom_face_group,
+            commands::custom_faces::preview_custom_face_group_import,
+            commands::custom_faces::import_custom_face_group,
+            commands::custom_face_editor::open_custom_face_editor,
+            commands::custom_face_editor::focus_custom_face_editor,
+            commands::custom_face_editor::close_custom_face_editor,
             commands::profile::profile_state,
             commands::profile::save_profile,
             commands::profile::create_profile,

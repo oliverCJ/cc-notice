@@ -9,7 +9,7 @@ import {
   DeviceTransportConfig,
   openDeviceTransportMonitorWindow
 } from '@/api/tauriApi';
-import { getBoardAvailableChannels, getBoardConnectionResourceMode } from '@/domain/boards/boardCatalog';
+import { getBoardAvailableChannels, getBoardConnectionResourceMode, getBoardDeviceExtensions } from '@/domain/boards/boardCatalog';
 import {
   toRp2040PicoGpioInputChannel,
   toRp2040PicoGpioOutputChannel
@@ -25,12 +25,14 @@ type DevicesPageProps = {
   registry: DeviceRuntimeRegistryState;
   onOpenRulesPage?: () => void;
   onOpenDiagnosticsCenter?: () => void;
+  onOpenCustomFaceEditor?: () => void;
 };
 
 export function DevicesPage({
   registry,
   onOpenRulesPage,
-  onOpenDiagnosticsCenter
+  onOpenDiagnosticsCenter,
+  onOpenCustomFaceEditor
 }: DevicesPageProps) {
   const t = useI18n();
   const discovery = useDeviceDiscovery({
@@ -62,6 +64,7 @@ export function DevicesPage({
     [discovery.candidates, registry.states, selectedState]
   );
   const selectedChannels = selectedState?.channels ?? [];
+  const supportsCustomFaces = Boolean(getBoardDeviceExtensions(selectedState?.boardId ?? '')?.display?.face);
   const addableChannels = useMemo(() => {
     const configuredChannelIds = new Set(selectedChannels.map((channel) => channel.id));
     return getBoardAvailableChannels(selectedState?.boardId ?? DEFAULT_DEVICE_BOARD_ID).filter(
@@ -176,11 +179,12 @@ export function DevicesPage({
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('devices.title')}</h1>
+      <div className="flex items-start justify-between gap-4">
+        <div><h1 className="text-3xl font-bold tracking-tight">{t('devices.title')}</h1>
         <p className="mt-2 text-muted-foreground">
           {t('devices.description')}
         </p>
+        </div>{onOpenCustomFaceEditor ? <button type="button" disabled={!supportsCustomFaces} title={supportsCustomFaces ? t('devices.customFaces.openHint') : t('devices.customFaces.unsupportedHint')} className="shrink-0 rounded-lg border border-border px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-40" onClick={onOpenCustomFaceEditor}>◈ {t('devices.customFaces.manage')}</button> : null}
       </div>
 
       <DeviceDiscoveryPanel

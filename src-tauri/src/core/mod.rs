@@ -3,6 +3,7 @@ pub mod boards;
 #[cfg(test)]
 mod boards_tests;
 pub mod capability;
+pub mod custom_faces;
 pub mod desktop_notice;
 pub mod device;
 pub mod device_transport_monitor;

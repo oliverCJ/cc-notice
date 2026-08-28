@@ -587,10 +587,7 @@ fn validate_device_channel_action_parameters(
             Ok(())
         }
         DeviceChannelActionType::DisplayFace => {
-            validate_display_face_template_id(
-                action.display_face_template_id.as_deref(),
-                rule_id,
-            )?;
+            validate_display_face_template_id(action.display_face_template_id.as_deref(), rule_id)?;
             validate_display_face_intensity(action.display_face_intensity.as_deref(), rule_id)
         }
         DeviceChannelActionType::SetColor => {
@@ -658,10 +655,7 @@ fn validate_display_face_template_id(
     }
 }
 
-fn validate_display_face_intensity(
-    intensity: Option<&str>,
-    rule_id: &str,
-) -> Result<(), String> {
+fn validate_display_face_intensity(intensity: Option<&str>, rule_id: &str) -> Result<(), String> {
     let Some(intensity) = intensity.map(str::trim).filter(|value| !value.is_empty()) else {
         return Ok(());
     };

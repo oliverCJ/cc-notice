@@ -8,6 +8,7 @@ import {
   DiagnosticActionKind,
   getAppConfig,
   getDesktopNoticeWindowPayload,
+  openCustomFaceEditor,
   hideDesktopNoticeInstance,
   previewDesktopNoticeInstance,
   resetConfiguration,
@@ -53,6 +54,7 @@ import { useProfileActions } from '@/hooks/useProfileActions';
 import { useRuntimeMonitorState } from '@/hooks/useRuntimeMonitorState';
 import { useThemeMode } from '@/hooks/useThemeMode';
 import { ProfileRepairAlert } from '@/components/app/ProfileRepairAlert';
+import { CustomFaceEditorWindow } from './pages/custom-face-editor/CustomFaceEditorWindow';
 
 const DEBUG_REFRESH_INTERVAL_MS = 2_000;
 const DESKTOP_NOTICE_WINDOW_BOUNDS_CHANGED_EVENT =
@@ -76,6 +78,9 @@ declare global {
 }
 
 export default function App() {
+  if (window.location.pathname === '/custom-face-editor') {
+    return <CustomFaceEditorWindow />;
+  }
   const desktopNoticeInstanceId = getDesktopNoticeWindowInstanceId();
   if (desktopNoticeInstanceId) {
     return <DesktopNoticeWindowApp instanceId={desktopNoticeInstanceId} />;
@@ -630,6 +635,7 @@ export default function App() {
               registry={deviceRegistry}
               onOpenRulesPage={() => setActivePage('rules')}
               onOpenDiagnosticsCenter={() => setActivePage('diagnostics')}
+              onOpenCustomFaceEditor={() => { void openCustomFaceEditor(); }}
             />
           </div>
         ) : null}

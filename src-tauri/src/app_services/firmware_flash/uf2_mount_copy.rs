@@ -142,8 +142,8 @@ mod tests {
         let volume = root.join("RPI-RP2");
         fs::create_dir_all(&volume).expect("mock volume should be created");
 
-        let target = find_uf2_target("RPI-RP2", &[volume.clone()])
-            .expect("volume root should be detected");
+        let target =
+            find_uf2_target("RPI-RP2", &[volume.clone()]).expect("volume root should be detected");
 
         assert_eq!(volume.to_string_lossy(), target.mount_path);
         assert_eq!("RPI-RP2", target.volume_name);

@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::app_services::app_config_service::AppConfigService;
+use crate::app_services::custom_face_library::CustomFaceLibraryService;
 use crate::app_services::custom_internal_event_service::CustomInternalEventService;
 use crate::app_services::desktop_notice_service::DesktopNoticeService;
 use crate::app_services::device_input_service::DeviceInputService;
@@ -73,6 +74,9 @@ pub(crate) fn hook_target_test_state(name: &str) -> (std::path::PathBuf, AppStat
         app_config_service: Mutex::new(app_config_service),
         profile_service: Mutex::new(profile_service),
         custom_internal_event_service: Mutex::new(custom_internal_event_service),
+        custom_face_library_service: Mutex::new(CustomFaceLibraryService::new(
+            root.join(".cc-notice"),
+        )),
         local_hook_server_status: Arc::new(Mutex::new(LocalHookServerService::status_for_port(
             17321, false, None,
         ))),
@@ -102,6 +106,9 @@ pub(crate) fn minimal_app_state_for_root(root: &std::path::Path) -> AppState {
             CustomInternalEventService::from_config_root(root.join(".cc-notice"))
                 .expect("custom internal event service should initialize"),
         ),
+        custom_face_library_service: Mutex::new(CustomFaceLibraryService::new(
+            root.join(".cc-notice"),
+        )),
         profile_service: Mutex::new(
             ProfileService::from_config_root(root.join(".cc-notice"))
                 .expect("profile service should initialize"),

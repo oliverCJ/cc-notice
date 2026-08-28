@@ -508,6 +508,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use crate::app_services::app_config_service::AppConfigService;
+    use crate::app_services::custom_face_library::CustomFaceLibraryService;
     use crate::app_services::custom_internal_event_service::{
         CreateCustomInternalEventRequest, CustomInternalEventService,
     };
@@ -568,6 +569,9 @@ mod tests {
                 CustomInternalEventService::from_config_root(root.join(".cc-notice"))
                     .expect("custom event service should load"),
             ),
+            custom_face_library_service: Mutex::new(CustomFaceLibraryService::new(
+                root.join(".cc-notice"),
+            )),
             local_hook_server_status: Arc::new(Mutex::new(
                 LocalHookServerService::status_for_port(17321, false, None),
             )),
@@ -605,6 +609,9 @@ mod tests {
                 CustomInternalEventService::from_config_root(root.join(".cc-notice"))
                     .expect("custom event service should load"),
             ),
+            custom_face_library_service: Mutex::new(CustomFaceLibraryService::new(
+                root.join(".cc-notice"),
+            )),
             local_hook_server_status: Arc::new(Mutex::new(
                 LocalHookServerService::status_for_port(17321, false, None),
             )),
@@ -660,6 +667,9 @@ mod tests {
             app_config_service: Mutex::new(AppConfigService::default()),
             profile_service: Mutex::new(profile_service),
             custom_internal_event_service: Mutex::new(custom_internal_event_service),
+            custom_face_library_service: Mutex::new(CustomFaceLibraryService::new(
+                root.join(".cc-notice"),
+            )),
             local_hook_server_status: Arc::new(Mutex::new(
                 LocalHookServerService::status_for_port(17321, false, None),
             )),

@@ -1030,6 +1030,11 @@ export const enMessages = {
   devices: {
     title: 'Device Management',
     description: 'Manage hardware devices, transport connections, device channels, and test actions.',
+    customFaces: {
+      manage: 'Face Library',
+      openHint: 'Open the custom face editor',
+      unsupportedHint: 'The selected device does not support face displays'
+    },
     unknownDevice: 'Unknown Device',
     unknownBoard: 'Unknown Board',
     status: {

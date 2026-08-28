@@ -1026,6 +1026,69 @@ export type ProfilePackageImportResult = {
   desktopNoticeInstances: DesktopNoticeInstance[];
 };
 
+export type CustomFaceColor = {
+  red: number;
+  green: number;
+  blue: number;
+};
+
+export type CustomFaceFrame = {
+  durationMs: number;
+  packedPixels: number[];
+};
+
+export type CustomFace = {
+  faceId: string;
+  name: string;
+  color: CustomFaceColor;
+  frames: CustomFaceFrame[];
+};
+
+export type CustomFaceGroup = {
+  schemaVersion: number;
+  groupId: string;
+  name: string;
+  displayProfileId: string;
+  revision: number;
+  defaultFaceId: string;
+  faces: CustomFace[];
+};
+
+export type CustomFaceGroupSummary = {
+  groupId: string;
+  name: string;
+  displayProfileId: string;
+  revision: number;
+  defaultFaceId: string;
+  faceCount: number;
+  libraryHash: string;
+};
+
+export type SaveCustomFaceGroupRequest = {
+  group: CustomFaceGroup;
+  expectedLibraryHash?: string | null;
+};
+
+export type SaveCustomFaceGroupResult = {
+  group: CustomFaceGroup;
+  libraryHash: string;
+  changed: boolean;
+};
+
+export type CustomFaceImportMode = 'update' | 'copy';
+export type CustomFaceImportStatus = 'new' | 'duplicate' | 'conflict';
+
+export type CustomFaceImportPreview = {
+  group: CustomFaceGroup;
+  libraryHash: string;
+  status: CustomFaceImportStatus;
+};
+
+export type CustomFaceImportRequest = {
+  path: string;
+  mode: CustomFaceImportMode;
+};
+
 export type InternalEventDefinition = {
   id: string;
   title: string;
@@ -1199,6 +1262,58 @@ export function previewProfilePackageImport(path: string) {
 
 export function importProfilePackage(request: ProfilePackageImportRequest) {
   return invoke<ProfilePackageImportResult>('import_profile_package', { request });
+}
+
+export function getCustomFaceGroups() {
+  return invoke<CustomFaceGroupSummary[]>('custom_face_groups');
+}
+
+export function getCustomFaceGroup(groupId: string) {
+  return invoke<CustomFaceGroup>('custom_face_group', { groupId });
+}
+
+export function saveCustomFaceGroup(request: SaveCustomFaceGroupRequest) {
+  return invoke<SaveCustomFaceGroupResult>('save_custom_face_group', { request });
+}
+
+export function deleteCustomFaceGroup(groupId: string, expectedLibraryHash: string) {
+  return invoke<void>('delete_custom_face_group', { groupId, expectedLibraryHash });
+}
+
+export function saveCustomFaceRecovery(group: CustomFaceGroup) {
+  return invoke<void>('save_custom_face_recovery', { group });
+}
+
+export function getCustomFaceRecovery(groupId: string) {
+  return invoke<CustomFaceGroup | null>('custom_face_recovery', { groupId });
+}
+
+export function clearCustomFaceRecovery(groupId: string) {
+  return invoke<void>('clear_custom_face_recovery', { groupId });
+}
+
+export function exportCustomFaceGroup(groupId: string, path: string) {
+  return invoke<void>('export_custom_face_group', { groupId, path });
+}
+
+export function previewCustomFaceGroupImport(path: string) {
+  return invoke<CustomFaceImportPreview>('preview_custom_face_group_import', { path });
+}
+
+export function importCustomFaceGroup(request: CustomFaceImportRequest) {
+  return invoke<SaveCustomFaceGroupResult>('import_custom_face_group', { request });
+}
+
+export function openCustomFaceEditor() {
+  return invoke<void>('open_custom_face_editor');
+}
+
+export function focusCustomFaceEditor() {
+  return invoke<void>('focus_custom_face_editor');
+}
+
+export function closeCustomFaceEditor() {
+  return invoke<void>('close_custom_face_editor');
 }
 
 export function getInternalEventCatalog() {

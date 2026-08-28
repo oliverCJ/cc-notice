@@ -1012,6 +1012,11 @@ export const zhMessages = {
   devices: {
     title: '设备管理',
     description: '管理多个硬件设备、传输连接、设备通道和测试动作。',
+    customFaces: {
+      manage: '表情管理',
+      openHint: '打开自定义表情编辑器',
+      unsupportedHint: '当前选中设备不支持表情屏'
+    },
     unknownDevice: '未知设备',
     unknownBoard: '未知板卡',
     status: {

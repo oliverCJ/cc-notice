@@ -12,6 +12,7 @@ pub mod infrastructure;
 use std::sync::{Arc, Mutex};
 
 use app_services::app_config_service::AppConfigService;
+use app_services::custom_face_library::CustomFaceLibraryService;
 use app_services::custom_internal_event_service::CustomInternalEventService;
 use app_services::desktop_notice_service::DesktopNoticeService;
 use app_services::device_input_service::DeviceInputService;
@@ -31,6 +32,7 @@ pub(crate) struct AppState {
     pub(crate) app_config_service: Mutex<AppConfigService>,
     pub(crate) profile_service: Mutex<ProfileService>,
     pub(crate) custom_internal_event_service: Mutex<CustomInternalEventService>,
+    pub(crate) custom_face_library_service: Mutex<CustomFaceLibraryService>,
     pub(crate) local_hook_server_status: Arc<Mutex<LocalHookServerStatus>>,
     pub(crate) hook_auth_token: SharedHookAuthToken,
     pub(crate) output_executor: Arc<Mutex<NativeOutputExecutor>>,

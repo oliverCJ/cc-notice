@@ -266,7 +266,9 @@ impl ProtocolCommandV2 {
                 )
             }
             DeviceChannelActionType::DisplayFace => {
-                return Err("display-face action must be sent as device extension action".to_string())
+                return Err(
+                    "display-face action must be sent as device extension action".to_string(),
+                )
             }
             DeviceChannelActionType::SetColor => Self::addressable_led_set(action)?,
         };
