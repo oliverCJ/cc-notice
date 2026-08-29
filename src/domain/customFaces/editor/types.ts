@@ -1,4 +1,4 @@
-import type { CustomFaceGroup } from '@/api/tauriApi';
+import type { CustomFace, CustomFaceGroup } from '@/api/tauriApi';
 
 export type EditorProfile = {
   id: string;
@@ -22,12 +22,21 @@ export type EditorState = {
   past: CustomFaceGroup[];
   future: CustomFaceGroup[];
   selection: { x: number; y: number; width: number; height: number } | null;
+  selectionOrigin: { x: number; y: number; width: number; height: number } | null;
   clipboard: { width: number; height: number; pixels: boolean[] } | null;
 };
 
 export type EditorAction =
+  | { type: 'rename-group'; name: string }
+  | { type: 'mark-saved'; group: CustomFaceGroup }
+  | { type: 'select-face'; faceId: string }
+  | { type: 'add-face'; face: CustomFace }
+  | { type: 'duplicate-face'; sourceFaceId: string; faceId: string; name: string }
+  | { type: 'rename-face'; faceId: string; name: string }
+  | { type: 'set-default-face'; faceId: string }
   | { type: 'select-frame'; index: number }
   | { type: 'set-selection'; selection: { x: number; y: number; width: number; height: number } | null }
+  | { type: 'move-selection'; dx: number; dy: number }
   | { type: 'copy-selection' }
   | { type: 'paste-selection' }
   | { type: 'clear-selection' }
@@ -39,6 +48,6 @@ export type EditorAction =
   | { type: 'apply-pixel-transaction'; pixels: Array<{ x: number; y: number; active: boolean }> }
   | { type: 'duplicate-frame'; index: number }
   | { type: 'delete-frame'; index: number }
-  | { type: 'delete-face'; faceId: string }
+  | { type: 'delete-face'; faceId: string; replacementDefaultFaceId?: string }
   | { type: 'undo' }
   | { type: 'redo' };

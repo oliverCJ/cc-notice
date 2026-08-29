@@ -13,6 +13,7 @@ import {
   getCustomFaceRecovery,
   importCustomFaceGroup,
   previewCustomFaceGroupImport,
+  readCustomFaceSvg,
   saveCustomFaceGroup,
   saveCustomFaceRecovery,
   type CustomFaceGroup
@@ -49,6 +50,7 @@ describe('custom face Tauri API', () => {
     await exportCustomFaceGroup(group.groupId, '/tmp/a.ccface');
     await previewCustomFaceGroupImport('/tmp/a.ccface');
     await importCustomFaceGroup({ path: '/tmp/a.ccface', mode: 'copy' });
+    await readCustomFaceSvg('/tmp/a.svg');
 
     expect(invoke.mock.calls).toEqual([
       ['custom_face_groups'],
@@ -69,7 +71,8 @@ describe('custom face Tauri API', () => {
       [
         'import_custom_face_group',
         { request: { path: '/tmp/a.ccface', mode: 'copy' } }
-      ]
+      ],
+      ['read_custom_face_svg', { path: '/tmp/a.svg' }]
     ]);
   });
 });

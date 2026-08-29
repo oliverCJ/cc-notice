@@ -59,6 +59,7 @@ import { CustomFaceEditorWindow } from './pages/custom-face-editor/CustomFaceEdi
 const DEBUG_REFRESH_INTERVAL_MS = 2_000;
 const DESKTOP_NOTICE_WINDOW_BOUNDS_CHANGED_EVENT =
   'cc-notice://desktop-notice-window-bounds-changed';
+const CUSTOM_FACE_EDITOR_STATE_EVENT = 'cc-notice://custom-face-editor-state-changed';
 const DESKTOP_NOTICE_RUNTIME_BOUNDS_SAVE_DELAY_MS = 500;
 const MonitorPage = lazy(() =>
   import('./pages/monitor/MonitorPage').then((module) => ({ default: module.MonitorPage }))
@@ -95,6 +96,7 @@ export default function App() {
   const [selectedToolId, setSelectedToolId] = useState<AiToolId>('codex');
   const [setupActiveStepId, setSetupActiveStepId] = useState<SetupStepId>('hook-service');
   const [devicesPageVisited, setDevicesPageVisited] = useState(false);
+  const [customFaceEditorOpen, setCustomFaceEditorOpen] = useState(false);
   const [customInternalEventError, setCustomInternalEventError] = useState<string>();
   const [debugTestDialogRequestId, setDebugTestDialogRequestId] = useState(0);
   const {
@@ -201,6 +203,18 @@ export default function App() {
       disposed = true;
       unlisten?.();
     };
+  }, []);
+
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<boolean>(CUSTOM_FACE_EDITOR_STATE_EVENT, (event) => {
+      if (!disposed) setCustomFaceEditorOpen(event.payload);
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize custom face editor state listener', error));
+    return () => { disposed = true; unlisten?.(); };
   }, []);
 
   useEffect(() => {
@@ -635,7 +649,12 @@ export default function App() {
               registry={deviceRegistry}
               onOpenRulesPage={() => setActivePage('rules')}
               onOpenDiagnosticsCenter={() => setActivePage('diagnostics')}
-              onOpenCustomFaceEditor={() => { void openCustomFaceEditor(); }}
+              customFaceEditorOpen={customFaceEditorOpen}
+              onOpenCustomFaceEditor={() => {
+                void openCustomFaceEditor()
+                  .then(() => setCustomFaceEditorOpen(true))
+                  .catch((error) => console.warn('failed to open custom face editor', error));
+              }}
             />
           </div>
         ) : null}

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import type { CustomFaceGroup } from '@/api/tauriApi';
 import { createEditorState, editorReducer } from './reducer';
 import type { EditorProfile } from './types';
+import { getPixel } from './raster';
 
 const profile: EditorProfile = {
   id: 'custom-mono-128x32-v1', width: 128, height: 32, maxFrames: 10, framebufferBytes: 512
@@ -58,6 +59,15 @@ describe('custom face editor reducer', () => {
     expect(state.selectedFrameIndex).toBe(0);
   });
 
+  test('appends a copy of the selected frame to the end', () => {
+    let state = createEditorState(group(), profile);
+    state = editorReducer(state, { type: 'add-frame' });
+    state = editorReducer(state, { type: 'select-frame', index: 0 });
+    state = editorReducer(state, { type: 'add-frame' });
+    expect(state.presentGroup.faces[0].frames).toHaveLength(3);
+    expect(state.selectedFrameIndex).toBe(2);
+  });
+
   test('copies and clears a selected region', () => {
     let state = createEditorState(group(), profile);
     state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [{ x: 2, y: 2, active: true }] });
@@ -76,5 +86,53 @@ describe('custom face editor reducer', () => {
     state = editorReducer(state, { type: 'move-frame', from: 1, to: 0 });
     expect(state.selectedFrameIndex).toBe(0);
     expect(state.presentGroup.faces[0].frames[0].durationMs).toBe(500);
+  });
+
+  test('moves a selected region by a step using a source snapshot', () => {
+    let state = createEditorState(group(), profile);
+    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 2, height: 2 } });
+    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [{ x: 1, y: 1, active: true }, { x: 2, y: 2, active: true }] });
+    const moved = editorReducer(state, { type: 'move-selection', dx: 1, dy: 0 });
+    const movedPixels = new Uint8Array(moved.presentGroup.faces[0].frames[0].packedPixels);
+    expect(getPixel(movedPixels, profile, 1, 1)).toBe(false);
+    expect(getPixel(movedPixels, profile, 2, 1)).toBe(true);
+    expect(getPixel(movedPixels, profile, 3, 2)).toBe(true);
+    expect(moved.selection).toEqual({ x: 2, y: 1, width: 2, height: 2 });
+    expect(moved.selectionOrigin).toEqual({ x: 1, y: 1, width: 2, height: 2 });
+    expect(moved.past).toHaveLength(state.past.length + 1);
+  });
+
+  test('does not create history when a selection is already at the requested boundary', () => {
+    const state = editorReducer(editorReducer(createEditorState(group(), profile), { type: 'set-selection', selection: { x: 0, y: 0, width: 2, height: 2 } }), { type: 'move-selection', dx: -1, dy: 0 });
+    expect(state.past).toHaveLength(0);
+    expect(state.selection).toEqual({ x: 0, y: 0, width: 2, height: 2 });
+  });
+
+  test('adds, selects, renames, duplicates and changes the default face', () => {
+    let state = createEditorState(group(), profile);
+    const blankFace = face('face-2');
+    state = editorReducer(state, { type: 'add-face', face: blankFace });
+    expect(state.selectedFaceId).toBe('face-2');
+    state = editorReducer(state, { type: 'rename-face', faceId: 'face-2', name: 'Thinking' });
+    expect(state.presentGroup.faces[1].name).toBe('Thinking');
+    state = editorReducer(state, { type: 'set-default-face', faceId: 'face-2' });
+    expect(state.presentGroup.defaultFaceId).toBe('face-2');
+    state = editorReducer(state, { type: 'duplicate-face', sourceFaceId: 'face-2', faceId: 'face-3', name: 'Thinking copy' });
+    expect(state.presentGroup.faces).toHaveLength(3);
+    state = editorReducer(state, { type: 'delete-face', faceId: 'face-2', replacementDefaultFaceId: 'face-1' });
+    expect(state.presentGroup.defaultFaceId).toBe('face-1');
+    expect(state.presentGroup.faces.map((item) => item.faceId)).not.toContain('face-2');
+  });
+
+  test('renames the group and marks a successful save as the new clean baseline', () => {
+    let state = createEditorState(group(), profile);
+    state = editorReducer(state, { type: 'rename-group', name: 'Renamed group' });
+    expect(state.presentGroup.name).toBe('Renamed group');
+    expect(state.past).toHaveLength(1);
+    state = editorReducer(state, { type: 'mark-saved', group: { ...state.presentGroup, revision: 2 } });
+    expect(state.savedGroup.name).toBe('Renamed group');
+    expect(state.presentGroup.revision).toBe(2);
+    expect(state.past).toHaveLength(0);
+    expect(state.future).toHaveLength(0);
   });
 });

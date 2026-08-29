@@ -1,0 +1,26 @@
+import { useEffect, useState } from 'react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { CustomFaceGroupSummary } from '@/api/tauriApi';
+import { CUSTOM_FACE_CONTRACT } from '@/domain/customFaces/generated/customFaceContract.generated';
+
+export function ResizeGroupDialog({ group, frameCount = 0, open, busy, error, onCancel, onConfirm }: { group: CustomFaceGroupSummary | null; frameCount?: number; open: boolean; busy: boolean; error?: string | null; onCancel: () => void; onConfirm: (profileId: string, name: string) => void }) {
+  const [profileId, setProfileId] = useState('');
+  const [name, setName] = useState('');
+  useEffect(() => { if (group) { const profile = CUSTOM_FACE_CONTRACT.profiles.find((item) => item.id !== group.displayProfileId); setProfileId(profile?.id ?? ''); setName(`${group.name} ${profile?.width ?? ''}×${profile?.height ?? ''}`); } }, [group]);
+  const target = CUSTOM_FACE_CONTRACT.profiles.find((item) => item.id === profileId);
+  return <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && !busy && onCancel()}><DialogContent><DialogHeader><DialogTitle>另存为其他分辨率</DialogTitle><DialogDescription>创建新组，原组保持不变；完成后自动打开新组编辑。</DialogDescription></DialogHeader><label className="text-sm">目标分辨率<Select value={profileId} onValueChange={setProfileId}><SelectTrigger aria-label="目标分辨率"><SelectValue placeholder="选择分辨率" /></SelectTrigger><SelectContent>{CUSTOM_FACE_CONTRACT.profiles.filter((profile) => profile.id !== group?.displayProfileId).map((profile) => <SelectItem key={profile.id} value={profile.id}>{profile.width} × {profile.height} · 最多 {profile.maxFrames} 帧</SelectItem>)}</SelectContent></Select></label><label className="text-sm">新组名称<input aria-label="新组名称" value={name} onChange={(event) => setName(event.target.value)} className="mt-1 w-full border border-border bg-background px-2 py-2" /></label>{target ? <p className="text-xs text-muted-foreground">目标最多 {target.maxFrames} 帧{frameCount > target.maxFrames ? `，预计裁减 ${frameCount - target.maxFrames} 帧` : '，不会裁减当前帧'}。</p> : null}{error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}<DialogFooter><button type="button" className="border border-border px-3 py-2" disabled={busy} onClick={onCancel}>取消</button><button type="button" className="border border-primary bg-primary px-3 py-2 text-primary-foreground disabled:opacity-50" disabled={busy || !profileId || !name.trim()} onClick={() => onConfirm(profileId, name.trim())}>{busy ? '创建中…' : '创建并打开'}</button></DialogFooter></DialogContent></Dialog>;
+}
+
+export function RenameGroupDialog({ group, open, busy, error, onCancel, onConfirm }: { group: CustomFaceGroupSummary | null; open: boolean; busy: boolean; error?: string | null; onCancel: () => void; onConfirm: (name: string) => void }) {
+  const [name, setName] = useState('');
+  useEffect(() => setName(group?.name ?? ''), [group]);
+  return <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && !busy && onCancel()}><DialogContent><DialogHeader><DialogTitle>重命名表情组</DialogTitle><DialogDescription>名称只影响本地表情库显示。</DialogDescription></DialogHeader><input aria-label="组名称" value={name} onChange={(event) => setName(event.target.value)} className="border border-border bg-background px-2 py-2" />{error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}<DialogFooter><button type="button" className="border border-border px-3 py-2" disabled={busy} onClick={onCancel}>取消</button><button type="button" className="border border-primary bg-primary px-3 py-2 text-primary-foreground disabled:opacity-50" disabled={busy || !name.trim()} onClick={() => onConfirm(name.trim())}>{busy ? '保存中…' : '确认重命名'}</button></DialogFooter></DialogContent></Dialog>;
+}
+
+export function DeleteGroupDialog({ group, open, busy, error, onCancel, onConfirm }: { group: CustomFaceGroupSummary | null; open: boolean; busy: boolean; error?: string | null; onCancel: () => void; onConfirm: () => void }) {
+  return <AlertDialog open={open} onOpenChange={(nextOpen) => !nextOpen && !busy && onCancel()}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>确认删除表情组</AlertDialogTitle><AlertDialogDescription>{group ? `将删除“${group.name}”，分辨率 ${profileLabel(group.displayProfileId)}，包含 ${group.faceCount} 个表情。此操作不可恢复。` : ''}</AlertDialogDescription></AlertDialogHeader>{error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}<AlertDialogFooter><AlertDialogCancel disabled={busy}>取消</AlertDialogCancel><AlertDialogAction disabled={busy} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={onConfirm}>{busy ? '删除中…' : '确认删除'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>;
+}
+
+function profileLabel(id: string) { const profile = CUSTOM_FACE_CONTRACT.profiles.find((item) => item.id === id); return profile ? `${profile.width} × ${profile.height}` : id; }

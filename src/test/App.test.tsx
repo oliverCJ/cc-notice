@@ -732,6 +732,34 @@ test('switches navigation pages with current page titles', async () => {
   expect(screen.getByText('本地 Hook 接收服务')).toBeInTheDocument();
 });
 
+test('tracks the custom face editor window lifecycle in the main page entry', async () => {
+  let stateHandler: ((event: { payload: boolean }) => void) | null = null;
+  invokeMock.mockImplementation((command, args) => {
+    if (command === 'device_input_bindings') {
+      return Promise.resolve([]);
+    }
+    return defaultInvoke(command, args);
+  });
+  listenMock.mockImplementation(async (eventName, handler) => {
+    if (eventName === 'cc-notice://custom-face-editor-state-changed') {
+      stateHandler = handler as (event: { payload: boolean }) => void;
+    }
+    return vi.fn();
+  });
+  await renderApp();
+
+  fireEvent.click(screen.getByRole('button', { name: '设备' }));
+  const entry = await screen.findByRole('button', { name: /设备屏幕自定义表情管理/ });
+  expect(entry).toBeEnabled();
+  await waitFor(() => expect(stateHandler).not.toBeNull());
+
+  act(() => stateHandler?.({ payload: true }));
+  expect(entry).toBeDisabled();
+
+  act(() => stateHandler?.({ payload: false }));
+  expect(entry).toBeEnabled();
+});
+
 test('opens diagnostics center from navigation', async () => {
   await renderApp();
 

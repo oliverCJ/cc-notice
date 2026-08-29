@@ -1304,6 +1304,10 @@ export function importCustomFaceGroup(request: CustomFaceImportRequest) {
   return invoke<SaveCustomFaceGroupResult>('import_custom_face_group', { request });
 }
 
+export function readCustomFaceSvg(path: string) {
+  return invoke<string>('read_custom_face_svg', { path });
+}
+
 export function openCustomFaceEditor() {
   return invoke<void>('open_custom_face_editor');
 }

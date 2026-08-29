@@ -1572,13 +1572,32 @@ describe('DevicesPage', () => {
 
     expect(onOpenDiagnosticsCenter).toHaveBeenCalledTimes(1);
   });
+
+  test('opens custom face management without requiring a selected face-capable device', () => {
+    const onOpenCustomFaceEditor = vi.fn();
+
+    renderDevicesPage(registryState, discoveryState, vi.fn(), vi.fn(), onOpenCustomFaceEditor);
+    const button = screen.getByRole('button', { name: /设备屏幕自定义表情管理/ });
+
+    expect(button).toBeEnabled();
+    fireEvent.click(button);
+    expect(onOpenCustomFaceEditor).toHaveBeenCalledOnce();
+  });
+
+  test('disables custom face management only while the editor window is open', () => {
+    renderDevicesPage(registryState, discoveryState, vi.fn(), vi.fn(), vi.fn(), true);
+
+    expect(screen.getByRole('button', { name: /设备屏幕自定义表情管理/ })).toBeDisabled();
+  });
 });
 
 function renderDevicesPage(
   state: DeviceRuntimeRegistryState = registryState,
   discovery: DeviceDiscoveryState = discoveryState,
   onOpenRulesPage = vi.fn(),
-  onOpenDiagnosticsCenter = vi.fn()
+  onOpenDiagnosticsCenter = vi.fn(),
+  onOpenCustomFaceEditor = vi.fn(),
+  customFaceEditorOpen = false
 ) {
   vi.mocked(useDeviceDiscoveryModule.useDeviceDiscovery).mockReturnValue(discovery);
 
@@ -1588,6 +1607,8 @@ function renderDevicesPage(
         registry={state}
         onOpenRulesPage={onOpenRulesPage}
         onOpenDiagnosticsCenter={onOpenDiagnosticsCenter}
+        onOpenCustomFaceEditor={onOpenCustomFaceEditor}
+        customFaceEditorOpen={customFaceEditorOpen}
       />
     </I18nProvider>
   );

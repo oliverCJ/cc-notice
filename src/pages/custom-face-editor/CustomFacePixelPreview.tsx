@@ -1,0 +1,38 @@
+import { useEffect, useRef } from 'react';
+
+type Props = {
+  width: number;
+  height: number;
+  packedPixels: ArrayLike<number>;
+  ariaLabel: string;
+  className?: string;
+  displayScale?: number;
+};
+
+export function CustomFacePixelPreview({ width, height, packedPixels, ariaLabel, className, displayScale = 1 }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const hasPixels = packedPixels.length >= Math.ceil(width * height / 8);
+  const hasActivePixel = hasPixels && Array.from(packedPixels).some((value) => value !== 0);
+
+  useEffect(() => {
+    if (!hasActivePixel || !canvasRef.current) return;
+    const context = canvasRef.current.getContext('2d');
+    if (!context) {
+      console.warn('[custom-face-preview] Canvas 2D context is unavailable');
+      return;
+    }
+    context.imageSmoothingEnabled = false;
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = '#ffffff';
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const byte = packedPixels[x + Math.floor(y / 8) * width];
+        if ((byte & (1 << (y & 7))) !== 0) context.fillRect(x, y, 1, 1);
+      }
+    }
+  }, [hasActivePixel, height, packedPixels, width]);
+
+  if (!hasActivePixel) return <div className={className ?? 'flex h-full items-center justify-center text-xs text-muted-foreground'}>空白帧</div>;
+  const scale = Math.max(1, Math.floor(displayScale));
+  return <canvas ref={canvasRef} aria-label={ariaLabel} className={className} data-testid="custom-face-pixel-preview-canvas" height={height} role="img" style={{ imageRendering: 'pixelated', width: `${width * scale}px`, height: `${height * scale}px` }} width={width} />;
+}

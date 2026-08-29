@@ -8,7 +8,9 @@ import {
   getPixel
 } from '@/domain/customFaces/editor/raster';
 import type { ToolId } from '@/domain/customFaces/editor/types';
-import { CanvasGuide, CustomFaceRulers } from './CustomFaceRulers';
+import type { CanvasGuide } from './CustomFaceRulers';
+import { CustomFaceViewport, logicalPointFromClientPoint } from './CustomFaceViewport';
+import { CustomFacePixelPreview } from './CustomFacePixelPreview';
 
 type Point = [number, number];
 export type CanvasSelection = { x: number; y: number; width: number; height: number };
@@ -26,6 +28,7 @@ type Props = {
   pixels: Uint8Array;
   onionPixels?: Uint8Array;
   selection?: CanvasSelection | null;
+  selectionOrigin?: CanvasSelection | null;
   selectedTool: ToolId;
   eraserSize?: number;
   constraintEnabled?: boolean;
@@ -37,6 +40,8 @@ type Props = {
   onSelectionChange?: (selection: CanvasSelection | null) => void;
   onToolStateChange?: (state: CanvasToolState) => void;
   onGuidesChange?: (guides: CanvasGuide[]) => void;
+  pendingImportPixels?: number[] | null;
+  onPendingImportMove?: (dx: number, dy: number) => void;
 };
 
 const DRAW_COLOR = '#d7ff70';
@@ -50,6 +55,7 @@ export function CustomFaceCanvas({
   pixels,
   onionPixels,
   selection,
+  selectionOrigin,
   selectedTool,
   eraserSize = 3,
   constraintEnabled = false,
@@ -60,7 +66,9 @@ export function CustomFaceCanvas({
   onPixelTransaction,
   onSelectionChange,
   onToolStateChange,
-  onGuidesChange = () => undefined
+  onGuidesChange = () => undefined,
+  pendingImportPixels = null,
+  onPendingImportMove = () => undefined
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -106,10 +114,7 @@ export function CustomFaceCanvas({
   const coordinate = (event: React.PointerEvent<HTMLCanvasElement>): Point | null => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect || rect.width <= 0 || rect.height <= 0) return null;
-    return [
-      Math.min(width - 1, Math.max(0, Math.floor(((event.clientX - rect.left) / rect.width) * width))),
-      Math.min(height - 1, Math.max(0, Math.floor(((event.clientY - rect.top) / rect.height) * height)))
-    ];
+    return logicalPointFromClientPoint(rect, event.clientX, event.clientY, width, height);
   };
 
   const addEraserArea = (point: Point) => {
@@ -251,6 +256,10 @@ export function CustomFaceCanvas({
       onSelectionChange?.(null);
     }
   };
+  const pendingDragRef = useRef<{ clientX: number; clientY: number } | null>(null);
+  const handlePendingPointerDown = (event: React.PointerEvent<HTMLDivElement>) => { pendingDragRef.current = { clientX: event.clientX, clientY: event.clientY }; event.currentTarget.setPointerCapture(event.pointerId); };
+  const handlePendingPointerMove = (event: React.PointerEvent<HTMLDivElement>) => { const origin = pendingDragRef.current; if (!origin || !event.currentTarget.hasPointerCapture(event.pointerId)) return; const dx = Math.round((event.clientX - origin.clientX) / displayScale); const dy = Math.round((event.clientY - origin.clientY) / displayScale); if (dx || dy) { onPendingImportMove(dx, dy); pendingDragRef.current = { clientX: event.clientX, clientY: event.clientY }; } };
+  const handlePendingPointerUp = (event: React.PointerEvent<HTMLDivElement>) => { pendingDragRef.current = null; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); };
 
   const scaleX = 100 / width;
   const scaleY = 100 / height;
@@ -271,8 +280,8 @@ export function CustomFaceCanvas({
         </span>
       </div>
       <div ref={workspaceRef} className="flex min-h-56 flex-1 items-center justify-center overflow-auto bg-muted/20 p-2">
-        <CustomFaceRulers width={width} height={height} scale={displayScale} guides={guides} onGuidesChange={onGuidesChange}>
-        <div className="relative shrink-0 overflow-hidden bg-black outline outline-1 outline-border" style={{ width: `${width * displayScale}px`, height: `${height * displayScale}px` }}>
+        <CustomFaceViewport width={width} height={height} scale={displayScale} guides={guides} onGuidesChange={onGuidesChange}>
+        <div className="relative shrink-0" style={{ width: `${width * displayScale}px`, height: `${height * displayScale}px` }}>
           <canvas
             ref={canvasRef}
             tabIndex={0}
@@ -289,7 +298,6 @@ export function CustomFaceCanvas({
             className={cursorClass(selectedTool)}
             style={{ imageRendering: 'pixelated', width: '100%', height: '100%' }}
           />
-          <PixelGrid scale={displayScale} />
           <ToolOverlay
             width={width}
             height={height}
@@ -298,17 +306,19 @@ export function CustomFaceCanvas({
             end={previewEnd}
             bounds={bounds}
             selection={selection ?? null}
+            selectionOrigin={selectionOrigin ?? null}
             eraserBounds={selectedTool === 'eraser' ? eraserBounds : null}
             penPoints={selectedTool === 'pen' ? penPreviewPoints : []}
           />
+          {pendingImportPixels ? <div aria-label="待确认导入对象" className="pointer-events-auto absolute inset-0 cursor-move border-2 border-dashed border-fuchsia-400 bg-fuchsia-400/10" onPointerDown={handlePendingPointerDown} onPointerMove={handlePendingPointerMove} onPointerUp={handlePendingPointerUp} onPointerCancel={handlePendingPointerUp}><CustomFacePixelPreview width={width} height={height} displayScale={displayScale} packedPixels={pendingImportPixels} ariaLabel={`待确认导入 ${width} × ${height}`} className="pointer-events-none absolute left-0 top-0 opacity-60" /></div> : null}
         </div>
-        </CustomFaceRulers>
+        </CustomFaceViewport>
       </div>
     </div>
   );
 }
 
-function ToolOverlay({ width, height, tool, start, end, bounds, selection, eraserBounds, penPoints }: {
+function ToolOverlay({ width, height, tool, start, end, bounds, selection, selectionOrigin, eraserBounds, penPoints }: {
   width: number;
   height: number;
   tool: ToolId;
@@ -316,6 +326,7 @@ function ToolOverlay({ width, height, tool, start, end, bounds, selection, erase
   end: Point | null;
   bounds: CanvasSelection | null;
   selection: CanvasSelection | null;
+  selectionOrigin: CanvasSelection | null;
   eraserBounds: CanvasSelection | null;
   penPoints: Point[];
 }) {
@@ -327,7 +338,8 @@ function ToolOverlay({ width, height, tool, start, end, bounds, selection, erase
   });
   return (
     <>
-      {selection ? <div aria-label="当前选区" className="pointer-events-none absolute border-2 border-dashed border-yellow-300 bg-yellow-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(selection)} /> : null}
+      {selectionOrigin ? <div aria-label="原始选区" className="pointer-events-none absolute border-2 border-dashed border-yellow-300 bg-yellow-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(selectionOrigin)} /> : null}
+      {selection ? <div aria-label="当前选区" className="pointer-events-none absolute border-2 border-solid border-cyan-300 bg-cyan-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(selection)} /> : null}
       {eraserBounds ? <div aria-label="擦除范围" className="pointer-events-none absolute border-2 border-red-400 bg-red-400/15 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(eraserBounds)} /> : null}
       {start && end && bounds ? (
         <svg aria-label="工具预览" className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
@@ -350,10 +362,6 @@ function ToolOverlay({ width, height, tool, start, end, bounds, selection, erase
 
 function previewStroke(stroke = PREVIEW_STROKE) {
   return { stroke, strokeWidth: 0.55, strokeDasharray: '1.2 0.8', vectorEffect: 'non-scaling-stroke' as const, filter: 'drop-shadow(0 0 0.3px #000)' };
-}
-
-function PixelGrid({ scale }: { scale: number }) {
-  return <div aria-label="像素网格" className="pointer-events-none absolute inset-0" style={{ backgroundImage: 'linear-gradient(to right, rgba(130, 165, 178, 0.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(130, 165, 178, 0.28) 1px, transparent 1px)', backgroundSize: `${scale}px ${scale}px` }} />;
 }
 
 function boundsFor(start: Point, end: Point): CanvasSelection {

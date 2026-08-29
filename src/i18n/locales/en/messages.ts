@@ -1031,8 +1031,9 @@ export const enMessages = {
     title: 'Device Management',
     description: 'Manage hardware devices, transport connections, device channels, and test actions.',
     customFaces: {
-      manage: 'Face Library',
+      manage: 'Device Screen Custom Face Manager',
       openHint: 'Open the custom face editor',
+      openedHint: 'The custom face editor is already open',
       unsupportedHint: 'The selected device does not support face displays'
     },
     unknownDevice: 'Unknown Device',

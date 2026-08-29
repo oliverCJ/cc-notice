@@ -24,6 +24,24 @@ pub struct CustomFaceImportRequest {
 }
 
 #[tauri::command]
+pub fn read_custom_face_svg(path: String) -> Result<String, String> {
+    let path = PathBuf::from(path);
+    if path
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(|value| value.eq_ignore_ascii_case("svg"))
+        != Some(true)
+    {
+        return Err("SVG 文件扩展名无效".to_string());
+    }
+    let metadata = std::fs::metadata(&path).map_err(|error| error.to_string())?;
+    if !metadata.is_file() || metadata.len() > 2 * 1024 * 1024 {
+        return Err("SVG 文件不存在、不是普通文件或超过 2 MiB".to_string());
+    }
+    std::fs::read_to_string(path).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 pub fn custom_face_groups(
     state: tauri::State<'_, AppState>,
 ) -> Result<Vec<CustomFaceGroupSummary>, String> {

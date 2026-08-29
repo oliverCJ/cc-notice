@@ -1,9 +1,47 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { createEditorState } from '@/domain/customFaces/editor/reducer';
 import { CustomFaceEditorWorkbench } from './CustomFaceEditorWorkbench';
 
+const saveCustomFaceGroupMock = vi.hoisted(() => vi.fn());
+const saveCustomFaceRecoveryMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const clearCustomFaceRecoveryMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const getCustomFaceGroupMock = vi.hoisted(() => vi.fn());
+const closeCustomFaceEditorMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const windowApiMock = vi.hoisted(() => ({
+  closeRequestedHandler: null as null | ((event: { preventDefault: () => void }) => void | Promise<void>),
+  unlisten: vi.fn(),
+  onCloseRequested: vi.fn()
+}));
+
+vi.mock('@/api/tauriApi', async () => {
+  const actual = await vi.importActual<typeof import('@/api/tauriApi')>('@/api/tauriApi');
+  return {
+    ...actual,
+    saveCustomFaceGroup: saveCustomFaceGroupMock,
+    saveCustomFaceRecovery: saveCustomFaceRecoveryMock,
+    clearCustomFaceRecovery: clearCustomFaceRecoveryMock,
+    getCustomFaceGroup: getCustomFaceGroupMock,
+    closeCustomFaceEditor: closeCustomFaceEditorMock
+  };
+});
+
+vi.mock('@tauri-apps/api/window', () => ({
+  getCurrentWindow: () => ({ onCloseRequested: windowApiMock.onCloseRequested })
+}));
+
 beforeEach(() => {
+  saveCustomFaceGroupMock.mockReset();
+  saveCustomFaceRecoveryMock.mockClear();
+  clearCustomFaceRecoveryMock.mockClear();
+  getCustomFaceGroupMock.mockReset();
+  closeCustomFaceEditorMock.mockClear();
+  windowApiMock.closeRequestedHandler = null;
+  windowApiMock.unlisten.mockClear();
+  windowApiMock.onCloseRequested.mockImplementation(async (handler) => {
+    windowApiMock.closeRequestedHandler = handler;
+    return windowApiMock.unlisten;
+  });
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), stroke: vi.fn(), imageSmoothingEnabled: false, fillStyle: '', strokeStyle: '', lineWidth: 1 } as unknown as CanvasRenderingContext2D);
 });
 
@@ -15,3 +53,114 @@ test('opens the toolbar by default and clears selection when another tool is cho
   fireEvent.click(screen.getByRole('button', { name: '画笔' }));
   expect(screen.queryByText(/选区：/)).not.toBeInTheDocument();
 });
+
+test('adds and manages faces inside the current group', () => {
+  const state = createEditorState({ schemaVersion: 1, groupId: 'g', name: 'G', displayProfileId: 'custom-mono-128x32-v1', revision: 1, defaultFaceId: 'f', faces: [{ faceId: 'f', name: 'Face', color: { red: 255, green: 255, blue: 255 }, frames: [{ durationMs: 200, packedPixels: Array(512).fill(0) }] }] }, { id: 'custom-mono-128x32-v1', width: 128, height: 32, maxFrames: 10, framebufferBytes: 512 });
+  render(<CustomFaceEditorWorkbench initialState={state} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '新增表情' }));
+  expect(screen.getByText('新表情')).toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: '表情名称' })).toHaveValue('新表情');
+  expect(screen.getByRole('button', { name: '复制表情' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '设为默认表情' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '删除表情' })).toBeEnabled();
+});
+
+test('renames the group in the editor and stays clean after saving', async () => {
+  const state = createEditorState({ schemaVersion: 1, groupId: 'g', name: '原组名', displayProfileId: 'custom-mono-128x32-v1', revision: 1, defaultFaceId: 'f', faces: [{ faceId: 'f', name: 'Face', color: { red: 255, green: 255, blue: 255 }, frames: [{ durationMs: 200, packedPixels: Array(512).fill(0) }] }] }, { id: 'custom-mono-128x32-v1', width: 128, height: 32, maxFrames: 10, framebufferBytes: 512 });
+  const onBack = vi.fn();
+  const onSaved = vi.fn();
+  saveCustomFaceGroupMock.mockImplementation(async ({ group }) => ({
+    group: { ...group, revision: 2 },
+    libraryHash: 'next-hash'
+  }));
+
+  render(<CustomFaceEditorWorkbench initialState={state} expectedLibraryHash="hash" onBack={onBack} onSaved={onSaved} />);
+  fireEvent.change(screen.getByRole('textbox', { name: '组名称' }), { target: { value: '新的组名' } });
+  fireEvent.click(screen.getByRole('button', { name: '应用组名称' }));
+
+  expect(screen.getByText('有未保存修改')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+  await waitFor(() => expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({
+    group: expect.objectContaining({ name: '新的组名', revision: 2 }),
+    libraryHash: 'next-hash'
+  })));
+  expect(onBack).not.toHaveBeenCalled();
+  expect(screen.getByRole('textbox', { name: '组名称' })).toHaveValue('新的组名');
+  expect(screen.getByText('已保存')).toBeInTheDocument();
+});
+
+test('offers an explicit overwrite when the saved library hash conflicts', async () => {
+  const state = createState();
+  saveCustomFaceGroupMock
+    .mockRejectedValueOnce(new Error('custom face group conflicts with current hash disk-hash'))
+    .mockImplementationOnce(async ({ group }) => ({ group: { ...group, revision: 2 }, libraryHash: 'saved-hash', changed: true }));
+
+  render(<CustomFaceEditorWorkbench initialState={state} expectedLibraryHash="old-hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+  renameGroup('本地修改');
+  fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+  expect(await screen.findByRole('alertdialog', { name: '检测到保存冲突' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '覆盖保存' }));
+
+  await waitFor(() => expect(saveCustomFaceGroupMock).toHaveBeenCalledTimes(2));
+  expect(saveCustomFaceGroupMock.mock.calls[1][0]).toEqual(expect.objectContaining({ expectedLibraryHash: 'disk-hash' }));
+  expect(screen.getByText('已保存')).toBeInTheDocument();
+});
+
+test('reloads the disk group after a save conflict', async () => {
+  const state = createState();
+  const diskGroup = { ...state.presentGroup, name: '磁盘版本', revision: 4 };
+  saveCustomFaceGroupMock.mockRejectedValue(new Error('custom face group conflicts with current hash disk-hash'));
+  getCustomFaceGroupMock.mockResolvedValue(diskGroup);
+  const onSaved = vi.fn();
+
+  render(<CustomFaceEditorWorkbench initialState={state} expectedLibraryHash="old-hash" onBack={vi.fn()} onSaved={onSaved} />);
+  renameGroup('本地修改');
+  fireEvent.click(screen.getByRole('button', { name: '保存' }));
+  fireEvent.click(await screen.findByRole('button', { name: '重新加载磁盘版本' }));
+
+  await waitFor(() => expect(screen.getByRole('textbox', { name: '组名称' })).toHaveValue('磁盘版本'));
+  expect(onSaved).toHaveBeenCalledWith({ group: diskGroup, libraryHash: 'disk-hash', changed: false });
+  expect(screen.getByText('已保存')).toBeInTheDocument();
+});
+
+test('prevents a dirty native window close and supports cancel or discard', async () => {
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+  renameGroup('尚未保存');
+  await waitFor(() => expect(windowApiMock.closeRequestedHandler).not.toBeNull());
+  const preventDefault = vi.fn();
+
+  await act(async () => { await windowApiMock.closeRequestedHandler?.({ preventDefault }); });
+  expect(preventDefault).toHaveBeenCalled();
+  expect(screen.getByRole('alertdialog', { name: '保存未完成的修改？' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '取消' }));
+  expect(closeCustomFaceEditorMock).not.toHaveBeenCalled();
+
+  await act(async () => { await windowApiMock.closeRequestedHandler?.({ preventDefault }); });
+  fireEvent.click(screen.getByRole('button', { name: '丢弃修改' }));
+  await waitFor(() => expect(closeCustomFaceEditorMock).toHaveBeenCalledOnce());
+});
+
+test('saves a dirty group before closing the native window', async () => {
+  const state = createState();
+  saveCustomFaceGroupMock.mockImplementation(async ({ group }) => ({ group: { ...group, revision: 2 }, libraryHash: 'saved-hash', changed: true }));
+
+  render(<CustomFaceEditorWorkbench initialState={state} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+  renameGroup('保存后关闭');
+  await waitFor(() => expect(windowApiMock.closeRequestedHandler).not.toBeNull());
+  await act(async () => { await windowApiMock.closeRequestedHandler?.({ preventDefault: vi.fn() }); });
+  fireEvent.click(screen.getByRole('button', { name: '保存并关闭' }));
+
+  await waitFor(() => expect(saveCustomFaceGroupMock).toHaveBeenCalledOnce());
+  expect(closeCustomFaceEditorMock).toHaveBeenCalledOnce();
+});
+
+function createState() {
+  return createEditorState({ schemaVersion: 1, groupId: 'g', name: '原组名', displayProfileId: 'custom-mono-128x32-v1', revision: 1, defaultFaceId: 'f', faces: [{ faceId: 'f', name: 'Face', color: { red: 255, green: 255, blue: 255 }, frames: [{ durationMs: 200, packedPixels: Array(512).fill(0) }] }] }, { id: 'custom-mono-128x32-v1', width: 128, height: 32, maxFrames: 10, framebufferBytes: 512 });
+}
+
+function renameGroup(name: string) {
+  fireEvent.change(screen.getByRole('textbox', { name: '组名称' }), { target: { value: name } });
+  fireEvent.click(screen.getByRole('button', { name: '应用组名称' }));
+}
