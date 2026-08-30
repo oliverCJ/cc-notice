@@ -1089,6 +1089,21 @@ export type CustomFaceImportRequest = {
   mode: CustomFaceImportMode;
 };
 
+export type PersonalCustomFaceAsset = {
+  assetId: string;
+  scope: 'public' | 'group';
+  groupId?: string | null;
+  name: string;
+  tags: string[];
+  profileId: string;
+  width: number;
+  height: number;
+  packedPixels: number[];
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type InternalEventDefinition = {
   id: string;
   title: string;
@@ -1307,6 +1322,10 @@ export function importCustomFaceGroup(request: CustomFaceImportRequest) {
 export function readCustomFaceSvg(path: string) {
   return invoke<string>('read_custom_face_svg', { path });
 }
+
+export function getCustomFaceAssets() { return invoke<PersonalCustomFaceAsset[]>('custom_face_assets'); }
+export function saveCustomFaceAsset(asset: PersonalCustomFaceAsset) { return invoke<PersonalCustomFaceAsset>('save_custom_face_asset', { asset }); }
+export function deleteCustomFaceAsset(assetId: string) { return invoke<void>('delete_custom_face_asset', { assetId }); }
 
 export function openCustomFaceEditor() {
   return invoke<void>('open_custom_face_editor');

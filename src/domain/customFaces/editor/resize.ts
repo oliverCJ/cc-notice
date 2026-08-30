@@ -1,10 +1,10 @@
 import type { CustomFaceGroup } from '@/api/tauriApi';
-import { CUSTOM_FACE_CONTRACT } from '@/domain/customFaces/generated/customFaceContract.generated';
 import { getPixel, setPixel } from './raster';
+import { editorProfileFromId } from './profile';
 
 export function resizeCustomFaceGroup(group: CustomFaceGroup, targetProfileId: string, createId: () => string): CustomFaceGroup {
-  const source = CUSTOM_FACE_CONTRACT.profiles.find((profile) => profile.id === group.displayProfileId);
-  const target = CUSTOM_FACE_CONTRACT.profiles.find((profile) => profile.id === targetProfileId);
+  const source = editorProfileFromId(group.displayProfileId);
+  const target = editorProfileFromId(targetProfileId);
   if (!source || !target) throw new RangeError('unknown custom face profile');
   const faceIds = new Map(group.faces.map((face) => [face.faceId, createId()]));
   return {
@@ -27,7 +27,7 @@ export function resizeCustomFaceGroup(group: CustomFaceGroup, targetProfileId: s
 
 export function resizePackedPixels(sourcePixels: number[], sourceWidth: number, sourceHeight: number, targetWidth: number, targetHeight: number) {
   const source = Uint8Array.from(sourcePixels);
-  const target = new Uint8Array(targetWidth * targetHeight / 8);
+  const target = new Uint8Array(targetWidth * Math.ceil(targetHeight / 8));
   for (let y = 0; y < targetHeight; y += 1) {
     for (let x = 0; x < targetWidth; x += 1) {
       const sourceX = Math.min(sourceWidth - 1, Math.floor(x * sourceWidth / targetWidth));

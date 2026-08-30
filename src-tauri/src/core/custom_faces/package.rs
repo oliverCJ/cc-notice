@@ -21,6 +21,8 @@ pub enum CustomFaceCompileError {
     Validation(#[from] CustomFaceValidationError),
     #[error("custom face group is too large: {actual} > {max}")]
     GroupTooLarge { max: usize, actual: usize },
+    #[error("custom face profile is not deployable: {0}")]
+    ProfileNotDeployable(String),
     #[error("custom face package is malformed: {0}")]
     MalformedPackage(String),
     #[error(transparent)]

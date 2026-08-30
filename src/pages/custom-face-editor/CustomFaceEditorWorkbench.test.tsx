@@ -65,6 +65,15 @@ test('adds and manages faces inside the current group', () => {
   expect(screen.getByRole('button', { name: '删除表情' })).toBeEnabled();
 });
 
+test('allows clearing frame duration input before committing a normalized value', () => {
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+  const input = screen.getByRole('spinbutton', { name: '帧时长' });
+  fireEvent.change(input, { target: { value: '' } });
+  expect(input).toHaveValue(null);
+  fireEvent.change(input, { target: { value: '450' } });
+  expect(input).toHaveValue(450);
+});
+
 test('renames the group in the editor and stays clean after saving', async () => {
   const state = createEditorState({ schemaVersion: 1, groupId: 'g', name: '原组名', displayProfileId: 'custom-mono-128x32-v1', revision: 1, defaultFaceId: 'f', faces: [{ faceId: 'f', name: 'Face', color: { red: 255, green: 255, blue: 255 }, frames: [{ durationMs: 200, packedPixels: Array(512).fill(0) }] }] }, { id: 'custom-mono-128x32-v1', width: 128, height: 32, maxFrames: 10, framebufferBytes: 512 });
   const onBack = vi.fn();

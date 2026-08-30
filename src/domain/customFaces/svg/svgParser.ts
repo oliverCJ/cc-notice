@@ -30,7 +30,14 @@ const allowedElementAttributes = new Set(['x', 'y', 'x1', 'y1', 'x2', 'y2', 'cx'
 export function parseSvgDocument(source: string): SvgDocument {
   if (source.length > 2 * 1024 * 1024) throw new SvgParseError('SVG 文件超过 2 MiB 限制');
   if (/<!doctype|<!entity|<script|<animate|<image|<filter|<lineargradient|<radialgradient|<foreignobject/i.test(source)) throw new SvgParseError('SVG 包含不支持的脚本、外链或动态元素');
-  const root = new DOMParser().parseFromString(source, 'image/svg+xml').documentElement;
+  const hasMultipleRoots = /<\/svg>\s*<svg\b/i.test(source);
+  const parsedSource = hasMultipleRoots ? `<root>${source}</root>` : source;
+  const documentRoot = new DOMParser().parseFromString(parsedSource, 'image/svg+xml').documentElement;
+  const root = hasMultipleRoots ? documentRoot?.querySelector('svg') : documentRoot;
+  if (hasMultipleRoots) {
+    const roots = documentRoot ? Array.from(documentRoot.children).filter((item) => item.tagName.toLowerCase() === 'svg') : [];
+    if (!roots.length || roots.some((item) => item.getAttribute('viewBox') !== root?.getAttribute('viewBox'))) throw new SvgParseError('多个 SVG 根节点必须使用相同 viewBox');
+  }
   if (!root || root.tagName.toLowerCase() !== 'svg') throw new SvgParseError('根节点必须是 svg');
   if (root.querySelector('parsererror')) throw new SvgParseError('SVG XML 格式无效');
   for (const attribute of Array.from(root.attributes)) {
@@ -41,7 +48,8 @@ export function parseSvgDocument(source: string): SvgDocument {
   const width = parsePositiveNumber(root.getAttribute('width')) ?? viewBox[2];
   const height = parsePositiveNumber(root.getAttribute('height')) ?? viewBox[3];
   const elements: SvgElement[] = [];
-  walkElements(root, elements);
+  if (hasMultipleRoots && documentRoot) Array.from(documentRoot.children).filter((item) => item.tagName.toLowerCase() === 'svg').forEach((item) => walkElements(item, elements));
+  else walkElements(root, elements);
   if (elements.length > 10000) throw new SvgParseError('SVG 元素数量超过限制');
   return { width, height, viewBox, elements };
 }
@@ -49,6 +57,10 @@ export function parseSvgDocument(source: string): SvgDocument {
 function walkElements(node: Element, output: SvgElement[]) {
   for (const child of Array.from(node.children)) {
     const type = child.tagName.toLowerCase();
+    if (type === 'g') {
+      walkElements(child, output);
+      continue;
+    }
     if (type === 'style') {
       if (!/^\s*(?:[a-z-]+\s*)?\{?\s*shape-rendering\s*:\s*(?:auto|crispEdges)\s*;?\s*\}?\s*$/i.test(child.textContent ?? '')) throw new SvgParseError('style 内容不受支持');
       continue;

@@ -37,6 +37,7 @@ export type EditorAction =
   | { type: 'select-frame'; index: number }
   | { type: 'set-selection'; selection: { x: number; y: number; width: number; height: number } | null }
   | { type: 'move-selection'; dx: number; dy: number }
+  | { type: 'cancel-selection-move' }
   | { type: 'copy-selection' }
   | { type: 'paste-selection' }
   | { type: 'clear-selection' }

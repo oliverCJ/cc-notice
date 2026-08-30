@@ -1,6 +1,6 @@
 pub mod app_config;
-pub mod custom_faces;
 pub mod custom_face_editor;
+pub mod custom_faces;
 pub mod debug;
 pub mod desktop_notice;
 pub mod device;

@@ -41,6 +41,8 @@ type Props = {
   onToolStateChange?: (state: CanvasToolState) => void;
   onGuidesChange?: (guides: CanvasGuide[]) => void;
   pendingImportPixels?: number[] | null;
+  pendingImportSize?: { width: number; height: number };
+  pendingImportOffset?: { x: number; y: number };
   onPendingImportMove?: (dx: number, dy: number) => void;
 };
 
@@ -68,6 +70,8 @@ export function CustomFaceCanvas({
   onToolStateChange,
   onGuidesChange = () => undefined,
   pendingImportPixels = null,
+  pendingImportSize = { width, height },
+  pendingImportOffset = { x: 0, y: 0 },
   onPendingImportMove = () => undefined
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -310,7 +314,7 @@ export function CustomFaceCanvas({
             eraserBounds={selectedTool === 'eraser' ? eraserBounds : null}
             penPoints={selectedTool === 'pen' ? penPreviewPoints : []}
           />
-          {pendingImportPixels ? <div aria-label="待确认导入对象" className="pointer-events-auto absolute inset-0 cursor-move border-2 border-dashed border-fuchsia-400 bg-fuchsia-400/10" onPointerDown={handlePendingPointerDown} onPointerMove={handlePendingPointerMove} onPointerUp={handlePendingPointerUp} onPointerCancel={handlePendingPointerUp}><CustomFacePixelPreview width={width} height={height} displayScale={displayScale} packedPixels={pendingImportPixels} ariaLabel={`待确认导入 ${width} × ${height}`} className="pointer-events-none absolute left-0 top-0 opacity-60" /></div> : null}
+          {pendingImportPixels ? <div aria-label="待确认导入对象" className="pointer-events-auto absolute inset-0 cursor-move border-2 border-dashed border-fuchsia-400 bg-fuchsia-400/10" onPointerDown={handlePendingPointerDown} onPointerMove={handlePendingPointerMove} onPointerUp={handlePendingPointerUp} onPointerCancel={handlePendingPointerUp}><div className="pointer-events-none absolute left-0 top-0 opacity-60" style={{ width: `${pendingImportSize.width * displayScale}px`, height: `${pendingImportSize.height * displayScale}px`, transform: `translate(${pendingImportOffset.x * displayScale}px, ${pendingImportOffset.y * displayScale}px)` }}><CustomFacePixelPreview width={pendingImportSize.width} height={pendingImportSize.height} displayScale={displayScale} packedPixels={pendingImportPixels} ariaLabel={`待确认导入 ${pendingImportSize.width} × ${pendingImportSize.height}`} /></div></div> : null}
         </div>
         </CustomFaceViewport>
       </div>

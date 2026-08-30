@@ -15,7 +15,7 @@ export const CUSTOM_FACE_CONTRACT = {
       "id": "custom-mono-128x32-v1",
       "width": 128,
       "height": 32,
-      "maxFrames": 10,
+      "maxFrames": 20,
       "maxGroupBytes": 131072,
       "deployment": "enabled",
       "framebufferBytes": 512
@@ -25,7 +25,7 @@ export const CUSTOM_FACE_CONTRACT = {
       "id": "custom-mono-128x64-v1",
       "width": 128,
       "height": 64,
-      "maxFrames": 10,
+      "maxFrames": 20,
       "maxGroupBytes": 262144,
       "deployment": "editor-only",
       "framebufferBytes": 1024
@@ -35,7 +35,7 @@ export const CUSTOM_FACE_CONTRACT = {
       "id": "custom-mono-320x240-v1",
       "width": 320,
       "height": 240,
-      "maxFrames": 5,
+      "maxFrames": 10,
       "maxGroupBytes": 393216,
       "deployment": "enabled",
       "framebufferBytes": 9600

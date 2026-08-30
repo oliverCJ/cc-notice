@@ -10,7 +10,7 @@ test('submits target profile and editable name in resize dialog', () => {
   render(<ResizeGroupDialog group={group} open busy={false} onCancel={vi.fn()} onConfirm={onConfirm} />);
   fireEvent.change(screen.getByRole('textbox', { name: '新组名称' }), { target: { value: '目标组' } });
   fireEvent.click(screen.getByRole('combobox', { name: '目标分辨率' }));
-  fireEvent.click(screen.getByRole('option', { name: '128 × 64 · 最多 10 帧' }));
+  fireEvent.click(screen.getByRole('option', { name: '128 × 64 · 最多 20 帧' }));
   fireEvent.click(screen.getByRole('button', { name: '创建并打开' }));
   expect(onConfirm).toHaveBeenCalledWith('custom-mono-128x64-v1', '目标组');
 });

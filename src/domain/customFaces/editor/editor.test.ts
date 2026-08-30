@@ -108,6 +108,19 @@ describe('custom face editor reducer', () => {
     expect(state.selection).toEqual({ x: 0, y: 0, width: 2, height: 2 });
   });
 
+  test('cancels a selection move by returning pixels to the origin', () => {
+    let state = createEditorState(group(), profile);
+    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 2, height: 2 } });
+    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [{ x: 1, y: 1, active: true }] });
+    state = editorReducer(state, { type: 'move-selection', dx: 2, dy: 0 });
+    const canceled = editorReducer(state, { type: 'cancel-selection-move' });
+    const pixels = new Uint8Array(canceled.presentGroup.faces[0].frames[0].packedPixels);
+    expect(getPixel(pixels, profile, 1, 1)).toBe(true);
+    expect(getPixel(pixels, profile, 3, 1)).toBe(false);
+    expect(canceled.selection).toBeNull();
+    expect(canceled.selectionOrigin).toBeNull();
+  });
+
   test('adds, selects, renames, duplicates and changes the default face', () => {
     let state = createEditorState(group(), profile);
     const blankFace = face('face-2');

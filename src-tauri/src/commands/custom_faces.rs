@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use serde::Deserialize;
 
 use crate::app_services::custom_face_library::{
-    CustomFaceGroupSummary, CustomFaceImportMode, CustomFaceImportPreview,
+    CustomFaceGroupSummary, CustomFaceImportMode, CustomFaceImportPreview, PersonalCustomFaceAsset,
     SaveCustomFaceGroupResult,
 };
 use crate::core::custom_faces::CustomFaceGroup;
@@ -21,6 +21,44 @@ pub struct SaveCustomFaceGroupRequest {
 pub struct CustomFaceImportRequest {
     pub path: String,
     pub mode: CustomFaceImportMode,
+}
+
+#[tauri::command]
+pub fn custom_face_assets(
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<PersonalCustomFaceAsset>, String> {
+    state
+        .custom_face_library_service
+        .lock()
+        .map_err(|error| error.to_string())?
+        .list_assets()
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn save_custom_face_asset(
+    state: tauri::State<'_, AppState>,
+    asset: PersonalCustomFaceAsset,
+) -> Result<PersonalCustomFaceAsset, String> {
+    state
+        .custom_face_library_service
+        .lock()
+        .map_err(|error| error.to_string())?
+        .save_asset(asset)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn delete_custom_face_asset(
+    state: tauri::State<'_, AppState>,
+    asset_id: String,
+) -> Result<(), String> {
+    state
+        .custom_face_library_service
+        .lock()
+        .map_err(|error| error.to_string())?
+        .delete_asset(&asset_id)
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]

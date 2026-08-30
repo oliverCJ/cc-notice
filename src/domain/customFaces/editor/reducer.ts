@@ -108,6 +108,10 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     return commit(state, group, state.selectedFaceId, state.selectedFrameIndex);
   }
   if (action.type === 'set-selection') return { ...state, selection: action.selection, selectionOrigin: null };
+  if (action.type === 'cancel-selection-move' && state.selection && state.selectionOrigin) {
+    const restored = editorReducer(state, { type: 'move-selection', dx: state.selectionOrigin.x - state.selection.x, dy: state.selectionOrigin.y - state.selection.y });
+    return { ...restored, selection: null, selectionOrigin: null };
+  }
   if (action.type === 'move-selection' && state.selection) {
     if (!Number.isFinite(action.dx) || !Number.isFinite(action.dy) || (action.dx === 0 && action.dy === 0)) return state;
     const face = state.presentGroup.faces.find((item) => item.faceId === state.selectedFaceId);

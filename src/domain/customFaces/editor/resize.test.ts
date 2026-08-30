@@ -9,6 +9,6 @@ test('creates a new group and applies target profile frame limits', () => {
   expect(resized.groupId).not.toBe(group.groupId);
   expect(resized.defaultFaceId).toBe(resized.faces[0].faceId);
   expect(resized.displayProfileId).toBe('custom-mono-320x240-v1');
-  expect(resized.faces[0].frames).toHaveLength(5);
+  expect(resized.faces[0].frames).toHaveLength(7);
   expect(resized.faces[0].frames[0].packedPixels).toHaveLength(9600);
 });

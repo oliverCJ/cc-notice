@@ -7,6 +7,7 @@ import { CUSTOM_FACE_CONTRACT } from '@/domain/customFaces/generated/customFaceC
 import { createEditorState } from '@/domain/customFaces/editor/reducer';
 import { resizeCustomFaceGroup } from '@/domain/customFaces/editor/resize';
 import { CustomFaceGroupLibrary } from './CustomFaceGroupLibrary';
+import { editorProfileFromId } from '@/domain/customFaces/editor/profile';
 import { CustomFaceEditorWorkbench } from './CustomFaceEditorWorkbench';
 
 export function CustomFaceEditorWindow() {
@@ -37,7 +38,8 @@ export function CustomFaceEditorWindow() {
 
   if (!current) {
     return <CustomFaceGroupLibrary groups={groups} previews={previews} onOpen={async (id) => setCurrent(await getCustomFaceGroup(id))} onCreate={async (profileId) => {
-      const profile = CUSTOM_FACE_CONTRACT.profiles.find((item) => item.id === profileId)!;
+      const profile = editorProfileFromId(profileId);
+      if (!profile) throw new Error('自定义分辨率无效');
       const groupId = crypto.randomUUID(); const faceId = crypto.randomUUID();
       const saved = await saveCustomFaceGroup({ group: { schemaVersion: 1, groupId, name: '未命名组', displayProfileId: profile.id, revision: 1, defaultFaceId: faceId, faces: [{ faceId, name: '静态表情', color: { red: 255, green: 255, blue: 255 }, frames: [{ durationMs: 200, packedPixels: Array(profile.framebufferBytes).fill(0) }] }] }, expectedLibraryHash: null });
       addSaved(saved); setCurrent(saved.group);
@@ -72,7 +74,7 @@ export function CustomFaceEditorWindow() {
     }} />;
   }
 
-  const profile = CUSTOM_FACE_CONTRACT.profiles.find((item) => item.id === current.displayProfileId);
+  const profile = editorProfileFromId(current.displayProfileId);
   if (!profile) return <main className="p-6 text-sm text-destructive">当前表情组分辨率档案不可用</main>;
   const item = groups.find((group) => group.groupId === current.groupId);
   return <CustomFaceEditorWorkbench initialState={createEditorState(current, profile)} expectedLibraryHash={item?.libraryHash} onBack={() => setCurrent(null)} onSaved={(saved) => { setGroups((items) => items.map((group) => group.groupId === saved.group.groupId ? summary(saved) : group)); setPreviews((items) => ({ ...items, [saved.group.groupId]: saved.group })); setCurrent(saved.group); }} />;

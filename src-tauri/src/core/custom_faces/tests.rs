@@ -299,6 +299,20 @@ fn rejects_compiled_group_larger_than_profile_limit() {
 }
 
 #[test]
+fn rejects_editor_only_and_custom_profiles_at_device_compile_boundary() {
+    let editor_only = test_group("custom-mono-128x64-v1", 1, 1, 1024);
+    assert!(matches!(
+        compile_group(&editor_only),
+        Err(CustomFaceCompileError::ProfileNotDeployable(_))
+    ));
+    let custom = test_group("custom-200x48-v1", 1, 1, 1200);
+    assert!(matches!(
+        compile_group(&custom),
+        Err(CustomFaceCompileError::ProfileNotDeployable(_))
+    ));
+}
+
+#[test]
 fn patch_sends_only_changed_and_new_faces() {
     let base_group = test_group("custom-mono-128x32-v1", 2, 1, 512);
     let base = compile_group(&base_group).unwrap();

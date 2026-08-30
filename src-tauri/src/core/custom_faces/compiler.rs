@@ -38,6 +38,11 @@ pub fn compile_group(
     let profile = custom_face_profile_by_id(&group.display_profile_id).ok_or_else(|| {
         CustomFaceCompileError::MalformedPackage("unknown profile after validation".into())
     })?;
+    if !profile.deployment_enabled {
+        return Err(CustomFaceCompileError::ProfileNotDeployable(
+            group.display_profile_id.clone(),
+        ));
+    }
     let group_id = Uuid::parse_str(&group.group_id)
         .map_err(|_| CustomFaceCompileError::MalformedPackage("invalid group UUID".into()))?;
     let default_face_id = Uuid::parse_str(&group.default_face_id).map_err(|_| {

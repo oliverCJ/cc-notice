@@ -38,4 +38,12 @@ describe('parseSvgDocument', () => {
     expect(() => parseSvgDocument('<svg><rect onclick="alert(1)" /></svg>')).toThrow(/viewBox|尺寸/);
     expect(() => parseSvgDocument('<svg viewBox="0 0 0 10" />')).toThrow(/viewBox/);
   });
+
+  test('accepts structural groups while validating contained geometry', () => {
+    expect(parseSvgDocument('<svg viewBox="0 0 8 8"><g><rect x="1" y="1" width="2" height="2" /></g></svg>').elements).toHaveLength(1);
+  });
+
+  test('merges adjacent SVG roots with the same viewBox', () => {
+    expect(parseSvgDocument('<svg viewBox="0 0 8 8"><rect x="0" y="0" width="1" height="1" /></svg><svg viewBox="0 0 8 8"><rect x="2" y="2" width="1" height="1" /></svg>').elements).toHaveLength(2);
+  });
 });

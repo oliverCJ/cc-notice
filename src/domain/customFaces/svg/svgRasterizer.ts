@@ -10,10 +10,16 @@ export function rasterizeSvg(document: SvgDocument, targetSize: RasterSize, opti
   for (const element of document.elements) {
     if (backgroundFill && (element.attributes.fill ?? '').toLowerCase() === backgroundFill) continue;
     const points = geometryPoints(element);
-    const transformed = points.map((point) => transformPoint(point, document, targetSize, options));
+    const transformed = points.map((point) => transformPoint(point, element, document, targetSize, options));
     if (transformed.some(([x, y]) => x < 0 || y < 0 || x >= targetSize.width || y >= targetSize.height)) clipped = true;
     if (element.type === 'circle' || element.type === 'ellipse') drawEllipsePixels(pixels, targetSize, transformed, element.type === 'circle');
-    else if (element.type === 'rect') drawPolygon(pixels, targetSize, transformed, true);
+    else if (element.type === 'rect') {
+      const rectWidth = num(element.attributes.width);
+      const rectHeight = num(element.attributes.height);
+      if (rectWidth <= 1 && rectHeight <= 1) setPixel(pixels, targetSize, Math.round(transformed[0][0]), Math.round(transformed[0][1]), true);
+      else if (rectWidth <= 1 || rectHeight <= 1) drawPolyline(pixels, targetSize, transformed);
+      else drawPolygon(pixels, targetSize, transformed, true);
+    }
     else if (element.type === 'polygon' || element.type === 'path') drawPolygon(pixels, targetSize, transformed, true);
     else drawPolyline(pixels, targetSize, transformed);
   }
@@ -44,13 +50,33 @@ function geometryPoints(element: SvgElement): Point[] {
   if (element.type === 'ellipse') return [[num(a.cx), num(a.cy)], [num(a.cx) + num(a.rx), num(a.cy)], [num(a.cx), num(a.cy) + num(a.ry)]];
   const values = (a.points ?? '').trim().split(/[ ,]+/).map(Number);
   if (values.length >= 4 && values.every(Number.isFinite)) { const points: Point[] = []; for (let i = 0; i < values.length; i += 2) points.push([values[i], values[i + 1]]); return points; }
-  const pathValues = (a.d ?? '').match(/[MLHVZmlhvz]|-?\d*\.?\d+(?:e[-+]?\d+)?/g) ?? [];
-  const points: Point[] = []; let current: Point = [0, 0];
-  for (let i = 0; i < pathValues.length; i += 1) { const token = pathValues[i]; if (/^[ML]$/i.test(token)) { current = [Number(pathValues[++i]), Number(pathValues[++i])]; points.push(current); } else if (/^[HV]$/i.test(token)) { const value = Number(pathValues[++i]); current = /^[H]$/i.test(token) ? [value, current[1]] : [current[0], value]; points.push(current); } }
+  const pathValues = (a.d ?? '').match(/[MLHVZCQSmSmlhvzcqs]|-?\d*\.?\d+(?:e[-+]?\d+)?/gi) ?? [];
+  const points: Point[] = []; let current: Point = [0, 0]; let start: Point = current; let command = 'M'; let cursor = 0; let previousControl: Point | null = null;
+  const read = () => Number(pathValues[cursor++]);
+  const point = (x: number, y: number, relative: boolean): Point => relative ? [current[0] + x, current[1] + y] : [x, y];
+  while (cursor < pathValues.length) {
+    if (/^[A-Za-z]$/.test(pathValues[cursor])) { command = pathValues[cursor++]; if (!/[CS cs]/.test(command)) previousControl = null; }
+    const upper = command.toUpperCase();
+    const relative = command === command.toLowerCase();
+    if (upper === 'Z') { current = start; points.push(current); command = relative ? 'm' : 'M'; continue; }
+    if (upper === 'M' || upper === 'L') { if (cursor + 1 >= pathValues.length) break; current = point(read(), read(), relative); points.push(current); if (upper === 'M') { start = current; command = relative ? 'l' : 'L'; } continue; }
+    if (upper === 'H') { current = relative ? [current[0] + read(), current[1]] : [read(), current[1]]; points.push(current); continue; }
+    if (upper === 'V') { current = relative ? [current[0], current[1] + read()] : [current[0], read()]; points.push(current); continue; }
+    if (upper === 'C' || upper === 'S') { const required = upper === 'C' ? 5 : 3; if (cursor + required >= pathValues.length) break; const origin = current; const c1 = upper === 'C' ? point(read(), read(), relative) : (previousControl ? [2 * current[0] - previousControl[0], 2 * current[1] - previousControl[1]] : current); const c2 = point(read(), read(), relative); const end = point(read(), read(), relative); for (let step = 1; step <= 8; step += 1) { const t = step / 8; const mt = 1 - t; points.push([mt ** 3 * origin[0] + 3 * mt ** 2 * t * c1[0] + 3 * mt * t ** 2 * c2[0] + t ** 3 * end[0], mt ** 3 * origin[1] + 3 * mt ** 2 * t * c1[1] + 3 * mt * t ** 2 * c2[1] + t ** 3 * end[1]]); } current = end; previousControl = c2; continue; }
+    if (upper === 'Q') { if (cursor + 3 >= pathValues.length) break; const origin = current; const c = point(read(), read(), relative); const end = point(read(), read(), relative); for (let step = 1; step <= 8; step += 1) { const t = step / 8; const mt = 1 - t; points.push([mt ** 2 * origin[0] + 2 * mt * t * c[0] + t ** 2 * end[0], mt ** 2 * origin[1] + 2 * mt * t * c[1] + t ** 2 * end[1]]); } current = end; continue; }
+    cursor += 1;
+  }
   return points;
 }
 
-function transformPoint([x, y]: Point, document: SvgDocument, targetSize: RasterSize, options: SvgRasterOptions): Point {
+function transformPoint([rawX, rawY]: Point, element: SvgElement, document: SvgDocument, targetSize: RasterSize, options: SvgRasterOptions): Point {
+  let x = rawX;
+  let y = rawY;
+  for (const transform of element.transform) {
+    if (transform.type === 'translate') { x += transform.x; y += transform.y; }
+    else if (transform.type === 'scale') { x *= transform.x; y *= transform.y; }
+    else { const angle = (transform.angle * Math.PI) / 180; const nextX = x * Math.cos(angle) - y * Math.sin(angle); y = x * Math.sin(angle) + y * Math.cos(angle); x = nextX; }
+  }
   const originX = document.viewBox[0] + document.viewBox[2] / 2;
   const originY = document.viewBox[1] + document.viewBox[3] / 2;
   const scale = options.scale || 1;

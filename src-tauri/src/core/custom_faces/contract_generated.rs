@@ -26,7 +26,7 @@ pub const CUSTOM_FACE_PROFILES: &[CustomFaceProfileSpec] = &[
         width: 128,
         height: 32,
         framebuffer_bytes: 512,
-        max_frames: 10,
+        max_frames: 20,
         max_group_bytes: 131_072,
         deployment_enabled: true,
     },
@@ -36,7 +36,7 @@ pub const CUSTOM_FACE_PROFILES: &[CustomFaceProfileSpec] = &[
         width: 128,
         height: 64,
         framebuffer_bytes: 1_024,
-        max_frames: 10,
+        max_frames: 20,
         max_group_bytes: 262_144,
         deployment_enabled: false,
     },
@@ -46,14 +46,43 @@ pub const CUSTOM_FACE_PROFILES: &[CustomFaceProfileSpec] = &[
         width: 320,
         height: 240,
         framebuffer_bytes: 9_600,
-        max_frames: 5,
+        max_frames: 10,
         max_group_bytes: 393_216,
         deployment_enabled: true,
     },
 ];
 
-pub fn custom_face_profile_by_id(id: &str) -> Option<&'static CustomFaceProfileSpec> {
-    CUSTOM_FACE_PROFILES.iter().find(|profile| profile.id == id)
+pub fn custom_face_profile_by_id(id: &str) -> Option<CustomFaceProfileSpec> {
+    if let Some(profile) = CUSTOM_FACE_PROFILES.iter().find(|profile| profile.id == id) {
+        return Some(*profile);
+    }
+    let value = id.strip_prefix("custom-")?.strip_suffix("-v1")?;
+    let (width, height) = value.split_once('x')?;
+    let width = width.parse::<u16>().ok()?;
+    let height = height.parse::<u16>().ok()?;
+    if !(10..=1024).contains(&width)
+        || !(10..=1024).contains(&height)
+        || usize::from(width) * usize::from(height) > 1_048_576
+    {
+        return None;
+    }
+    let max_frames = if usize::from(width) * usize::from(height) <= 8192 {
+        20
+    } else if usize::from(width) * usize::from(height) <= 76800 {
+        10
+    } else {
+        5
+    };
+    Some(CustomFaceProfileSpec {
+        code: 0,
+        id: "custom",
+        width,
+        height,
+        framebuffer_bytes: usize::from(width) * usize::from((height + 7) / 8),
+        max_frames,
+        max_group_bytes: 16 * 1024 * 1024,
+        deployment_enabled: false,
+    })
 }
 
 pub fn custom_face_profile_by_code(code: u16) -> Option<&'static CustomFaceProfileSpec> {

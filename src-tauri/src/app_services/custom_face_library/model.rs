@@ -23,6 +23,10 @@ pub enum CustomFaceLibraryError {
     Conflict { current_library_hash: String },
     #[error("custom face archive is unsafe: {0}")]
     UnsafeArchive(String),
+    #[error("custom face asset was not found: {0}")]
+    AssetNotFound(String),
+    #[error("custom face asset is invalid: {0}")]
+    InvalidAsset(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -103,4 +107,37 @@ pub struct StoredFrameRef {
     pub duration_ms: u16,
     pub offset: u64,
     pub length: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PersonalCustomFaceAsset {
+    pub asset_id: String,
+    #[serde(default)]
+    pub scope: CustomFaceAssetScope,
+    #[serde(default)]
+    pub group_id: Option<String>,
+    pub name: String,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    pub profile_id: String,
+    pub width: u16,
+    pub height: u16,
+    pub packed_pixels: Vec<u8>,
+    pub source: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum CustomFaceAssetScope {
+    Public,
+    Group,
+}
+
+impl Default for CustomFaceAssetScope {
+    fn default() -> Self {
+        Self::Public
+    }
 }
