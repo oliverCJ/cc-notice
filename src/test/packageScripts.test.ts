@@ -16,6 +16,15 @@ test('package exposes relay build commands', () => {
     'npm run build:relay:release && node scripts/sync-relay-asset.mjs'
   );
   expect(packageJson.scripts['build:app']).toBe('npm run build:relay:asset && npm run build');
+  expect(packageJson.scripts['clean:rust:debug']).toBe(
+    'node scripts/clean-rust-target.mjs debug'
+  );
+  expect(packageJson.scripts['clean:rust:release']).toBe(
+    'node scripts/clean-rust-target.mjs release'
+  );
+  expect(packageJson.scripts['clean:rust:all']).toBe(
+    'node scripts/clean-rust-target.mjs all'
+  );
   expect(packageJson.scripts['package:mac:x64']).toBe('node scripts/package-macos.mjs x64');
   expect(packageJson.scripts['package:mac:arm64']).toBe('node scripts/package-macos.mjs arm64');
   expect(packageJson.scripts['package:mac:universal']).toBe(
@@ -32,6 +41,36 @@ test('package exposes relay build commands', () => {
   expect(packageJson.scripts).not.toHaveProperty('generate:icons');
   expect(packageJson.scripts).not.toHaveProperty('generate:tray-icon');
   expect(packageJson.scripts).not.toHaveProperty('check:icons');
+});
+
+test('Rust cleanup uses a fixed cross-platform target scope', () => {
+  const packageJson = JSON.parse(
+    readFileSync(join(process.cwd(), 'package.json'), 'utf8')
+  ) as { scripts: Record<string, string> };
+  const cargoManifest = readFileSync(join(process.cwd(), 'src-tauri/Cargo.toml'), 'utf8');
+  const cleanupScript = readFileSync(join(process.cwd(), 'scripts/clean-rust-target.mjs'), 'utf8');
+
+  expect(cargoManifest).toContain('[profile.dev]');
+  expect(cargoManifest).toContain('debug = "line-tables-only"');
+  expect(cleanupScript).toContain("new Set(['debug', 'release', 'all'])");
+  expect(cleanupScript).toContain("'src-tauri', 'target'");
+  expect(cleanupScript).toContain('rmSync');
+  expect(cleanupScript).not.toContain('rm -rf');
+  expect(cleanupScript).not.toContain('shell: true');
+  expect(packageJson.scripts['diagnose:disk']).toBe('node scripts/diagnose-disk.mjs');
+});
+
+test('disk diagnosis is read-only and cross-platform', () => {
+  const script = readFileSync(join(process.cwd(), 'scripts/diagnose-disk.mjs'), 'utf8');
+
+  expect(script).toContain("from 'node:fs'");
+  expect(script).toContain('lstatSync');
+  expect(script).toContain('readdirSync');
+  expect(script).toContain('spawnSync');
+  expect(script).not.toContain("'du'");
+  expect(script).not.toContain('rmSync');
+  expect(script).not.toContain('shell: true');
+  expect(script).not.toContain('readFileSync');
 });
 
 test('tauri npm script uses a cross-platform launcher without requiring sh', () => {

@@ -5,6 +5,8 @@ const SAMPLES_PER_PIXEL = 4;
 const CONTENT_PADDING_RATIO = 0.08;
 const MEASUREMENT_MAX_SIZE = 1_024;
 
+export type SvgRecognitionMode = 'alpha' | 'brightness';
+
 export type SvgRasterOptions = {
   offsetX: number;
   offsetY: number;
@@ -12,6 +14,7 @@ export type SvgRasterOptions = {
   rotationDeg: number;
   threshold: number;
   invert?: boolean;
+  recognitionMode?: SvgRecognitionMode;
 };
 
 export type SvgRasterResult = {
@@ -67,6 +70,7 @@ export async function rasterizeSvg(
     SAMPLES_PER_PIXEL,
     options.threshold,
     options.invert,
+    options.recognitionMode,
   );
   return {
     pixels,
@@ -81,6 +85,7 @@ export function rasterizeAlphaCoverage(
   samplesPerPixel: number,
   threshold: number,
   invert = false,
+  recognitionMode: SvgRecognitionMode = 'alpha',
 ) {
   const expectedLength =
     targetSize.width * samplesPerPixel * targetSize.height * samplesPerPixel * 4;
@@ -101,17 +106,17 @@ export function rasterizeAlphaCoverage(
 
   for (let y = 0; y < targetSize.height; y += 1) {
     for (let x = 0; x < targetSize.width; x += 1) {
-      let alphaSum = 0;
+      let signalSum = 0;
       for (let sampleY = 0; sampleY < samplesPerPixel; sampleY += 1) {
         for (let sampleX = 0; sampleX < samplesPerPixel; sampleX += 1) {
           const index =
             ((y * samplesPerPixel + sampleY) * sampleWidth +
               (x * samplesPerPixel + sampleX)) *
             4;
-          alphaSum += rgba[index + 3];
+          signalSum += sampleSignal(rgba, index, recognitionMode);
         }
       }
-      const coverage = alphaSum / (samplesPerLogicalPixel * 255);
+      const coverage = signalSum / (samplesPerLogicalPixel * 255);
       const active = coverage >= thresholdRatio;
       const inContent = Boolean(contentBounds && contains(contentBounds, x, y));
       const outputActive = inContent && invert ? !active : active;
@@ -121,6 +126,18 @@ export function rasterizeAlphaCoverage(
     }
   }
   return pixels;
+}
+
+function sampleSignal(
+  rgba: Uint8ClampedArray,
+  index: number,
+  recognitionMode: SvgRecognitionMode,
+) {
+  const alpha = rgba[index + 3];
+  if (recognitionMode === 'alpha') return alpha;
+  const brightness =
+    0.299 * rgba[index] + 0.587 * rgba[index + 1] + 0.114 * rgba[index + 2];
+  return (alpha * (255 - brightness)) / 255;
 }
 
 function logicalContentBounds(

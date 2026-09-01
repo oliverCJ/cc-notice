@@ -50,6 +50,8 @@ test('selects only svg files, previews target resolution and applies packed pixe
   await waitFor(() => expect(screen.getByText(/目标分辨率/)).toBeInTheDocument());
   await waitFor(() => expect(screen.getByText(/高亮像素：1/)).toBeInTheDocument());
   expect(screen.getByRole('checkbox', { name: '反转图像亮点' })).not.toBeChecked();
+  expect(screen.getByRole('radio', { name: '按透明度识别像素' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: '按亮度识别像素' })).not.toBeChecked();
   expect(openMock).toHaveBeenCalledWith(expect.objectContaining({ multiple: false, directory: false, filters: [{ name: 'SVG 图像', extensions: ['svg'] }] }));
   expect(screen.getByTestId('svg-import-screen')).toHaveStyle({ aspectRatio: '8 / 8' });
   expect(screen.getByTestId('svg-import-screen')).toHaveStyle({ width: '128px', height: '128px' });
@@ -65,6 +67,73 @@ test('selects only svg files, previews target resolution and applies packed pixe
   expect(onApply).toHaveBeenCalledOnce();
   expect(onApply.mock.calls[0][0]).toHaveLength(8);
   expect(onApply.mock.calls[0][1]).toBe('merge');
+});
+
+test('switches pixel recognition mode and passes it to rasterization', async () => {
+  openMock.mockResolvedValue('/tmp/face.svg');
+  readSvgMock.mockResolvedValue('<svg viewBox="0 0 8 8"><rect width="4" height="4" /></svg>');
+
+  render(<CustomFaceSvgImportDialog open width={8} height={8} onCancel={vi.fn()} onApply={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '选择 SVG 文件' }));
+  await waitFor(() => expect(screen.getByText(/高亮像素：1/)).toBeInTheDocument());
+
+  fireEvent.click(screen.getByRole('radio', { name: '按亮度识别像素' }));
+  expect(screen.getByRole('radio', { name: '按亮度识别像素' })).toBeChecked();
+  expect(screen.getByText('适合白底黑图；深色像素更容易转换为亮点，透明像素仍保持熄灭。')).toBeInTheDocument();
+  await waitFor(() => expect(rasterizeMock).toHaveBeenLastCalledWith(
+    expect.anything(),
+    { width: 8, height: 8 },
+    expect.objectContaining({ recognitionMode: 'brightness' }),
+  ));
+});
+
+test('supports precise range adjustments with step buttons and boundaries', async () => {
+  openMock.mockResolvedValue('/tmp/face.svg');
+  readSvgMock.mockResolvedValue('<svg viewBox="0 0 8 8"><rect width="4" height="4" /></svg>');
+
+  render(<CustomFaceSvgImportDialog open width={8} height={6} onCancel={vi.fn()} onApply={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '选择 SVG 文件' }));
+  await waitFor(() => expect(screen.getByText(/高亮像素：1/)).toBeInTheDocument());
+
+  expect(screen.getByRole('button', { name: '减少缩放' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '增加缩放' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '减少旋转' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '增加旋转' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '减少像素覆盖阈值' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '增加像素覆盖阈值' })).toBeEnabled();
+
+  fireEvent.click(screen.getByRole('button', { name: '增加缩放' }));
+  fireEvent.click(screen.getByRole('button', { name: '增加缩放' }));
+  fireEvent.click(screen.getByRole('button', { name: '增加旋转' }));
+  fireEvent.click(screen.getByRole('button', { name: '减少像素覆盖阈值' }));
+  fireEvent.click(screen.getByRole('button', { name: '增加水平偏移' }));
+  fireEvent.click(screen.getByRole('button', { name: '减少垂直偏移' }));
+
+  expect(screen.getByRole('slider', { name: '缩放' })).toHaveValue('1.1');
+  expect(screen.getByRole('slider', { name: '旋转' })).toHaveValue('1');
+  expect(screen.getByRole('slider', { name: '像素覆盖阈值' })).toHaveValue('49');
+  expect(screen.getByRole('slider', { name: '水平偏移' })).toHaveValue('1');
+  expect(screen.getByRole('slider', { name: '垂直偏移' })).toHaveValue('-1');
+  await waitFor(() => expect(rasterizeMock).toHaveBeenLastCalledWith(
+    expect.anything(),
+    { width: 8, height: 6 },
+    expect.objectContaining({ offsetX: 1, offsetY: -1, scale: 1.1, rotationDeg: 1, threshold: 49 }),
+  ));
+
+  fireEvent.change(screen.getByRole('slider', { name: '缩放' }), { target: { value: '4' } });
+  fireEvent.change(screen.getByRole('slider', { name: '旋转' }), { target: { value: '180' } });
+  fireEvent.change(screen.getByRole('slider', { name: '像素覆盖阈值' }), { target: { value: '100' } });
+  fireEvent.change(screen.getByRole('slider', { name: '水平偏移' }), { target: { value: '8' } });
+  fireEvent.change(screen.getByRole('slider', { name: '垂直偏移' }), { target: { value: '6' } });
+
+  expect(screen.getByRole('button', { name: '增加缩放' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '增加旋转' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '增加像素覆盖阈值' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '增加水平偏移' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '增加垂直偏移' })).toBeDisabled();
+
+  fireEvent.click(screen.getByRole('button', { name: '减少缩放' }));
+  expect(screen.getByRole('slider', { name: '缩放' })).toHaveValue('3.95');
 });
 
 test('keeps the completed preview visible while parameter rendering is pending', async () => {

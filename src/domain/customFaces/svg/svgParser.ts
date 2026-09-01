@@ -63,6 +63,8 @@ const allowedElementAttributes = new Set([
   'd',
   ...allowedGroupAttributes,
 ]);
+const safeStaticStylePattern =
+  /^\s*(?:rect\s*\{\s*shape-rendering\s*:\s*(?:auto|crispEdges)\s*;?\s*\}\s*)+$/;
 
 export function parseSvgDocument(source: string): SvgDocument {
   if (source.length > MAX_SOURCE_BYTES) {
@@ -81,6 +83,7 @@ export function parseSvgDocument(source: string): SvgDocument {
     throw new SvgParseError('SVG XML 格式无效');
   }
 
+  removeSafeStaticStyles(root);
   validateAttributes(root, allowedSvgAttributes, 'svg');
   const viewBox = parseViewBox(root.getAttribute('viewBox'));
   const width = parsePositiveNumber(root.getAttribute('width')) ?? viewBox[2];
@@ -100,7 +103,21 @@ export function parseSvgDocument(source: string): SvgDocument {
 }
 
 function containsDisallowedMarkup(source: string) {
-  return /<!doctype|<!entity|<\/?(?:script|animate(?:[a-z-]*)?|image|filter|lineargradient|radialgradient|foreignobject|use|mask|pattern|clipPath|text|style)\b|\b(?:href|xlink:href)\s*=|\b(?:url|javascript|data):/i.test(source);
+  return /<!doctype|<!entity|<\/?(?:script|animate(?:[a-z-]*)?|image|filter|lineargradient|radialgradient|foreignobject|use|mask|pattern|clipPath|text)\b|\b(?:href|xlink:href)\s*=|\b(?:url|javascript|data):/i.test(source);
+}
+
+function removeSafeStaticStyles(root: Element) {
+  // Styles are removed before native rendering, so accepted SVGs keep no executable CSS.
+  const styles = Array.from(root.querySelectorAll('style'));
+  for (const style of styles) {
+    if (style.parentElement !== root || style.attributes.length > 0) {
+      throw new SvgParseError('SVG style 只支持根节点下的静态声明');
+    }
+    if (!safeStaticStylePattern.test(style.textContent ?? '')) {
+      throw new SvgParseError('SVG style 只支持静态 shape-rendering 声明');
+    }
+    style.remove();
+  }
 }
 
 function validateChildren(node: Element): number {

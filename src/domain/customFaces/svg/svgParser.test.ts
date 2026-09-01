@@ -14,12 +14,33 @@ describe('parseSvgDocument', () => {
     expect(document.source).toContain('transform="translate(4 2)"');
   });
 
+  test('accepts and removes safe static shape-rendering styles', () => {
+    const document = parseSvgDocument(
+      '<svg viewBox="0 0 8 8"><style>rect { shape-rendering: crispEdges; }</style><rect width="8" height="8" /></svg>',
+    );
+
+    expect(document.elementCount).toBe(1);
+    expect(document.source).not.toContain('<style');
+  });
+
   test('accepts SVG visual attributes supported by native rendering', () => {
     const document = parseSvgDocument(
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8" shape-rendering="crispEdges"><g opacity="0.5" stroke="white" stroke-width="1" stroke-linecap="round"><path d="M1 1 H7 V7 H1 Z M3 3 H5 V5 H3 Z" fill-rule="evenodd"/></g></svg>',
     );
 
     expect(document.elementCount).toBe(1);
+  });
+
+  test('rejects unsafe or unsupported style content', () => {
+    for (const source of [
+      '<svg viewBox="0 0 10 10"><style>rect { fill: red; }</style></svg>',
+      '<svg viewBox="0 0 10 10"><style>@import url(https://example.com/a.css);</style></svg>',
+      '<svg viewBox="0 0 10 10"><style>rect { animation: pulse 1s; }</style></svg>',
+      '<svg viewBox="0 0 10 10"><style media="screen">rect { shape-rendering: crispEdges; }</style></svg>',
+      '<svg viewBox="0 0 10 10"><g><style>rect { shape-rendering: crispEdges; }</style></g></svg>',
+    ]) {
+      expect(() => parseSvgDocument(source)).toThrow(SvgParseError);
+    }
   });
 
   test('rejects executable, external and unsupported SVG content', () => {

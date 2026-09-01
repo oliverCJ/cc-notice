@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Minus, Plus } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import {
   Dialog,
@@ -13,6 +14,7 @@ import { parseSvgDocument, SvgParseError } from '@/domain/customFaces/svg/svgPar
 import {
   rasterizeSvg,
   type SvgRasterResult,
+  type SvgRecognitionMode,
 } from '@/domain/customFaces/svg/svgRasterizer';
 import { CustomFacePixelPreview } from './CustomFacePixelPreview';
 import { CustomFaceViewport } from './CustomFaceViewport';
@@ -46,6 +48,7 @@ export function CustomFaceSvgImportDialog({
   const [scale, setScale] = useState(1);
   const [rotationDeg, setRotationDeg] = useState(0);
   const [threshold, setThreshold] = useState(50);
+  const [recognitionMode, setRecognitionMode] = useState<SvgRecognitionMode>('alpha');
   const [invert, setInvert] = useState(false);
   const [mode, setMode] = useState<'merge' | 'replace'>('merge');
   const [guides, setGuides] = useState<
@@ -91,6 +94,7 @@ export function CustomFaceSvgImportDialog({
       rotationDeg,
       threshold,
       invert,
+      recognitionMode,
     })
       .then((result) => {
         if (renderVersionRef.current === version) setRaster(result);
@@ -106,7 +110,7 @@ export function CustomFaceSvgImportDialog({
     return () => {
       if (renderVersionRef.current === version) renderVersionRef.current += 1;
     };
-  }, [document, height, invert, offsetX, offsetY, rotationDeg, scale, threshold, width]);
+  }, [document, height, invert, offsetX, offsetY, recognitionMode, rotationDeg, scale, threshold, width]);
 
   useEffect(() => {
     if (!visible) {
@@ -118,6 +122,7 @@ export function CustomFaceSvgImportDialog({
       setScale(1);
       setRotationDeg(0);
       setThreshold(50);
+      setRecognitionMode('alpha');
       setInvert(false);
       setMode('merge');
       setGuides([]);
@@ -290,6 +295,12 @@ export function CustomFaceSvgImportDialog({
               <label className="mr-3"><input type="radio" name="svg-import-mode" aria-label={t('customFaceEditor.svgImport.mergeLabel')} checked={mode === 'merge'} onChange={() => setMode('merge')} /> {t('customFaceEditor.svgImport.merge')}</label>
               <label><input type="radio" name="svg-import-mode" aria-label={t('customFaceEditor.svgImport.replaceLabel')} checked={mode === 'replace'} onChange={() => setMode('replace')} /> {t('customFaceEditor.svgImport.replace')}</label>
             </fieldset>
+            <fieldset>
+              <legend className="mb-1">{t('customFaceEditor.svgImport.recognitionMode')}</legend>
+              <label className="mr-3"><input type="radio" name="svg-recognition-mode" aria-label={t('customFaceEditor.svgImport.alphaRecognitionLabel')} checked={recognitionMode === 'alpha'} onChange={() => setRecognitionMode('alpha')} /> {t('customFaceEditor.svgImport.alphaRecognition')}</label>
+              <label><input type="radio" name="svg-recognition-mode" aria-label={t('customFaceEditor.svgImport.brightnessRecognitionLabel')} checked={recognitionMode === 'brightness'} onChange={() => setRecognitionMode('brightness')} /> {t('customFaceEditor.svgImport.brightnessRecognition')}</label>
+              <p className="mt-1 text-muted-foreground">{t(`customFaceEditor.svgImport.${recognitionMode}RecognitionHint`)}</p>
+            </fieldset>
             <div className="grid grid-cols-2 gap-2">
               <label className="block">X<input aria-label={t('customFaceEditor.svgImport.x')} className="mt-1 w-full border border-border px-2 py-1" type="number" min={-width} max={width} step="1" value={offsetX} onChange={(event) => setOffset('x', Number(event.target.value))} /></label>
               <label className="block">Y<input aria-label={t('customFaceEditor.svgImport.y')} className="mt-1 w-full border border-border px-2 py-1" type="number" min={-height} max={height} step="1" value={offsetY} onChange={(event) => setOffset('y', Number(event.target.value))} /></label>
@@ -299,11 +310,67 @@ export function CustomFaceSvgImportDialog({
               <button type="button" className="border border-border px-2 py-1" onClick={() => { setOffsetX(0); setOffsetY(0); }}>{t('customFaceEditor.svgImport.topLeft')}</button>
               <button type="button" className="border border-border px-2 py-1" onClick={() => { setOffsetX(0); setOffsetY(0); }}>{t('customFaceEditor.svgImport.reset')}</button>
             </div>
-            <label className="block">{t('customFaceEditor.svgImport.offsetX', { value: offsetX })}<input aria-label={t('customFaceEditor.svgImport.offsetXLabel')} className="mt-1 w-full" type="range" min={-width} max={width} value={offsetX} onChange={(event) => setOffset('x', Number(event.target.value))} /></label>
-            <label className="block">{t('customFaceEditor.svgImport.offsetY', { value: offsetY })}<input aria-label={t('customFaceEditor.svgImport.offsetYLabel')} className="mt-1 w-full" type="range" min={-height} max={height} value={offsetY} onChange={(event) => setOffset('y', Number(event.target.value))} /></label>
-            <label className="block">{t('customFaceEditor.svgImport.scale', { value: scale.toFixed(2) })}<input aria-label={t('customFaceEditor.svgImport.scaleLabel')} className="mt-1 w-full" type="range" min="0.25" max="4" step="0.05" value={scale} onChange={(event) => setScale(Number(event.target.value))} /></label>
-            <label className="block">{t('customFaceEditor.svgImport.rotation', { value: rotationDeg })}<input aria-label={t('customFaceEditor.svgImport.rotationLabel')} className="mt-1 w-full" type="range" min="-180" max="180" step="1" value={rotationDeg} onChange={(event) => setRotationDeg(Number(event.target.value))} /></label>
-            <label className="block">{t('customFaceEditor.svgImport.threshold', { value: threshold })}<input aria-label={t('customFaceEditor.svgImport.thresholdLabel')} className="mt-1 w-full" type="range" min="0" max="100" value={threshold} onChange={(event) => setThreshold(Number(event.target.value))} /></label>
+            <RangeStepper
+              label={t('customFaceEditor.svgImport.offsetX', { value: offsetX })}
+              ariaLabel={t('customFaceEditor.svgImport.offsetXLabel')}
+              decreaseLabel={t('customFaceEditor.svgImport.decrease', { field: t('customFaceEditor.svgImport.offsetXLabel') })}
+              increaseLabel={t('customFaceEditor.svgImport.increase', { field: t('customFaceEditor.svgImport.offsetXLabel') })}
+              min={-width}
+              max={width}
+              step={1}
+              value={offsetX}
+              onChange={(value) => setOffset('x', value)}
+              onStep={(delta) => setOffsetX((current) => clampOffset(current + delta, width))}
+            />
+            <RangeStepper
+              label={t('customFaceEditor.svgImport.offsetY', { value: offsetY })}
+              ariaLabel={t('customFaceEditor.svgImport.offsetYLabel')}
+              decreaseLabel={t('customFaceEditor.svgImport.decrease', { field: t('customFaceEditor.svgImport.offsetYLabel') })}
+              increaseLabel={t('customFaceEditor.svgImport.increase', { field: t('customFaceEditor.svgImport.offsetYLabel') })}
+              min={-height}
+              max={height}
+              step={1}
+              value={offsetY}
+              onChange={(value) => setOffset('y', value)}
+              onStep={(delta) => setOffsetY((current) => clampOffset(current + delta, height))}
+            />
+            <RangeStepper
+              label={t('customFaceEditor.svgImport.scale', { value: scale.toFixed(2) })}
+              ariaLabel={t('customFaceEditor.svgImport.scaleLabel')}
+              decreaseLabel={t('customFaceEditor.svgImport.decrease', { field: t('customFaceEditor.svgImport.scaleLabel') })}
+              increaseLabel={t('customFaceEditor.svgImport.increase', { field: t('customFaceEditor.svgImport.scaleLabel') })}
+              min={0.25}
+              max={4}
+              step={0.05}
+              value={scale}
+              onChange={(next) => setScale(normalizeRangeValue(next, 0.25, 4, 0.05))}
+              onStep={(delta) => setScale((current) => normalizeRangeValue(current + delta, 0.25, 4, 0.05))}
+              formatValue={(value) => value.toFixed(2)}
+            />
+            <RangeStepper
+              label={t('customFaceEditor.svgImport.rotation', { value: rotationDeg })}
+              ariaLabel={t('customFaceEditor.svgImport.rotationLabel')}
+              decreaseLabel={t('customFaceEditor.svgImport.decrease', { field: t('customFaceEditor.svgImport.rotationLabel') })}
+              increaseLabel={t('customFaceEditor.svgImport.increase', { field: t('customFaceEditor.svgImport.rotationLabel') })}
+              min={-180}
+              max={180}
+              step={1}
+              value={rotationDeg}
+              onChange={(value) => setRotationDeg(value)}
+              onStep={(delta) => setRotationDeg((current) => normalizeRangeValue(current + delta, -180, 180, 1))}
+            />
+            <RangeStepper
+              label={t('customFaceEditor.svgImport.threshold', { value: threshold })}
+              ariaLabel={t('customFaceEditor.svgImport.thresholdLabel')}
+              decreaseLabel={t('customFaceEditor.svgImport.decrease', { field: t('customFaceEditor.svgImport.thresholdLabel') })}
+              increaseLabel={t('customFaceEditor.svgImport.increase', { field: t('customFaceEditor.svgImport.thresholdLabel') })}
+              min={0}
+              max={100}
+              step={1}
+              value={threshold}
+              onChange={(value) => setThreshold(value)}
+              onStep={(delta) => setThreshold((current) => normalizeRangeValue(current + delta, 0, 100, 1))}
+            />
             <p className="text-muted-foreground">{t('customFaceEditor.svgImport.thresholdHint')}</p>
             <label className="flex items-start gap-2"><input aria-label={t('customFaceEditor.faceImport.invertImage')} type="checkbox" checked={invert} onChange={(event) => setInvert(event.target.checked)} /><span><span className="block">{t('customFaceEditor.faceImport.invertImage')}</span><span className="text-muted-foreground">{t('customFaceEditor.faceImport.invertImageHint')}</span></span></label>
             {raster ? <p>{t('customFaceEditor.svgImport.activePixels', { count: raster.activePixelCount })}{raster.clipped ? ` · ${t('customFaceEditor.svgImport.clipped')}` : ''}</p> : null}
@@ -317,6 +384,80 @@ export function CustomFaceSvgImportDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+type RangeStepperProps = {
+  label: string;
+  ariaLabel: string;
+  decreaseLabel: string;
+  increaseLabel: string;
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+  onChange: (value: number) => void;
+  onStep: (delta: number) => void;
+  formatValue?: (value: number) => string;
+};
+
+function RangeStepper({
+  label,
+  ariaLabel,
+  decreaseLabel,
+  increaseLabel,
+  min,
+  max,
+  step,
+  value,
+  onChange,
+  onStep,
+  formatValue,
+}: RangeStepperProps) {
+  const displayValue = formatValue ? formatValue(value) : String(value);
+  return (
+    <div>
+      <label className="block">{label}</label>
+      <div className="mt-1 flex items-center gap-1">
+        <button
+          type="button"
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center border border-border"
+          aria-label={decreaseLabel}
+          title={decreaseLabel}
+          disabled={value <= min}
+          onClick={() => onStep(-step)}
+        >
+          <Minus aria-hidden="true" className="h-3.5 w-3.5" />
+        </button>
+        <input
+          aria-label={ariaLabel}
+          className="min-w-0 w-full"
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(event) => onChange(Number(event.target.value))}
+        />
+        <button
+          type="button"
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center border border-border"
+          aria-label={increaseLabel}
+          title={increaseLabel}
+          disabled={value >= max}
+          onClick={() => onStep(step)}
+        >
+          <Plus aria-hidden="true" className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <span className="sr-only">{displayValue}</span>
+    </div>
+  );
+}
+
+function normalizeRangeValue(value: number, min: number, max: number, step: number) {
+  const clamped = Math.min(max, Math.max(min, value));
+  const steps = Math.round((clamped - min) / step);
+  return Number((min + steps * step).toFixed(2));
 }
 
 function displayScaleFor(width: number, height: number, availableWidth: number, availableHeight: number) {

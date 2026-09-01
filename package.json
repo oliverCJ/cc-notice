@@ -16,6 +16,10 @@
     "package:mac:all": "node scripts/package-macos.mjs all",
     "package:win": "npm run build:relay:asset && npx tauri build --bundles nsis",
     "build:app": "npm run build:relay:asset && npm run build",
+    "clean:rust:debug": "node scripts/clean-rust-target.mjs debug",
+    "clean:rust:release": "node scripts/clean-rust-target.mjs release",
+    "clean:rust:all": "node scripts/clean-rust-target.mjs all",
+    "diagnose:disk": "node scripts/diagnose-disk.mjs",
     "test": "vitest run",
     "tauri": "node scripts/tauri-dev.mjs"
   },

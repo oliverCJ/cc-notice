@@ -9,6 +9,9 @@ default-run = "cc-notice"
 name = "cc_notice"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[profile.dev]
+debug = "line-tables-only"
+
 [dependencies]
 anyhow = "1"
 fs2 = "0.4"

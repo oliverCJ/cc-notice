@@ -20,6 +20,21 @@ function rgba(
   return pixels;
 }
 
+function rgbaColors(
+  width: number,
+  height: number,
+  colorAt: (x: number, y: number) => [number, number, number, number],
+) {
+  const pixels = new Uint8ClampedArray(width * height * 4);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const index = (y * width + x) * 4;
+      pixels.set(colorAt(x, y), index);
+    }
+  }
+  return pixels;
+}
+
 test('uses alpha coverage instead of foreground color to create page-packed pixels', () => {
   const pixels = rasterizeAlphaCoverage(
     rgba(8, 4, (x, y) => (x === 2 || x === 3) && y < 2 ? 255 : 0),
@@ -30,6 +45,42 @@ test('uses alpha coverage instead of foreground color to create page-packed pixe
 
   expect(getPixel(pixels, { width: 4, height: 2 }, 1, 0)).toBe(true);
   expect(getPixel(pixels, { width: 4, height: 2 }, 0, 0)).toBe(false);
+});
+
+test('uses inverted brightness so dark opaque pixels become active and white pixels stay off', () => {
+  const source = rgbaColors(4, 2, (x) => {
+    if (x < 2) return [0, 0, 0, 255];
+    return [255, 255, 255, 255];
+  });
+  const pixels = rasterizeAlphaCoverage(
+    source,
+    { width: 2, height: 1 },
+    2,
+    50,
+    false,
+    'brightness',
+  );
+
+  expect(getPixel(pixels, { width: 2, height: 1 }, 0, 0)).toBe(true);
+  expect(getPixel(pixels, { width: 2, height: 1 }, 1, 0)).toBe(false);
+});
+
+test('keeps brightness recognition alpha-gated for transparent white pixels', () => {
+  const source = rgbaColors(4, 2, (x) => {
+    if (x < 2) return [255, 255, 255, 0];
+    return [0, 0, 0, 64];
+  });
+  const pixels = rasterizeAlphaCoverage(
+    source,
+    { width: 2, height: 1 },
+    2,
+    50,
+    false,
+    'brightness',
+  );
+
+  expect(getPixel(pixels, { width: 2, height: 1 }, 0, 0)).toBe(false);
+  expect(getPixel(pixels, { width: 2, height: 1 }, 1, 0)).toBe(false);
 });
 
 test('inverts only the logical content bounds and leaves transparent background off', () => {

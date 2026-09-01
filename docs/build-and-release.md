@@ -30,6 +30,38 @@ npm run build:app
 
 该命令会先构建默认架构的 `cc-notice-relay` 并同步到 `src-tauri/assets/tools/cc-notice-relay`，再构建前端。这个默认链路适合本机开发构建，不用于 macOS 多架构发布包。Tauri 打包时会把 `src-tauri/assets/firmware` 中已经提交的固件资产作为资源打入安装包，但不会编译固件。
 
+## 构建产物清理
+
+Rust 开发构建默认会保留增量编译缓存。项目将开发 profile 的调试信息收敛为 `line-tables-only`，保留源码行号和基本回溯定位，同时减少完整调试信息占用；需要查看完整局部变量信息时，可以临时使用单独的 Cargo 配置覆盖该设置。增量编译不会默认关闭，以免每次修改 Tauri 后都重新编译完整依赖树。
+
+清理命令只作用于仓库内固定生成目录，使用 Node 脚本实现，不依赖 `sh`、`rm -rf` 或平台专用删除命令：
+
+```bash
+npm run clean:rust:debug
+npm run clean:rust:release
+npm run clean:rust:all
+```
+
+- `clean:rust:debug`：清理默认 target 以及 Intel、Apple Silicon、universal 等架构 target 下的 debug 目录。
+- `clean:rust:release`：清理上述 target 下的 release 目录，包括 Tauri bundle。
+- `clean:rust:all`：清理整个 `src-tauri/target`，下次构建需要重新生成完整 Rust 产物。
+- 任意命令都支持 `--dry-run`，例如 `npm run clean:rust:all -- --dry-run`，只预览固定路径而不删除。
+
+执行清理前必须停止 Tauri、Cargo 和打包进程。清理命令不会删除源码、`node_modules`、固件资产、维护工具或用户配置；如果通过 `CARGO_TARGET_DIR` 将产物放到仓库外，也不会被该命令主动猜测或删除。
+
+不建议把清理命令设置为定时无条件执行。较大的功能阶段结束后或磁盘空间告警时手动运行即可，日常开发优先保留增量缓存。
+
+需要定位空间来源时使用只读诊断命令：
+
+```bash
+npm run diagnose:disk
+npm run diagnose:disk -- --json
+```
+
+命令会统计 app 内的 `node_modules`、`src-tauri/target`、前端产物、资源和 Git 数据，并在用户级范围统计 `~/.cargo/registry`、`~/.cargo/git`、`~/.rustup/toolchains`、`~/.npm` 和 `~/.cc-notice`。它只读取文件元数据，不读取配置、日志或 token 内容；符号链接不会被跟随，缺失或无权限目录只会标记为不完整。诊断会显示 Cargo、Rustup、npm 和 Node 的可用性，但不会安装、删除或修改任何内容。
+
+用户级 Cargo/Rustup/npm 缓存可能被多个项目共享，不属于项目清理命令的范围。应先根据诊断结果确认目录用途，再单独处理明确不用的缓存或旧工具链。
+
 ## macOS 发布包
 
 macOS 发布包使用专用脚本：
