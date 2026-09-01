@@ -1009,6 +1009,71 @@ export const zhMessages = {
       notificationFocus: '系统通知可能被系统专注模式拦截，请在系统设置中确认通知权限。'
     }
   },
+  customFaceEditor: {
+    canvas: {
+      label: '自定义表情画布 {{width}} × {{height}}',
+      coordinate: '坐标 {{x}}, {{y}} · ',
+      scale: '缩放 {{scale}}×'
+    },
+    magnifier: {
+      show: '局部放大',
+      hide: '关闭局部放大',
+      title: '局部放大 {{scale}}×',
+      panelLabel: '局部放大画布',
+      canvasLabel: '局部放大像素画布',
+      close: '关闭局部放大',
+      closePanel: '关闭局部放大浮窗',
+      pointer: '当前像素',
+      mode: {
+        follow: '跟随',
+        locked: '已锁定'
+      },
+      modeAction: {
+        follow: '锁定放大区域',
+        locked: '解锁放大区域'
+      },
+      modeText: {
+        follow: '锁定',
+        locked: '解锁'
+      },
+      range: '{{startX}},{{startY}} 至 {{endX}},{{endY}}'
+    },
+    faceImport: {
+      action: '导入单个表情',
+      title: '导入单个表情',
+      description: '表情将作为新表情加入当前组，不会覆盖已有表情。',
+      source: '来源：{{name}}',
+      details: '分辨率 {{width}} × {{height}} · {{frames}} 帧 · {{duration}} ms',
+      name: '导入后的表情名称',
+      confirm: '导入为新表情',
+      importing: '正在读取表情文件…',
+      profileMismatch: '导入失败：分辨率不一致（来源：{{sourceWidth}} × {{sourceHeight}}；当前组：{{targetWidth}} × {{targetHeight}}）。',
+      capacityReached: '当前组已达到 {{max}} 个表情，无法继续导入。',
+      duplicate: '当前组中已有内容相同的表情，仍可导入副本。',
+      invertImage: '反转图像亮点',
+      invertImageHint: '只反转图像内容区域，透明背景保持熄灭。',
+      imported: '已导入“{{name}}”，尚未保存。'
+    },
+    faceExport: {
+      item: '导出可编辑表情',
+      gif: '导出 GIF',
+      dialog: {
+        title: '导出 GIF',
+        description: '按整数倍率放大像素画布，保持硬边和原始宽高比。',
+        scale: '导出倍率',
+        scaleValue: '{{scale}}×',
+        sourceSize: '原始尺寸',
+        outputSize: '导出尺寸',
+        limit: '最大支持 4×；较大的 GIF 可能需要更多时间和存储空间。',
+        confirm: '选择保存位置'
+      },
+      itemSuccess: '已导出可再次导入的表情文件。',
+      gifSuccess: '已导出 GIF，共 {{frames}} 帧，播放时长 {{duration}} ms。',
+      quantized: 'GIF 使用 10ms 时间精度，帧时长会四舍五入；导出的播放时长为 {{duration}} ms。',
+      exporting: '正在导出当前表情…',
+      failed: '导出失败：{{error}}'
+    }
+  },
   devices: {
     title: '设备管理',
     description: '管理多个硬件设备、传输连接、设备通道和测试动作。',

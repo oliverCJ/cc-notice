@@ -190,6 +190,7 @@ fn runtime_state(
         transport: None,
         channels: Vec::new(),
         firmware_info: None,
+        custom_face_status: Default::default(),
         bundled_firmware_version: None,
         firmware_status: crate::core::device::DeviceFirmwareStatus::Unknown,
         firmware_check_error: None,

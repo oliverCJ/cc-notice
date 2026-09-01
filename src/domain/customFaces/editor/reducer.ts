@@ -23,6 +23,7 @@ function commit(state: EditorState, group: CustomFaceGroup, selectedFaceId = sta
     presentGroup: group,
     selectedFaceId: face?.faceId ?? null,
     selectedFrameIndex: safeFrameIndex,
+    selectionMoveBaseline: null,
     past: [...state.past, clone(state.presentGroup)],
     future: []
   };
@@ -42,6 +43,7 @@ export function createEditorState(group: CustomFaceGroup, profile: EditorProfile
     future: [],
     selection: null,
     selectionOrigin: null,
+    selectionMoveBaseline: null,
     clipboard: null
   };
 }
@@ -67,12 +69,13 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       past: [],
       future: [],
       selection: null,
-      selectionOrigin: null
+      selectionOrigin: null,
+      selectionMoveBaseline: null
     };
   }
   if (action.type === 'select-face') {
     const face = state.presentGroup.faces.find((item) => item.faceId === action.faceId);
-    return face ? { ...state, selectedFaceId: face.faceId, selectedFrameIndex: 0, selection: null, selectionOrigin: null } : state;
+    return face ? { ...state, selectedFaceId: face.faceId, selectedFrameIndex: 0, selection: null, selectionOrigin: null, selectionMoveBaseline: null } : state;
   }
   if (action.type === 'add-face') {
     if (state.presentGroup.faces.length >= MAX_FACES_PER_GROUP
@@ -107,43 +110,69 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     group.defaultFaceId = action.faceId;
     return commit(state, group, state.selectedFaceId, state.selectedFrameIndex);
   }
-  if (action.type === 'set-selection') return { ...state, selection: action.selection, selectionOrigin: null };
-  if (action.type === 'cancel-selection-move' && state.selection && state.selectionOrigin) {
-    const restored = editorReducer(state, { type: 'move-selection', dx: state.selectionOrigin.x - state.selection.x, dy: state.selectionOrigin.y - state.selection.y });
-    return { ...restored, selection: null, selectionOrigin: null };
+  if (action.type === 'set-selection') return { ...state, selection: action.selection, selectionOrigin: null, selectionMoveBaseline: null };
+  if (action.type === 'cancel-selection-move' && state.selection && state.selectionMoveBaseline) {
+    const baseline = state.selectionMoveBaseline;
+    const group = clone(state.presentGroup);
+    const frame = group.faces.find((item) => item.faceId === baseline.faceId)?.frames[baseline.frameIndex];
+    if (!frame) return state;
+    frame.packedPixels = [...baseline.packedPixels];
+    return {
+      ...state,
+      mode: modeFor(group, state.selectedFaceId),
+      presentGroup: group,
+      selection: null,
+      selectionOrigin: null,
+      selectionMoveBaseline: null,
+      past: state.past.slice(0, baseline.pastLength),
+      future: []
+    };
   }
   if (action.type === 'move-selection' && state.selection) {
     if (!Number.isFinite(action.dx) || !Number.isFinite(action.dy) || (action.dx === 0 && action.dy === 0)) return state;
-    const face = state.presentGroup.faces.find((item) => item.faceId === state.selectedFaceId);
-    const frame = face?.frames[state.selectedFrameIndex];
+    const baseline = state.selectionMoveBaseline;
+    const faceId = baseline?.faceId ?? state.selectedFaceId;
+    const frameIndex = baseline?.frameIndex ?? state.selectedFrameIndex;
+    const face = state.presentGroup.faces.find((item) => item.faceId === faceId);
+    const frame = face?.frames[frameIndex];
     if (!frame) return state;
-    const { x, y, width, height } = state.selection;
-    const snapshot: boolean[] = [];
+    const origin = baseline?.selection ?? state.selection;
+    const { x, y, width, height } = origin;
+    const nextX = Math.max(0, Math.min(state.profile.width - width, state.selection.x + Math.trunc(action.dx)));
+    const nextY = Math.max(0, Math.min(state.profile.height - height, state.selection.y + Math.trunc(action.dy)));
+    if (nextX === state.selection.x && nextY === state.selection.y) return state;
+    const moveBaseline = baseline ?? {
+      faceId,
+      frameIndex,
+      selection: { x, y, width, height },
+      packedPixels: [...frame.packedPixels],
+      pastLength: state.past.length
+    };
+    const group = clone(state.presentGroup);
+    const nextFrame = group.faces.find((item) => item.faceId === faceId)?.frames[frameIndex];
+    if (!nextFrame) return state;
+    nextFrame.packedPixels = [...moveBaseline.packedPixels];
+    clearActiveRegionOnFrame(nextFrame, state.profile.width, state.profile.height, x, y, width, height, moveBaseline.packedPixels);
     for (let row = 0; row < height; row += 1) {
       for (let column = 0; column < width; column += 1) {
-        const pixelX = x + column;
-        const pixelY = y + row;
-        const index = pixelX + Math.floor(pixelY / 8) * state.profile.width;
-        snapshot.push((frame.packedPixels[index] & (1 << (pixelY & 7))) !== 0);
+        const sourceX = x + column;
+        const sourceY = y + row;
+        const sourceIndex = sourceX + Math.floor(sourceY / 8) * state.profile.width;
+        if ((moveBaseline.packedPixels[sourceIndex] & (1 << (sourceY & 7))) === 0) continue;
+        const pixelX = nextX + column;
+        const pixelY = nextY + row;
+        if (pixelX < 0 || pixelY < 0 || pixelX >= state.profile.width || pixelY >= state.profile.height) continue;
+        const byteIndex = pixelX + Math.floor(pixelY / 8) * state.profile.width;
+        nextFrame.packedPixels[byteIndex] |= 1 << (pixelY & 7);
       }
     }
-    const nextX = Math.max(0, Math.min(state.profile.width - width, x + Math.trunc(action.dx)));
-    const nextY = Math.max(0, Math.min(state.profile.height - height, y + Math.trunc(action.dy)));
-    if (nextX === x && nextY === y) return state;
-    const group = clone(state.presentGroup);
-    const nextFrame = group.faces.find((item) => item.faceId === state.selectedFaceId)?.frames[state.selectedFrameIndex];
-    if (!nextFrame) return state;
-    clearRegionOnFrame(nextFrame, state.profile.width, state.profile.height, x, y, width, height);
-    clearRegionOnFrame(nextFrame, state.profile.width, state.profile.height, nextX, nextY, width, height);
-    snapshot.forEach((active, index) => {
-      if (!active) return;
-      const pixelX = nextX + (index % width);
-      const pixelY = nextY + Math.floor(index / width);
-      if (pixelX < 0 || pixelY < 0 || pixelX >= state.profile.width || pixelY >= state.profile.height) return;
-      const byteIndex = pixelX + Math.floor(pixelY / 8) * state.profile.width;
-      nextFrame.packedPixels[byteIndex] |= 1 << (pixelY & 7);
-    });
-    return { ...commit(state, group), selection: { x: nextX, y: nextY, width, height }, selectionOrigin: state.selectionOrigin ?? { x, y, width, height } };
+    const committed = commit(state, group);
+    return {
+      ...committed,
+      selection: { x: nextX, y: nextY, width: state.selection.width, height: state.selection.height },
+      selectionOrigin: state.selectionOrigin ?? { x, y, width, height },
+      selectionMoveBaseline: moveBaseline
+    };
   }
   if (action.type === 'copy-selection') {
     const face = state.presentGroup.faces.find((item) => item.faceId === state.selectedFaceId);
@@ -188,7 +217,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
   if (action.type === 'select-frame') {
     const face = state.presentGroup.faces.find((item) => item.faceId === state.selectedFaceId);
     if (!face?.frames[action.index]) return state;
-    return { ...state, selectedFrameIndex: action.index, selection: null, selectionOrigin: null };
+    return { ...state, selectedFrameIndex: action.index, selection: null, selectionOrigin: null, selectionMoveBaseline: null };
   }
   if (action.type === 'add-frame') {
     const group = clone(state.presentGroup);
@@ -268,12 +297,12 @@ function hasFaceName(group: CustomFaceGroup, name: string, exceptFaceId?: string
   return group.faces.some((face) => face.faceId !== exceptFaceId && face.name.trim().toLocaleLowerCase() === normalized);
 }
 
-function clearRegionOnFrame(frame: { packedPixels: number[] }, canvasWidth: number, canvasHeight: number, originX: number, originY: number, width: number, height: number) {
+function clearActiveRegionOnFrame(frame: { packedPixels: number[] }, canvasWidth: number, canvasHeight: number, originX: number, originY: number, width: number, height: number, sourcePixels: number[]) {
   for (let row = 0; row < height; row += 1) for (let column = 0; column < width; column += 1) {
     const pixelX = originX + column;
     const pixelY = originY + row;
     if (pixelX < 0 || pixelY < 0 || pixelX >= canvasWidth || pixelY >= canvasHeight) continue;
     const index = pixelX + Math.floor(pixelY / 8) * canvasWidth;
-    frame.packedPixels[index] &= ~(1 << (pixelY & 7));
+    if ((sourcePixels[index] & (1 << (pixelY & 7))) !== 0) frame.packedPixels[index] &= ~(1 << (pixelY & 7));
   }
 }

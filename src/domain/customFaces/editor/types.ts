@@ -12,6 +12,14 @@ export type ToolId = 'brush' | 'eraser' | 'select' | 'line' | 'rectangle' | 'cir
 
 export type EditorMode = 'editing' | 'empty-group' | 'empty-frame';
 
+export type SelectionMoveBaseline = {
+  faceId: string;
+  frameIndex: number;
+  selection: { x: number; y: number; width: number; height: number };
+  packedPixels: number[];
+  pastLength: number;
+};
+
 export type EditorState = {
   mode: EditorMode;
   profile: EditorProfile;
@@ -23,6 +31,7 @@ export type EditorState = {
   future: CustomFaceGroup[];
   selection: { x: number; y: number; width: number; height: number } | null;
   selectionOrigin: { x: number; y: number; width: number; height: number } | null;
+  selectionMoveBaseline: SelectionMoveBaseline | null;
   clipboard: { width: number; height: number; pixels: boolean[] } | null;
 };
 

@@ -439,6 +439,7 @@ mod tests {
             scope: super::super::model::CustomFaceAssetScope::Public,
             group_id: None,
             name: "测试素材".into(),
+            tags: Vec::new(),
             profile_id: "p".into(),
             width: 8,
             height: 8,

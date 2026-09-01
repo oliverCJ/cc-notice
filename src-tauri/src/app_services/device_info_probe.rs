@@ -166,6 +166,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::device::DeviceCustomFaceErrorCode;
     use crate::infrastructure::transports::mock::MockDeviceTransport;
 
     #[test]
@@ -227,6 +228,42 @@ mod tests {
             events
         );
     }
+
+    #[test]
+    fn parses_valid_custom_face_capability_without_changing_base_identity() {
+        let ack = DeviceInfoAck::parse(
+            r#"{"ok":true,"v":2,"type":"device_info","board_id":"rp2040-pico-oled-091","device_uid":"rp2040-pico-oled-091:0011223344556677","firmware_version":"0.1.2","protocol_version":2,"custom_face":{"protocol_version":1,"profile_code":1,"pixel_width":128,"pixel_height":32,"max_faces":15,"max_frames_per_face":20,"max_group_bytes":131072,"chunk_bytes":512,"incremental_update":true}}"#,
+        )
+        .unwrap();
+
+        let info = firmware_info_from_ack(ack, &DeviceTransportConfig::serial("/dev/test", 115200))
+            .unwrap();
+
+        assert_eq!(
+            Some(1),
+            info.custom_face.as_ref().map(|value| value.profile_code)
+        );
+        assert_eq!(None, info.custom_face_error);
+        assert_eq!("rp2040-pico-oled-091:0011223344556677", info.device_uid);
+    }
+
+    #[test]
+    fn invalid_custom_face_capability_keeps_base_identity_and_records_extension_error() {
+        let ack = DeviceInfoAck::parse(
+            r#"{"ok":true,"v":2,"type":"device_info","board_id":"rp2040-pico-oled-091","device_uid":"rp2040-pico-oled-091:0011223344556677","firmware_version":"0.1.2","protocol_version":2,"custom_face":{"protocol_version":1,"profile_code":1,"pixel_width":320}}"#,
+        )
+        .unwrap();
+
+        let info = firmware_info_from_ack(ack, &DeviceTransportConfig::serial("/dev/test", 115200))
+            .unwrap();
+
+        assert!(info.custom_face.is_none());
+        assert_eq!(
+            Some(DeviceCustomFaceErrorCode::CustomFaceCapabilityInvalid),
+            info.custom_face_error
+        );
+        assert_eq!("rp2040-pico-oled-091:0011223344556677", info.device_uid);
+    }
 }
 
 pub fn firmware_info_from_ack(
@@ -253,6 +290,13 @@ pub fn firmware_info_from_ack(
         ack.v,
         identity_policy.as_ref(),
     )?;
+    let (custom_face, custom_face_error) = match ack.custom_face.as_ref() {
+        Some(value) => match crate::core::custom_faces::parse_custom_face_capabilities(value) {
+            Ok(capability) => (Some(capability), None),
+            Err(error) => (None, Some(error)),
+        },
+        None => (None, None),
+    };
     Ok(DeviceFirmwareInfo {
         board_id,
         device_uid,
@@ -260,6 +304,8 @@ pub fn firmware_info_from_ack(
             .firmware_version
             .ok_or_else(|| "device_info response missing firmware_version".to_string())?,
         protocol_version,
+        custom_face,
+        custom_face_error,
     })
 }
 

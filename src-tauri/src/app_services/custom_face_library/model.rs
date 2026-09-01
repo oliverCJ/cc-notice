@@ -27,6 +27,8 @@ pub enum CustomFaceLibraryError {
     AssetNotFound(String),
     #[error("custom face asset is invalid: {0}")]
     InvalidAsset(String),
+    #[error("custom face GIF export is invalid: {0}")]
+    InvalidGifExport(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -70,6 +72,26 @@ pub struct CustomFaceImportPreview {
     pub group: CustomFaceGroup,
     pub library_hash: String,
     pub status: CustomFaceImportStatus,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomFaceItemImportPreview {
+    pub face: crate::core::custom_faces::CustomFace,
+    pub display_profile_id: String,
+    pub width: u16,
+    pub height: u16,
+    pub frame_count: usize,
+    pub total_duration_ms: u32,
+    pub content_hash: String,
+    pub source_face_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomFaceGifExportResult {
+    pub frame_delays_ms: Vec<u16>,
+    pub total_duration_ms: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

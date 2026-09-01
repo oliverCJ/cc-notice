@@ -1027,6 +1027,71 @@ export const enMessages = {
       notificationFocus: 'System notifications may be blocked by Focus or Do Not Disturb. Check notification permissions in system settings.'
     }
   },
+  customFaceEditor: {
+    canvas: {
+      label: 'Custom face canvas {{width}} × {{height}}',
+      coordinate: 'Coordinates {{x}}, {{y}} · ',
+      scale: 'Scale {{scale}}×'
+    },
+    magnifier: {
+      show: 'Magnify area',
+      hide: 'Hide magnifier',
+      title: 'Magnified area {{scale}}×',
+      panelLabel: 'Magnified canvas',
+      canvasLabel: 'Magnified pixel canvas',
+      close: 'Close magnifier',
+      closePanel: 'Close magnifier window',
+      pointer: 'Current pixel',
+      mode: {
+        follow: 'Following',
+        locked: 'Locked'
+      },
+      modeAction: {
+        follow: 'Lock magnified area',
+        locked: 'Unlock magnified area'
+      },
+      modeText: {
+        follow: 'Lock',
+        locked: 'Unlock'
+      },
+      range: '{{startX}},{{startY}} to {{endX}},{{endY}}'
+    },
+    faceImport: {
+      action: 'Import single face',
+      title: 'Import single face',
+      description: 'The face is added to the current group as a new face and never overwrites an existing face.',
+      source: 'Source: {{name}}',
+      details: '{{width}} × {{height}} · {{frames}} frames · {{duration}} ms',
+      name: 'Imported face name',
+      confirm: 'Import as new face',
+      importing: 'Reading face file...',
+      profileMismatch: 'Import failed: resolution mismatch (source: {{sourceWidth}} × {{sourceHeight}}; current group: {{targetWidth}} × {{targetHeight}}).',
+      capacityReached: 'The current group already has {{max}} faces and cannot import another one.',
+      duplicate: 'The current group already contains identical face content. You can still import a copy.',
+      invertImage: 'Invert image highlights',
+      invertImageHint: 'Only the detected image content is inverted; transparent background stays off.',
+      imported: 'Imported “{{name}}”. It has not been saved yet.'
+    },
+    faceExport: {
+      item: 'Export editable face',
+      gif: 'Export GIF',
+      dialog: {
+        title: 'Export GIF',
+        description: 'Scale the pixel canvas by an integer factor while keeping hard edges and the original aspect ratio.',
+        scale: 'Export scale',
+        scaleValue: '{{scale}}×',
+        sourceSize: 'Source size',
+        outputSize: 'Export size',
+        limit: 'The maximum is 4×. Larger GIFs can require more time and storage.',
+        confirm: 'Choose save location'
+      },
+      itemSuccess: 'Exported a face file that can be imported again.',
+      gifSuccess: 'Exported GIF with {{frames}} frames and {{duration}} ms playback.',
+      quantized: 'GIF uses 10 ms timing. Frame delays are rounded; exported playback is {{duration}} ms.',
+      exporting: 'Exporting current face...',
+      failed: 'Export failed: {{error}}'
+    }
+  },
   devices: {
     title: 'Device Management',
     description: 'Manage hardware devices, transport connections, device channels, and test actions.',

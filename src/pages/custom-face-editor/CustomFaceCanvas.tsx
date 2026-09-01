@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useI18n } from '@/i18n';
 import {
   drawEllipse,
   drawLine,
@@ -9,8 +10,15 @@ import {
 } from '@/domain/customFaces/editor/raster';
 import type { ToolId } from '@/domain/customFaces/editor/types';
 import type { CanvasGuide } from './CustomFaceRulers';
-import { CustomFaceViewport, logicalPointFromClientPoint } from './CustomFaceViewport';
+import {
+  CustomFaceViewport,
+  logicalPointFromClientPoint,
+  magnifierViewport,
+  moveMagnifierViewportOrigin,
+  type LogicalViewport,
+} from './CustomFaceViewport';
 import { CustomFacePixelPreview } from './CustomFacePixelPreview';
+import { CustomFaceMagnifier } from './CustomFaceMagnifier';
 
 type Point = [number, number];
 export type CanvasSelection = { x: number; y: number; width: number; height: number };
@@ -50,6 +58,9 @@ const DRAW_COLOR = '#d7ff70';
 const PREVIEW_STROKE = '#67e8f9';
 const PREVIEW_HALO = 'rgba(8, 15, 20, 0.9)';
 const SELECTION_STROKE = '#facc15';
+const MAGNIFIER_SCALE = 16;
+const MAGNIFIER_MAX_WIDTH = 16;
+const MAGNIFIER_MAX_HEIGHT = 12;
 
 export function CustomFaceCanvas({
   width,
@@ -74,6 +85,7 @@ export function CustomFaceCanvas({
   pendingImportOffset = { x: 0, y: 0 },
   onPendingImportMove = () => undefined
 }: Props) {
+  const t = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const eraserChangesRef = useRef(new Map<string, { x: number; y: number; active: false }>());
@@ -83,9 +95,26 @@ export function CustomFaceCanvas({
   const [end, setEnd] = useState<Point | null>(null);
   const [penPoints, setPenPoints] = useState<Point[]>([]);
   const [displayScale, setDisplayScale] = useState(1);
+  const [magnifierOpen, setMagnifierOpen] = useState(true);
+  const [magnifierMode, setMagnifierMode] = useState<'follow' | 'locked'>('follow');
+  const [magnifierCenter, setMagnifierCenter] = useState<Point>([
+    Math.floor(width / 2),
+    Math.floor(height / 2),
+  ]);
+  const [pointerSurface, setPointerSurface] = useState<'main' | 'magnifier' | null>(null);
 
   const previewEnd = useMemo(() => start && end ? clampPoint(constrainEnd(start, end, selectedTool, constraintEnabled), width, height) : end, [constraintEnabled, end, height, selectedTool, start, width]);
   const bounds = useMemo(() => start && previewEnd ? boundsForTool(start, previewEnd, selectedTool) : null, [previewEnd, selectedTool, start]);
+  const magnifier = useMemo(
+    () => magnifierViewport(
+      magnifierCenter,
+      width,
+      height,
+      MAGNIFIER_MAX_WIDTH,
+      MAGNIFIER_MAX_HEIGHT,
+    ),
+    [height, magnifierCenter, width],
+  );
 
   useEffect(() => {
     onToolStateChange?.({ pointer, start, end: previewEnd, bounds, penPointCount: penPoints.length });
@@ -159,11 +188,15 @@ export function CustomFaceCanvas({
     else setPenPoints([]);
   }, [penCommand]);
 
-  const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+  const handlePointerDown = (
+    event: React.PointerEvent<HTMLCanvasElement>,
+    point: Point,
+    surface: 'main' | 'magnifier',
+  ) => {
     if (disabled) return;
-    const point = coordinate(event);
-    if (!point) return;
     setPointer(point);
+    setPointerSurface(surface);
+    if (surface === 'main' && magnifierMode === 'follow') setMagnifierCenter(point);
     drawingRef.current = true;
     event.currentTarget.setPointerCapture(event.pointerId);
 
@@ -194,10 +227,14 @@ export function CustomFaceCanvas({
     setEnd(point);
   };
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    const point = coordinate(event);
-    if (!point) return;
+  const handlePointerMove = (
+    _event: React.PointerEvent<HTMLCanvasElement>,
+    point: Point,
+    updateMagnifierCenter: boolean,
+  ) => {
     setPointer(point);
+    setPointerSurface(updateMagnifierCenter ? 'main' : 'magnifier');
+    if (updateMagnifierCenter && magnifierMode === 'follow') setMagnifierCenter(point);
     if (!disabled && drawingRef.current && selectedTool === 'eraser') addEraserArea(point);
     if (start) setEnd(point);
   };
@@ -260,6 +297,61 @@ export function CustomFaceCanvas({
       onSelectionChange?.(null);
     }
   };
+  const handleMainPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const point = coordinate(event);
+    if (point) handlePointerDown(event, point, 'main');
+  };
+  const handleMainPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const point = coordinate(event);
+    if (point) handlePointerMove(event, point, true);
+  };
+  const handleMagnifierPointerMove = (
+    event: React.PointerEvent<HTMLCanvasElement>,
+    point: Point,
+  ) => handlePointerMove(event, point, false);
+  const handleMagnifierPointerDown = (
+    event: React.PointerEvent<HTMLCanvasElement>,
+    point: Point,
+  ) => handlePointerDown(event, point, 'magnifier');
+  const handlePointerLeave = (surface: 'main' | 'magnifier') => {
+    if (!drawingRef.current && pointerSurface === surface) {
+      setPointer(null);
+      setPointerSurface(null);
+    }
+  };
+  const magnifierDragRef = useRef<{ pointerId: number; clientX: number; clientY: number; originX: number; originY: number } | null>(null);
+  const handleMagnifierFramePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+    if (magnifierMode === 'follow') return;
+    magnifierDragRef.current = {
+      pointerId: event.pointerId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      originX: magnifier.originX,
+      originY: magnifier.originY,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const handleMagnifierFramePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = magnifierDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    event.stopPropagation();
+    const next = moveMagnifierViewportOrigin(
+      { ...magnifier, originX: drag.originX, originY: drag.originY },
+      [(event.clientX - drag.clientX) / displayScale, (event.clientY - drag.clientY) / displayScale],
+      width,
+      height,
+    );
+    setMagnifierCenter([
+      next.originX + Math.floor(next.width / 2),
+      next.originY + Math.floor(next.height / 2),
+    ]);
+  };
+  const handleMagnifierFramePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+    magnifierDragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
   const pendingDragRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const handlePendingPointerDown = (event: React.PointerEvent<HTMLDivElement>) => { pendingDragRef.current = { clientX: event.clientX, clientY: event.clientY }; event.currentTarget.setPointerCapture(event.pointerId); };
   const handlePendingPointerMove = (event: React.PointerEvent<HTMLDivElement>) => { const origin = pendingDragRef.current; if (!origin || !event.currentTarget.hasPointerCapture(event.pointerId)) return; const dx = Math.round((event.clientX - origin.clientX) / displayScale); const dy = Math.round((event.clientY - origin.clientY) / displayScale); if (dx || dy) { onPendingImportMove(dx, dy); pendingDragRef.current = { clientX: event.clientX, clientY: event.clientY }; } };
@@ -267,6 +359,18 @@ export function CustomFaceCanvas({
 
   const scaleX = 100 / width;
   const scaleY = 100 / height;
+  const magnifierBounds: CanvasSelection = {
+    x: magnifier.originX,
+    y: magnifier.originY,
+    width: magnifier.width,
+    height: magnifier.height,
+  };
+  const pointerBounds: CanvasSelection | null = pointer ? {
+    x: pointer[0],
+    y: pointer[1],
+    width: 1,
+    height: 1,
+  } : null;
   const eraserBounds = pointer ? {
     x: pointer[0] - Math.floor((eraserSize - 1) / 2),
     y: pointer[1] - Math.floor((eraserSize - 1) / 2),
@@ -277,52 +381,102 @@ export function CustomFaceCanvas({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
-      <div className="flex items-center justify-between text-xs font-semibold">
+      <div className="flex items-center justify-between gap-2 text-xs font-semibold">
         <span>{width} × {height}</span>
-        <span className="font-normal text-muted-foreground">
-          {pointer ? `坐标 ${pointer[0]}, ${pointer[1]} · ` : ''}缩放 {displayScale}×
-        </span>
-      </div>
-      <div ref={workspaceRef} className="flex min-h-56 flex-1 items-center justify-center overflow-auto bg-muted/20 p-2">
-        <CustomFaceViewport width={width} height={height} scale={displayScale} guides={guides} onGuidesChange={onGuidesChange}>
-        <div className="relative shrink-0" style={{ width: `${width * displayScale}px`, height: `${height * displayScale}px` }}>
-          <canvas
-            ref={canvasRef}
-            tabIndex={0}
-            role="img"
-            aria-label={`自定义表情画布 ${width} × ${height}`}
-            width={width}
-            height={height}
-            onKeyDown={handleKeyDown}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
-            onPointerLeave={() => setPointer(null)}
-            className={cursorClass(selectedTool)}
-            style={{ imageRendering: 'pixelated', width: '100%', height: '100%' }}
-          />
-          <ToolOverlay
-            width={width}
-            height={height}
-            tool={selectedTool}
-            start={start}
-            end={previewEnd}
-            bounds={bounds}
-            selection={selection ?? null}
-            selectionOrigin={selectionOrigin ?? null}
-            eraserBounds={selectedTool === 'eraser' ? eraserBounds : null}
-            penPoints={selectedTool === 'pen' ? penPreviewPoints : []}
-          />
-          {pendingImportPixels ? <div aria-label="待确认导入对象" className="pointer-events-auto absolute inset-0 cursor-move border-2 border-dashed border-fuchsia-400 bg-fuchsia-400/10" onPointerDown={handlePendingPointerDown} onPointerMove={handlePendingPointerMove} onPointerUp={handlePendingPointerUp} onPointerCancel={handlePendingPointerUp}><div className="pointer-events-none absolute left-0 top-0 opacity-60" style={{ width: `${pendingImportSize.width * displayScale}px`, height: `${pendingImportSize.height * displayScale}px`, transform: `translate(${pendingImportOffset.x * displayScale}px, ${pendingImportOffset.y * displayScale}px)` }}><CustomFacePixelPreview width={pendingImportSize.width} height={pendingImportSize.height} displayScale={displayScale} packedPixels={pendingImportPixels} ariaLabel={`待确认导入 ${pendingImportSize.width} × ${pendingImportSize.height}`} /></div></div> : null}
+        <div className="flex items-center gap-2 font-normal text-muted-foreground">
+          <span>{pointer ? t('customFaceEditor.canvas.coordinate', { x: pointer[0], y: pointer[1] }) : ''}{t('customFaceEditor.canvas.scale', { scale: displayScale })}</span>
+          <button
+            type="button"
+            aria-pressed={magnifierOpen}
+            className="border border-border px-2 py-1 text-xs text-foreground"
+            onClick={() => setMagnifierOpen((current) => !current)}
+          >
+            {magnifierOpen ? t('customFaceEditor.magnifier.hide') : t('customFaceEditor.magnifier.show')}
+          </button>
         </div>
-        </CustomFaceViewport>
+      </div>
+      <div className="relative flex min-h-0 flex-1 flex-col gap-3">
+        <div ref={workspaceRef} className="flex min-h-56 min-w-0 flex-1 items-center justify-center overflow-auto bg-muted/20 p-2">
+          <CustomFaceViewport width={width} height={height} scale={displayScale} guides={guides} onGuidesChange={onGuidesChange}>
+            <div className="relative shrink-0" style={{ width: `${width * displayScale}px`, height: `${height * displayScale}px` }}>
+              <canvas
+                ref={canvasRef}
+                tabIndex={0}
+                role="img"
+                aria-label={t('customFaceEditor.canvas.label', { width, height })}
+                width={width}
+                height={height}
+                onKeyDown={handleKeyDown}
+                onPointerDown={handleMainPointerDown}
+                onPointerMove={handleMainPointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                onPointerLeave={() => handlePointerLeave('main')}
+                className={cursorClass(selectedTool)}
+                style={{ imageRendering: 'pixelated', width: '100%', height: '100%' }}
+              />
+              <ToolOverlay
+                width={width}
+                height={height}
+                tool={selectedTool}
+                start={start}
+                end={previewEnd}
+                bounds={bounds}
+                selection={selection ?? null}
+                selectionOrigin={selectionOrigin ?? null}
+                eraserBounds={selectedTool === 'eraser' ? eraserBounds : null}
+                penPoints={selectedTool === 'pen' ? penPreviewPoints : []}
+                magnifierBounds={magnifierOpen ? magnifierBounds : null}
+                pointerBounds={pointerBounds}
+                magnifierMode={magnifierMode}
+                onMagnifierPointerDown={handleMagnifierFramePointerDown}
+                onMagnifierPointerMove={handleMagnifierFramePointerMove}
+                onMagnifierPointerUp={handleMagnifierFramePointerUp}
+              />
+              {pendingImportPixels ? <div aria-label="待确认导入对象" className="pointer-events-auto absolute inset-0 cursor-move border-2 border-dashed border-fuchsia-400 bg-fuchsia-400/10" onPointerDown={handlePendingPointerDown} onPointerMove={handlePendingPointerMove} onPointerUp={handlePendingPointerUp} onPointerCancel={handlePendingPointerUp}><div className="pointer-events-none absolute left-0 top-0 opacity-60" style={{ width: `${pendingImportSize.width * displayScale}px`, height: `${pendingImportSize.height * displayScale}px`, transform: `translate(${pendingImportOffset.x * displayScale}px, ${pendingImportOffset.y * displayScale}px)` }}><CustomFacePixelPreview width={pendingImportSize.width} height={pendingImportSize.height} displayScale={displayScale} packedPixels={pendingImportPixels} ariaLabel={`待确认导入 ${pendingImportSize.width} × ${pendingImportSize.height}`} /></div></div> : null}
+            </div>
+          </CustomFaceViewport>
+        </div>
+        {magnifierOpen ? (
+          <CustomFaceMagnifier
+            canvasWidth={width}
+            canvasHeight={height}
+            pixels={pixels}
+            onionPixels={onionPixels}
+            viewport={magnifier}
+            scale={MAGNIFIER_SCALE}
+            pointer={pointer}
+            mode={magnifierMode}
+            cursorClassName={cursorClass(selectedTool)}
+            onKeyDown={handleKeyDown}
+            onPointerDown={handleMagnifierPointerDown}
+            onPointerMove={handleMagnifierPointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={() => handlePointerLeave('magnifier')}
+            onModeChange={setMagnifierMode}
+            onClose={() => setMagnifierOpen(false)}
+          >
+            <ToolOverlay
+              width={width}
+              height={height}
+              tool={selectedTool}
+              start={start}
+              end={previewEnd}
+              bounds={bounds}
+              selection={selection ?? null}
+              selectionOrigin={selectionOrigin ?? null}
+              eraserBounds={selectedTool === 'eraser' ? eraserBounds : null}
+              penPoints={selectedTool === 'pen' ? penPreviewPoints : []}
+              viewport={magnifier}
+            />
+          </CustomFaceMagnifier>
+        ) : null}
       </div>
     </div>
   );
 }
 
-function ToolOverlay({ width, height, tool, start, end, bounds, selection, selectionOrigin, eraserBounds, penPoints }: {
+function ToolOverlay({ width, height, tool, start, end, bounds, selection, selectionOrigin, eraserBounds, penPoints, magnifierBounds, pointerBounds, magnifierMode, onMagnifierPointerDown, onMagnifierPointerMove, onMagnifierPointerUp, viewport }: {
   width: number;
   height: number;
   tool: ToolId;
@@ -333,20 +487,40 @@ function ToolOverlay({ width, height, tool, start, end, bounds, selection, selec
   selectionOrigin: CanvasSelection | null;
   eraserBounds: CanvasSelection | null;
   penPoints: Point[];
+  magnifierBounds?: CanvasSelection | null;
+  pointerBounds?: CanvasSelection | null;
+  magnifierMode?: 'follow' | 'locked';
+  onMagnifierPointerDown?: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onMagnifierPointerMove?: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onMagnifierPointerUp?: (event: React.PointerEvent<HTMLDivElement>) => void;
+  viewport?: LogicalViewport;
 }) {
+  const visible = viewport ?? { originX: 0, originY: 0, width, height };
   const styleFor = (value: CanvasSelection) => ({
-    left: `${value.x / width * 100}%`,
-    top: `${value.y / height * 100}%`,
-    width: `${value.width / width * 100}%`,
-    height: `${value.height / height * 100}%`
+    left: `${(value.x - visible.originX) / visible.width * 100}%`,
+    top: `${(value.y - visible.originY) / visible.height * 100}%`,
+    width: `${value.width / visible.width * 100}%`,
+    height: `${value.height / visible.height * 100}%`
   });
   return (
     <>
+      {magnifierBounds && !viewport ? (
+        <div
+          aria-label="放大区域"
+          className={`absolute border-2 border-dashed border-fuchsia-300 bg-fuchsia-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.95)] ${magnifierMode === 'locked' ? 'pointer-events-auto cursor-move' : 'pointer-events-none'}`}
+          style={styleFor(magnifierBounds)}
+          onPointerDown={onMagnifierPointerDown}
+          onPointerMove={onMagnifierPointerMove}
+          onPointerUp={onMagnifierPointerUp}
+          onPointerCancel={onMagnifierPointerUp}
+        />
+      ) : null}
+      {pointerBounds ? <div aria-label="当前像素" className="pointer-events-none absolute border-2 border-cyan-300 shadow-[0_0_0_1px_rgba(0,0,0,.95)]" style={styleFor(pointerBounds)} /> : null}
       {selectionOrigin ? <div aria-label="原始选区" className="pointer-events-none absolute border-2 border-dashed border-yellow-300 bg-yellow-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(selectionOrigin)} /> : null}
       {selection ? <div aria-label="当前选区" className="pointer-events-none absolute border-2 border-solid border-cyan-300 bg-cyan-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(selection)} /> : null}
       {eraserBounds ? <div aria-label="擦除范围" className="pointer-events-none absolute border-2 border-red-400 bg-red-400/15 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(eraserBounds)} /> : null}
       {start && end && bounds ? (
-        <svg aria-label="工具预览" className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+        <svg aria-label="工具预览" className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`${visible.originX} ${visible.originY} ${visible.width} ${visible.height}`} preserveAspectRatio="none">
           {tool === 'line' ? <line x1={start[0] + 0.5} y1={start[1] + 0.5} x2={end[0] + 0.5} y2={end[1] + 0.5} {...previewStroke()} /> : null}
           {tool === 'rectangle' || tool === 'select' ? <rect x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} fill="rgba(103,232,249,.1)" {...previewStroke(tool === 'select' ? SELECTION_STROKE : PREVIEW_STROKE)} /> : null}
           {tool === 'circle' ? <ellipse cx={bounds.x + bounds.width / 2} cy={bounds.y + bounds.height / 2} rx={bounds.width / 2} ry={bounds.height / 2} fill="rgba(103,232,249,.1)" {...previewStroke()} /> : null}
@@ -355,7 +529,7 @@ function ToolOverlay({ width, height, tool, start, end, bounds, selection, selec
         </svg>
       ) : null}
       {penPoints.length > 0 ? (
-        <svg aria-label="钢笔路径预览" className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+        <svg aria-label="钢笔路径预览" className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`${visible.originX} ${visible.originY} ${visible.width} ${visible.height}`} preserveAspectRatio="none">
           <polyline points={penPoints.map(([x, y]) => `${x + 0.5},${y + 0.5}`).join(' ')} fill="none" {...previewStroke()} />
           {penPoints.slice(0, -1).map(([x, y], index) => <circle key={`${x}:${y}:${index}`} cx={x + 0.5} cy={y + 0.5} r="0.75" fill={PREVIEW_STROKE} stroke={PREVIEW_HALO} strokeWidth="0.35" />)}
         </svg>

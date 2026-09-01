@@ -8,6 +8,11 @@ const saveCustomFaceRecoveryMock = vi.hoisted(() => vi.fn().mockResolvedValue(un
 const clearCustomFaceRecoveryMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const getCustomFaceGroupMock = vi.hoisted(() => vi.fn());
 const closeCustomFaceEditorMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const previewCustomFaceItemImportMock = vi.hoisted(() => vi.fn());
+const exportCustomFaceItemMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const exportCustomFaceGifMock = vi.hoisted(() => vi.fn().mockResolvedValue({ frameDelaysMs: [210], totalDurationMs: 210 }));
+const openDialogMock = vi.hoisted(() => vi.fn());
+const saveDialogMock = vi.hoisted(() => vi.fn());
 const windowApiMock = vi.hoisted(() => ({
   closeRequestedHandler: null as null | ((event: { preventDefault: () => void }) => void | Promise<void>),
   unlisten: vi.fn(),
@@ -22,12 +27,20 @@ vi.mock('@/api/tauriApi', async () => {
     saveCustomFaceRecovery: saveCustomFaceRecoveryMock,
     clearCustomFaceRecovery: clearCustomFaceRecoveryMock,
     getCustomFaceGroup: getCustomFaceGroupMock,
-    closeCustomFaceEditor: closeCustomFaceEditorMock
+    closeCustomFaceEditor: closeCustomFaceEditorMock,
+    previewCustomFaceItemImport: previewCustomFaceItemImportMock,
+    exportCustomFaceItem: exportCustomFaceItemMock,
+    exportCustomFaceGif: exportCustomFaceGifMock
   };
 });
 
 vi.mock('@tauri-apps/api/window', () => ({
   getCurrentWindow: () => ({ onCloseRequested: windowApiMock.onCloseRequested })
+}));
+
+vi.mock('@tauri-apps/plugin-dialog', () => ({
+  open: openDialogMock,
+  save: saveDialogMock
 }));
 
 beforeEach(() => {
@@ -36,6 +49,11 @@ beforeEach(() => {
   clearCustomFaceRecoveryMock.mockClear();
   getCustomFaceGroupMock.mockReset();
   closeCustomFaceEditorMock.mockClear();
+  previewCustomFaceItemImportMock.mockReset();
+  exportCustomFaceItemMock.mockClear();
+  exportCustomFaceGifMock.mockClear();
+  openDialogMock.mockReset();
+  saveDialogMock.mockReset();
   windowApiMock.closeRequestedHandler = null;
   windowApiMock.unlisten.mockClear();
   windowApiMock.onCloseRequested.mockImplementation(async (handler) => {
@@ -63,6 +81,59 @@ test('adds and manages faces inside the current group', () => {
   expect(screen.getByRole('button', { name: '复制表情' })).toBeEnabled();
   expect(screen.getByRole('button', { name: '设为默认表情' })).toBeEnabled();
   expect(screen.getByRole('button', { name: '删除表情' })).toBeEnabled();
+});
+
+test('imports a compatible face into the reducer draft without saving the group', async () => {
+  previewCustomFaceItemImportMock.mockResolvedValue({
+    face: { faceId: 'source', name: 'Imported', color: { red: 1, green: 2, blue: 3 }, frames: [{ durationMs: 200, packedPixels: Array(512).fill(0) }] },
+    displayProfileId: 'custom-mono-128x32-v1', width: 128, height: 32, frameCount: 1,
+    totalDurationMs: 200, contentHash: 'a'.repeat(64), sourceFaceId: 'source'
+  });
+  openDialogMock.mockResolvedValue('/tmp/face.ccfaceitem');
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '导入单个表情' }));
+  expect(await screen.findByRole('dialog', { name: '导入单个表情' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '导入为新表情' }));
+
+  expect(screen.getByRole('textbox', { name: '表情名称' })).toHaveValue('Imported');
+  expect(screen.getByText('有未保存修改')).toBeInTheDocument();
+  expect(saveCustomFaceGroupMock).not.toHaveBeenCalled();
+});
+
+test('blocks a mismatched face profile before opening import confirmation', async () => {
+  previewCustomFaceItemImportMock.mockResolvedValue({
+    face: { faceId: 'source', name: 'Imported', color: { red: 1, green: 2, blue: 3 }, frames: [{ durationMs: 200, packedPixels: Array(1024).fill(0) }] },
+    displayProfileId: 'custom-mono-128x64-v1', width: 128, height: 64, frameCount: 1,
+    totalDurationMs: 200, contentHash: 'a'.repeat(64), sourceFaceId: 'source'
+  });
+  openDialogMock.mockResolvedValue('/tmp/face.ccfaceitem');
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '导入单个表情' }));
+  const alert = await screen.findByRole('alert');
+  expect(alert).toHaveTextContent('导入失败：分辨率不一致');
+  expect(alert).toHaveTextContent('128 × 64');
+  expect(alert).toHaveTextContent('128 × 32');
+  expect(alert).not.toHaveTextContent('不会缩放、裁切或转换');
+  expect(screen.queryByRole('dialog', { name: '导入单个表情' })).not.toBeInTheDocument();
+});
+
+test('exports the current unsaved face snapshot without saving', async () => {
+  saveDialogMock.mockResolvedValue('/tmp/face.gif');
+  const state = createState();
+  state.presentGroup.faces[0].frames[0].durationMs = 205;
+  render(<CustomFaceEditorWorkbench initialState={state} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '导出 GIF' }));
+  expect(screen.getByRole('dialog', { name: '导出 GIF' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('combobox', { name: '导出倍率' }));
+  fireEvent.click(screen.getByRole('option', { name: '2×' }));
+  fireEvent.click(screen.getByRole('button', { name: '选择保存位置' }));
+  await waitFor(() => expect(exportCustomFaceGifMock).toHaveBeenCalledOnce());
+  expect(exportCustomFaceGifMock).toHaveBeenCalledWith(expect.objectContaining({ scale: 2, face: expect.objectContaining({ frames: [expect.objectContaining({ durationMs: 205 })] }) }));
+  expect(saveCustomFaceGroupMock).not.toHaveBeenCalled();
+  expect(screen.getByText(/GIF 使用 10ms 时间精度/)).toBeInTheDocument();
 });
 
 test('allows clearing frame duration input before committing a normalized value', () => {

@@ -374,6 +374,7 @@ pub struct DeviceInfoAck {
     pub device_uid: Option<String>,
     pub firmware_version: Option<String>,
     pub protocol_version: Option<u16>,
+    pub custom_face: Option<serde_json::Value>,
     pub error: Option<String>,
 }
 
@@ -409,6 +410,13 @@ impl DeviceInfoAck {
             return Err("unexpected device_info response type".to_string());
         }
 
+        let (custom_face, custom_face_error) = match self.custom_face.as_ref() {
+            Some(value) => match crate::core::custom_faces::parse_custom_face_capabilities(value) {
+                Ok(capability) => (Some(capability), None),
+                Err(error) => (None, Some(error)),
+            },
+            None => (None, None),
+        };
         Ok(DeviceFirmwareInfo {
             board_id: self
                 .board_id
@@ -420,6 +428,8 @@ impl DeviceInfoAck {
             protocol_version: self
                 .protocol_version
                 .ok_or_else(|| "device_info response missing protocol_version".to_string())?,
+            custom_face,
+            custom_face_error,
         })
     }
 }

@@ -623,6 +623,7 @@ pub struct DeviceRuntimeState {
     pub transport: Option<DeviceTransportConfig>,
     pub channels: Vec<DeviceChannel>,
     pub firmware_info: Option<DeviceFirmwareInfo>,
+    pub custom_face_status: DeviceCustomFaceStatus,
     pub bundled_firmware_version: Option<String>,
     pub firmware_status: DeviceFirmwareStatus,
     pub firmware_check_error: Option<String>,
@@ -650,6 +651,7 @@ impl DeviceRuntimeState {
             transport: None,
             channels: Vec::new(),
             firmware_info: None,
+            custom_face_status: DeviceCustomFaceStatus::default(),
             bundled_firmware_version: None,
             firmware_status: DeviceFirmwareStatus::Unknown,
             firmware_check_error: None,
@@ -665,6 +667,69 @@ impl DeviceRuntimeState {
             last_error_code: None,
             last_error: None,
             last_sent_at: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceCustomFaceCapabilities {
+    pub protocol_version: u16,
+    pub profile_code: u16,
+    pub pixel_width: u16,
+    pub pixel_height: u16,
+    pub max_faces: u8,
+    pub max_frames_per_face: u8,
+    pub max_group_bytes: u32,
+    pub chunk_bytes: u16,
+    pub incremental_update: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum DeviceCustomFaceErrorCode {
+    CustomFaceCapabilityInvalid,
+    CustomFaceStatusTimeout,
+    CustomFaceStorageError,
+    CustomFaceStatusInvalid,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum DeviceCustomFaceStatusState {
+    Unknown,
+    Empty,
+    Installed,
+    Unavailable,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceInstalledCustomFaceGroup {
+    pub profile_code: u16,
+    pub group_id: String,
+    pub group_runtime_hash: String,
+    pub default_face_id: String,
+    pub face_count: u8,
+    pub encoded_bytes: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceCustomFaceStatus {
+    pub state: DeviceCustomFaceStatusState,
+    pub installed: Option<DeviceInstalledCustomFaceGroup>,
+    pub error_code: Option<DeviceCustomFaceErrorCode>,
+    pub last_confirmed_at: Option<String>,
+}
+
+impl Default for DeviceCustomFaceStatus {
+    fn default() -> Self {
+        Self {
+            state: DeviceCustomFaceStatusState::Unknown,
+            installed: None,
+            error_code: None,
+            last_confirmed_at: None,
         }
     }
 }
@@ -707,6 +772,8 @@ pub struct DeviceFirmwareInfo {
     pub device_uid: String,
     pub firmware_version: String,
     pub protocol_version: u16,
+    pub custom_face: Option<DeviceCustomFaceCapabilities>,
+    pub custom_face_error: Option<DeviceCustomFaceErrorCode>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

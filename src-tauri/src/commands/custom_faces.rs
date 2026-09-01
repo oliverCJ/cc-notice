@@ -3,10 +3,11 @@ use std::path::PathBuf;
 use serde::Deserialize;
 
 use crate::app_services::custom_face_library::{
-    CustomFaceGroupSummary, CustomFaceImportMode, CustomFaceImportPreview, PersonalCustomFaceAsset,
+    CustomFaceGifExportResult, CustomFaceGroupSummary, CustomFaceImportMode,
+    CustomFaceImportPreview, CustomFaceItemImportPreview, PersonalCustomFaceAsset,
     SaveCustomFaceGroupResult,
 };
-use crate::core::custom_faces::CustomFaceGroup;
+use crate::core::custom_faces::{CustomFace, CustomFaceGroup};
 use crate::AppState;
 
 #[derive(Debug, Deserialize)]
@@ -21,6 +22,23 @@ pub struct SaveCustomFaceGroupRequest {
 pub struct CustomFaceImportRequest {
     pub path: String,
     pub mode: CustomFaceImportMode,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportCustomFaceRequest {
+    pub face: CustomFace,
+    pub display_profile_id: String,
+    pub path: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportCustomFaceGifRequest {
+    pub face: CustomFace,
+    pub display_profile_id: String,
+    pub path: String,
+    pub scale: u8,
 }
 
 #[tauri::command]
@@ -208,4 +226,64 @@ pub fn import_custom_face_group(
         .map_err(|error| error.to_string())?
         .import_group(&PathBuf::from(request.path), request.mode)
         .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn preview_custom_face_item_import(
+    state: tauri::State<'_, AppState>,
+    path: String,
+) -> Result<CustomFaceItemImportPreview, String> {
+    require_extension(&path, "ccfaceitem")?;
+    state
+        .custom_face_library_service
+        .lock()
+        .map_err(|error| error.to_string())?
+        .preview_face_item_import(&PathBuf::from(path))
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn export_custom_face_item(
+    state: tauri::State<'_, AppState>,
+    request: ExportCustomFaceRequest,
+) -> Result<(), String> {
+    require_extension(&request.path, "ccfaceitem")?;
+    state
+        .custom_face_library_service
+        .lock()
+        .map_err(|error| error.to_string())?
+        .export_face_item(
+            &request.face,
+            &request.display_profile_id,
+            &PathBuf::from(request.path),
+        )
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn export_custom_face_gif(
+    state: tauri::State<'_, AppState>,
+    request: ExportCustomFaceGifRequest,
+) -> Result<CustomFaceGifExportResult, String> {
+    require_extension(&request.path, "gif")?;
+    state
+        .custom_face_library_service
+        .lock()
+        .map_err(|error| error.to_string())?
+        .export_face_gif(
+            &request.face,
+            &request.display_profile_id,
+            &PathBuf::from(request.path),
+            request.scale,
+        )
+        .map_err(|error| error.to_string())
+}
+
+fn require_extension(path: &str, extension: &str) -> Result<(), String> {
+    PathBuf::from(path)
+        .extension()
+        .and_then(|value| value.to_str())
+        .is_some_and(|value| value.eq_ignore_ascii_case(extension))
+        .then_some(())
+        .ok_or_else(|| format!("expected .{extension} file"))
 }

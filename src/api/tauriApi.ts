@@ -644,6 +644,7 @@ export type DeviceRuntimeState = {
   transport?: DeviceTransportConfig | null;
   channels: DeviceChannel[];
   firmwareInfo?: DeviceFirmwareInfo | null;
+  customFaceStatus: DeviceCustomFaceStatus;
   bundledFirmwareVersion?: string | null;
   firmwareStatus: DeviceFirmwareStatus;
   firmwareCheckError?: string | null;
@@ -704,6 +705,48 @@ export type DeviceFirmwareInfo = {
   deviceUid: string;
   firmwareVersion: string;
   protocolVersion: number;
+  customFace?: DeviceCustomFaceCapabilities | null;
+  customFaceError?: DeviceCustomFaceErrorCode | null;
+};
+
+export type DeviceCustomFaceCapabilities = {
+  protocolVersion: number;
+  profileCode: number;
+  pixelWidth: number;
+  pixelHeight: number;
+  maxFaces: number;
+  maxFramesPerFace: number;
+  maxGroupBytes: number;
+  chunkBytes: number;
+  incrementalUpdate: boolean;
+};
+
+export type DeviceCustomFaceErrorCode =
+  | 'custom-face-capability-invalid'
+  | 'custom-face-status-timeout'
+  | 'custom-face-storage-error'
+  | 'custom-face-status-invalid';
+
+export type DeviceCustomFaceStatusState =
+  | 'unknown'
+  | 'empty'
+  | 'installed'
+  | 'unavailable';
+
+export type DeviceInstalledCustomFaceGroup = {
+  profileCode: number;
+  groupId: string;
+  groupRuntimeHash: string;
+  defaultFaceId: string;
+  faceCount: number;
+  encodedBytes: number;
+};
+
+export type DeviceCustomFaceStatus = {
+  state: DeviceCustomFaceStatusState;
+  installed?: DeviceInstalledCustomFaceGroup | null;
+  errorCode?: DeviceCustomFaceErrorCode | null;
+  lastConfirmedAt?: string | null;
 };
 
 export type DeviceFirmwareStatus =
@@ -1089,6 +1132,32 @@ export type CustomFaceImportRequest = {
   mode: CustomFaceImportMode;
 };
 
+export type CustomFaceItemImportPreview = {
+  face: CustomFace;
+  displayProfileId: string;
+  width: number;
+  height: number;
+  frameCount: number;
+  totalDurationMs: number;
+  contentHash: string;
+  sourceFaceId: string;
+};
+
+export type ExportCustomFaceRequest = {
+  face: CustomFace;
+  displayProfileId: string;
+  path: string;
+};
+
+export type ExportCustomFaceGifRequest = ExportCustomFaceRequest & {
+  scale: number;
+};
+
+export type CustomFaceGifExportResult = {
+  frameDelaysMs: number[];
+  totalDurationMs: number;
+};
+
 export type PersonalCustomFaceAsset = {
   assetId: string;
   scope: 'public' | 'group';
@@ -1317,6 +1386,18 @@ export function previewCustomFaceGroupImport(path: string) {
 
 export function importCustomFaceGroup(request: CustomFaceImportRequest) {
   return invoke<SaveCustomFaceGroupResult>('import_custom_face_group', { request });
+}
+
+export function previewCustomFaceItemImport(path: string) {
+  return invoke<CustomFaceItemImportPreview>('preview_custom_face_item_import', { path });
+}
+
+export function exportCustomFaceItem(request: ExportCustomFaceRequest) {
+  return invoke<void>('export_custom_face_item', { request });
+}
+
+export function exportCustomFaceGif(request: ExportCustomFaceGifRequest) {
+  return invoke<CustomFaceGifExportResult>('export_custom_face_gif', { request });
 }
 
 export function readCustomFaceSvg(path: string) {

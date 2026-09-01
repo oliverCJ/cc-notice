@@ -12,6 +12,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [dependencies]
 anyhow = "1"
 fs2 = "0.4"
+gif = "0.13"
 hex = "0.4"
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }

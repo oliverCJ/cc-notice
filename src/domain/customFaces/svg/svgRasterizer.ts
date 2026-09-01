@@ -1,93 +1,327 @@
-import { drawLine, setPixel, type Point, type RasterSize } from '../editor/raster';
-import type { SvgDocument, SvgElement } from './svgParser';
+import { setPixel, type RasterSize } from '../editor/raster';
+import type { SvgDocument } from './svgParser';
 
-export type SvgRasterOptions = { offsetX: number; offsetY: number; scale: number; rotationDeg: number; threshold: number };
+const SAMPLES_PER_PIXEL = 4;
+const CONTENT_PADDING_RATIO = 0.08;
+const MEASUREMENT_MAX_SIZE = 1_024;
 
-export function rasterizeSvg(document: SvgDocument, targetSize: RasterSize, options: SvgRasterOptions) {
-  const pixels = new Uint8Array(targetSize.width * Math.ceil(targetSize.height / 8));
-  const backgroundFill = dominantBackgroundFill(document);
-  let clipped = false;
-  for (const element of document.elements) {
-    if (backgroundFill && (element.attributes.fill ?? '').toLowerCase() === backgroundFill) continue;
-    const points = geometryPoints(element);
-    const transformed = points.map((point) => transformPoint(point, element, document, targetSize, options));
-    if (transformed.some(([x, y]) => x < 0 || y < 0 || x >= targetSize.width || y >= targetSize.height)) clipped = true;
-    if (element.type === 'circle' || element.type === 'ellipse') drawEllipsePixels(pixels, targetSize, transformed, element.type === 'circle');
-    else if (element.type === 'rect') {
-      const rectWidth = num(element.attributes.width);
-      const rectHeight = num(element.attributes.height);
-      if (rectWidth <= 1 && rectHeight <= 1) setPixel(pixels, targetSize, Math.round(transformed[0][0]), Math.round(transformed[0][1]), true);
-      else if (rectWidth <= 1 || rectHeight <= 1) drawPolyline(pixels, targetSize, transformed);
-      else drawPolygon(pixels, targetSize, transformed, true);
+export type SvgRasterOptions = {
+  offsetX: number;
+  offsetY: number;
+  scale: number;
+  rotationDeg: number;
+  threshold: number;
+  invert?: boolean;
+};
+
+export type SvgRasterResult = {
+  pixels: Uint8Array;
+  activePixelCount: number;
+  clipped: boolean;
+};
+
+type PixelBounds = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export async function rasterizeSvg(
+  document: SvgDocument,
+  targetSize: RasterSize,
+  options: SvgRasterOptions,
+): Promise<SvgRasterResult> {
+  const image = await loadSvgImage(document.source);
+  const source = renderSourceImage(image, document);
+  const sourceBounds = opaquePixelBounds(
+    source.context.getImageData(0, 0, source.width, source.height).data,
+    source.width,
+    source.height,
+  );
+  if (!sourceBounds) {
+    return emptyRasterResult(targetSize);
+  }
+
+  const sampleSize = {
+    width: targetSize.width * SAMPLES_PER_PIXEL,
+    height: targetSize.height * SAMPLES_PER_PIXEL,
+  };
+  const canvas = documentCreateCanvas(sampleSize);
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) {
+    throw new Error('当前环境无法创建 SVG 导入画布');
+  }
+  context.clearRect(0, 0, sampleSize.width, sampleSize.height);
+  drawCroppedSvgImage(
+    context,
+    source.canvas,
+    sourceBounds,
+    targetSize,
+    options,
+  );
+  const rgba = context.getImageData(0, 0, sampleSize.width, sampleSize.height).data;
+  const pixels = rasterizeAlphaCoverage(
+    rgba,
+    targetSize,
+    SAMPLES_PER_PIXEL,
+    options.threshold,
+    options.invert,
+  );
+  return {
+    pixels,
+    activePixelCount: countActivePixels(pixels),
+    clipped: isCroppedContentOutsideTarget(sourceBounds, targetSize, options),
+  };
+}
+
+export function rasterizeAlphaCoverage(
+  rgba: Uint8ClampedArray,
+  targetSize: RasterSize,
+  samplesPerPixel: number,
+  threshold: number,
+  invert = false,
+) {
+  const expectedLength =
+    targetSize.width * samplesPerPixel * targetSize.height * samplesPerPixel * 4;
+  if (rgba.length !== expectedLength) {
+    throw new Error('SVG 导入像素缓冲区尺寸无效');
+  }
+  const pixels = new Uint8Array(
+    targetSize.width * Math.ceil(targetSize.height / 8),
+  );
+  const thresholdRatio = clamp(threshold, 0, 100) / 100;
+  const samplesPerLogicalPixel = samplesPerPixel * samplesPerPixel;
+  const sampleWidth = targetSize.width * samplesPerPixel;
+  const contentBounds = logicalContentBounds(
+    rgba,
+    targetSize,
+    samplesPerPixel,
+  );
+
+  for (let y = 0; y < targetSize.height; y += 1) {
+    for (let x = 0; x < targetSize.width; x += 1) {
+      let alphaSum = 0;
+      for (let sampleY = 0; sampleY < samplesPerPixel; sampleY += 1) {
+        for (let sampleX = 0; sampleX < samplesPerPixel; sampleX += 1) {
+          const index =
+            ((y * samplesPerPixel + sampleY) * sampleWidth +
+              (x * samplesPerPixel + sampleX)) *
+            4;
+          alphaSum += rgba[index + 3];
+        }
+      }
+      const coverage = alphaSum / (samplesPerLogicalPixel * 255);
+      const active = coverage >= thresholdRatio;
+      const inContent = Boolean(contentBounds && contains(contentBounds, x, y));
+      const outputActive = inContent && invert ? !active : active;
+      if (outputActive) {
+        setPixel(pixels, targetSize, x, y, true);
+      }
     }
-    else if (element.type === 'polygon' || element.type === 'path') drawPolygon(pixels, targetSize, transformed, true);
-    else drawPolyline(pixels, targetSize, transformed);
   }
-  let activePixelCount = 0;
-  for (const byte of pixels) activePixelCount += byte.toString(2).split('1').length - 1;
-  return { pixels, activePixelCount, clipped };
+  return pixels;
 }
 
-function dominantBackgroundFill(document: SvgDocument) {
-  const areas = new Map<string, number>();
-  for (const element of document.elements) {
-    const fill = element.attributes.fill?.trim().toLowerCase();
-    if (!fill || fill === 'none') continue;
-    const area = element.type === 'rect' ? Math.max(0, num(element.attributes.width) * num(element.attributes.height)) : element.type === 'circle' ? Math.PI * num(element.attributes.r) ** 2 : 0;
-    areas.set(fill, (areas.get(fill) ?? 0) + area);
+function logicalContentBounds(
+  rgba: Uint8ClampedArray,
+  targetSize: RasterSize,
+  samplesPerPixel: number,
+): PixelBounds | null {
+  const sampleWidth = targetSize.width * samplesPerPixel;
+  let minX = targetSize.width;
+  let minY = targetSize.height;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < targetSize.height; y += 1) {
+    for (let x = 0; x < targetSize.width; x += 1) {
+      let hasAlpha = false;
+      for (let sampleY = 0; sampleY < samplesPerPixel && !hasAlpha; sampleY += 1) {
+        for (let sampleX = 0; sampleX < samplesPerPixel; sampleX += 1) {
+          const index =
+            ((y * samplesPerPixel + sampleY) * sampleWidth +
+              (x * samplesPerPixel + sampleX)) *
+            4;
+          if (rgba[index + 3] > 0) {
+            hasAlpha = true;
+            break;
+          }
+        }
+      }
+      if (!hasAlpha) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
   }
-  if (areas.size < 2) return null;
-  const entries = [...areas.entries()].sort((a, b) => b[1] - a[1]);
-  const total = entries.reduce((sum, [, area]) => sum + area, 0);
-  return entries[0][1] >= total * 0.5 ? entries[0][0] : null;
+  return maxX < 0 ? null : {
+    x: minX,
+    y: minY,
+    width: maxX - minX + 1,
+    height: maxY - minY + 1,
+  };
 }
 
-function geometryPoints(element: SvgElement): Point[] {
-  const a = element.attributes;
-  if (element.type === 'rect') { const x = num(a.x), y = num(a.y), w = num(a.width), h = num(a.height); return [[x, y], [x + w - 1, y], [x + w - 1, y + h - 1], [x, y + h - 1]]; }
-  if (element.type === 'line') return [[num(a.x1), num(a.y1)], [num(a.x2), num(a.y2)]];
-  if (element.type === 'circle') return [[num(a.cx), num(a.cy)], [num(a.cx) + num(a.r), num(a.cy)]];
-  if (element.type === 'ellipse') return [[num(a.cx), num(a.cy)], [num(a.cx) + num(a.rx), num(a.cy)], [num(a.cx), num(a.cy) + num(a.ry)]];
-  const values = (a.points ?? '').trim().split(/[ ,]+/).map(Number);
-  if (values.length >= 4 && values.every(Number.isFinite)) { const points: Point[] = []; for (let i = 0; i < values.length; i += 2) points.push([values[i], values[i + 1]]); return points; }
-  const pathValues = (a.d ?? '').match(/[MLHVZCQSmSmlhvzcqs]|-?\d*\.?\d+(?:e[-+]?\d+)?/gi) ?? [];
-  const points: Point[] = []; let current: Point = [0, 0]; let start: Point = current; let command = 'M'; let cursor = 0; let previousControl: Point | null = null;
-  const read = () => Number(pathValues[cursor++]);
-  const point = (x: number, y: number, relative: boolean): Point => relative ? [current[0] + x, current[1] + y] : [x, y];
-  while (cursor < pathValues.length) {
-    if (/^[A-Za-z]$/.test(pathValues[cursor])) { command = pathValues[cursor++]; if (!/[CS cs]/.test(command)) previousControl = null; }
-    const upper = command.toUpperCase();
-    const relative = command === command.toLowerCase();
-    if (upper === 'Z') { current = start; points.push(current); command = relative ? 'm' : 'M'; continue; }
-    if (upper === 'M' || upper === 'L') { if (cursor + 1 >= pathValues.length) break; current = point(read(), read(), relative); points.push(current); if (upper === 'M') { start = current; command = relative ? 'l' : 'L'; } continue; }
-    if (upper === 'H') { current = relative ? [current[0] + read(), current[1]] : [read(), current[1]]; points.push(current); continue; }
-    if (upper === 'V') { current = relative ? [current[0], current[1] + read()] : [current[0], read()]; points.push(current); continue; }
-    if (upper === 'C' || upper === 'S') { const required = upper === 'C' ? 5 : 3; if (cursor + required >= pathValues.length) break; const origin = current; const c1 = upper === 'C' ? point(read(), read(), relative) : (previousControl ? [2 * current[0] - previousControl[0], 2 * current[1] - previousControl[1]] : current); const c2 = point(read(), read(), relative); const end = point(read(), read(), relative); for (let step = 1; step <= 8; step += 1) { const t = step / 8; const mt = 1 - t; points.push([mt ** 3 * origin[0] + 3 * mt ** 2 * t * c1[0] + 3 * mt * t ** 2 * c2[0] + t ** 3 * end[0], mt ** 3 * origin[1] + 3 * mt ** 2 * t * c1[1] + 3 * mt * t ** 2 * c2[1] + t ** 3 * end[1]]); } current = end; previousControl = c2; continue; }
-    if (upper === 'Q') { if (cursor + 3 >= pathValues.length) break; const origin = current; const c = point(read(), read(), relative); const end = point(read(), read(), relative); for (let step = 1; step <= 8; step += 1) { const t = step / 8; const mt = 1 - t; points.push([mt ** 2 * origin[0] + 2 * mt * t * c[0] + t ** 2 * end[0], mt ** 2 * origin[1] + 2 * mt * t * c[1] + t ** 2 * end[1]]); } current = end; continue; }
-    cursor += 1;
-  }
-  return points;
+function contains(bounds: PixelBounds, x: number, y: number) {
+  return x >= bounds.x && x < bounds.x + bounds.width && y >= bounds.y && y < bounds.y + bounds.height;
 }
 
-function transformPoint([rawX, rawY]: Point, element: SvgElement, document: SvgDocument, targetSize: RasterSize, options: SvgRasterOptions): Point {
-  let x = rawX;
-  let y = rawY;
-  for (const transform of element.transform) {
-    if (transform.type === 'translate') { x += transform.x; y += transform.y; }
-    else if (transform.type === 'scale') { x *= transform.x; y *= transform.y; }
-    else { const angle = (transform.angle * Math.PI) / 180; const nextX = x * Math.cos(angle) - y * Math.sin(angle); y = x * Math.sin(angle) + y * Math.cos(angle); x = nextX; }
+export function opaquePixelBounds(
+  rgba: Uint8ClampedArray,
+  width: number,
+  height: number,
+): PixelBounds | null {
+  if (rgba.length !== width * height * 4) {
+    throw new Error('SVG 导入像素缓冲区尺寸无效');
   }
-  const originX = document.viewBox[0] + document.viewBox[2] / 2;
-  const originY = document.viewBox[1] + document.viewBox[3] / 2;
-  const scale = options.scale || 1;
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (rgba[(y * width + x) * 4 + 3] === 0) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+  if (maxX < 0) return null;
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX + 1,
+    height: maxY - minY + 1,
+  };
+}
+
+function renderSourceImage(image: HTMLImageElement, document: SvgDocument) {
+  const sourceAspectRatio = document.viewBox[2] / document.viewBox[3];
+  const width =
+    sourceAspectRatio >= 1
+      ? MEASUREMENT_MAX_SIZE
+      : Math.max(1, Math.round(MEASUREMENT_MAX_SIZE * sourceAspectRatio));
+  const height =
+    sourceAspectRatio >= 1
+      ? Math.max(1, Math.round(MEASUREMENT_MAX_SIZE / sourceAspectRatio))
+      : MEASUREMENT_MAX_SIZE;
+  const canvas = documentCreateCanvas({ width, height });
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) {
+    throw new Error('当前环境无法创建 SVG 导入画布');
+  }
+  context.clearRect(0, 0, width, height);
+  context.drawImage(image, 0, 0, width, height);
+  return { canvas, context, width, height };
+}
+
+function drawCroppedSvgImage(
+  context: CanvasRenderingContext2D,
+  source: HTMLCanvasElement,
+  bounds: PixelBounds,
+  targetSize: RasterSize,
+  options: SvgRasterOptions,
+) {
+  const sampleScale = SAMPLES_PER_PIXEL;
+  const paddedWidth = bounds.width / (1 - CONTENT_PADDING_RATIO * 2);
+  const paddedHeight = bounds.height / (1 - CONTENT_PADDING_RATIO * 2);
+  const fittedScale = Math.min(targetSize.width / paddedWidth, targetSize.height / paddedHeight);
+  const drawWidth = bounds.width * fittedScale;
+  const drawHeight = bounds.height * fittedScale;
+  context.save();
+  context.translate(
+    (targetSize.width / 2 + options.offsetX) * sampleScale,
+    (targetSize.height / 2 + options.offsetY) * sampleScale,
+  );
+  context.rotate((options.rotationDeg * Math.PI) / 180);
+  context.scale(options.scale * sampleScale, options.scale * sampleScale);
+  context.drawImage(
+    source,
+    bounds.x,
+    bounds.y,
+    bounds.width,
+    bounds.height,
+    -drawWidth / 2,
+    -drawHeight / 2,
+    drawWidth,
+    drawHeight,
+  );
+  context.restore();
+}
+
+function isCroppedContentOutsideTarget(
+  bounds: PixelBounds,
+  targetSize: RasterSize,
+  options: SvgRasterOptions,
+) {
+  const paddedWidth = bounds.width / (1 - CONTENT_PADDING_RATIO * 2);
+  const paddedHeight = bounds.height / (1 - CONTENT_PADDING_RATIO * 2);
+  const fittedScale = Math.min(targetSize.width / paddedWidth, targetSize.height / paddedHeight);
+  const halfWidth = (bounds.width * fittedScale * Math.abs(options.scale)) / 2;
+  const halfHeight = (bounds.height * fittedScale * Math.abs(options.scale)) / 2;
   const radians = (options.rotationDeg * Math.PI) / 180;
-  const sx = (x - originX) * scale;
-  const sy = (y - originY) * scale;
-  return [Math.round(sx * Math.cos(radians) - sy * Math.sin(radians) + targetSize.width / 2 + options.offsetX), Math.round(sx * Math.sin(radians) + sy * Math.cos(radians) + targetSize.height / 2 + options.offsetY)];
+  const centerX = targetSize.width / 2 + options.offsetX;
+  const centerY = targetSize.height / 2 + options.offsetY;
+  const corners = [
+    [-halfWidth, -halfHeight],
+    [halfWidth, -halfHeight],
+    [halfWidth, halfHeight],
+    [-halfWidth, halfHeight],
+  ] as const;
+  return corners.some(([x, y]) => {
+    const transformedX = centerX + x * Math.cos(radians) - y * Math.sin(radians);
+    const transformedY = centerY + x * Math.sin(radians) + y * Math.cos(radians);
+    return (
+      transformedX < 0 ||
+      transformedY < 0 ||
+      transformedX > targetSize.width ||
+      transformedY > targetSize.height
+    );
+  });
 }
-function num(value: string | undefined) { const parsed = Number.parseFloat(value ?? '0'); return Number.isFinite(parsed) ? parsed : 0; }
 
-function drawPolyline(pixels: Uint8Array, size: RasterSize, points: Point[]) { for (let i = 1; i < points.length; i += 1) { const [x0, y0] = points[i - 1]; const [x1, y1] = points[i]; const line = drawLine(pixels, size, Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1)); pixels.set(line); } }
-function drawPolygon(pixels: Uint8Array, size: RasterSize, points: Point[], filled: boolean) { if (points.length < 2) return; if (!filled) return drawPolyline(pixels, size, [...points, points[0]]); const minX = Math.floor(Math.min(...points.map(([x]) => x))); const maxX = Math.ceil(Math.max(...points.map(([x]) => x))); const minY = Math.floor(Math.min(...points.map(([, y]) => y))); const maxY = Math.ceil(Math.max(...points.map(([, y]) => y))); for (let y = minY; y <= maxY; y += 1) for (let x = minX; x <= maxX; x += 1) if (insidePolygon(x, y, points)) setPixel(pixels, size, x, y, true); }
-function insidePolygon(x: number, y: number, points: Point[]) { let inside = false; for (let i = 0, j = points.length - 1; i < points.length; j = i++) { const [xi, yi] = points[i]; const [xj, yj] = points[j]; if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside; } return inside; }
-function drawEllipsePixels(pixels: Uint8Array, size: RasterSize, points: Point[], circle: boolean) { const [centerX, centerY] = points[0]; const radiusX = Math.max(1, Math.abs(points[1][0] - centerX)); const radiusY = circle ? radiusX : Math.max(1, Math.abs(points[2][1] - centerY)); for (let y = Math.floor(centerY - radiusY); y <= Math.ceil(centerY + radiusY); y += 1) for (let x = Math.floor(centerX - radiusX); x <= Math.ceil(centerX + radiusX); x += 1) if (((x - centerX) / radiusX) ** 2 + ((y - centerY) / radiusY) ** 2 <= 1) setPixel(pixels, size, x, y, true); }
+function emptyRasterResult(targetSize: RasterSize): SvgRasterResult {
+  return {
+    pixels: new Uint8Array(targetSize.width * Math.ceil(targetSize.height / 8)),
+    activePixelCount: 0,
+    clipped: false,
+  };
+}
+
+function documentCreateCanvas(size: RasterSize) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size.width;
+  canvas.height = size.height;
+  return canvas;
+}
+
+async function loadSvgImage(source: string) {
+  const url = URL.createObjectURL(new Blob([source], { type: 'image/svg+xml' }));
+  try {
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = url;
+    await image.decode();
+    return image;
+  } catch (error) {
+    throw new Error(
+      `SVG 图像无法解码：${error instanceof Error ? error.message : String(error)}`,
+    );
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function countActivePixels(pixels: Uint8Array) {
+  let count = 0;
+  for (const byte of pixels) {
+    count += byte.toString(2).split('1').length - 1;
+  }
+  return count;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}

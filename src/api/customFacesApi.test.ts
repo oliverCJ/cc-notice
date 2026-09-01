@@ -7,12 +7,15 @@ vi.mock('@tauri-apps/api/core', () => ({ invoke }));
 import {
   clearCustomFaceRecovery,
   deleteCustomFaceGroup,
+  exportCustomFaceGif,
   exportCustomFaceGroup,
+  exportCustomFaceItem,
   getCustomFaceGroup,
   getCustomFaceGroups,
   getCustomFaceRecovery,
   importCustomFaceGroup,
   previewCustomFaceGroupImport,
+  previewCustomFaceItemImport,
   readCustomFaceSvg,
   saveCustomFaceGroup,
   saveCustomFaceRecovery,
@@ -50,6 +53,9 @@ describe('custom face Tauri API', () => {
     await exportCustomFaceGroup(group.groupId, '/tmp/a.ccface');
     await previewCustomFaceGroupImport('/tmp/a.ccface');
     await importCustomFaceGroup({ path: '/tmp/a.ccface', mode: 'copy' });
+    await previewCustomFaceItemImport('/tmp/a.ccfaceitem');
+    await exportCustomFaceItem({ face: group.faces[0], displayProfileId: group.displayProfileId, path: '/tmp/a.ccfaceitem' });
+    await exportCustomFaceGif({ face: group.faces[0], displayProfileId: group.displayProfileId, path: '/tmp/a.gif', scale: 2 });
     await readCustomFaceSvg('/tmp/a.svg');
 
     expect(invoke.mock.calls).toEqual([
@@ -71,6 +77,15 @@ describe('custom face Tauri API', () => {
       [
         'import_custom_face_group',
         { request: { path: '/tmp/a.ccface', mode: 'copy' } }
+      ],
+      ['preview_custom_face_item_import', { path: '/tmp/a.ccfaceitem' }],
+      [
+        'export_custom_face_item',
+        { request: { face: group.faces[0], displayProfileId: group.displayProfileId, path: '/tmp/a.ccfaceitem' } }
+      ],
+      [
+        'export_custom_face_gif',
+        { request: { face: group.faces[0], displayProfileId: group.displayProfileId, path: '/tmp/a.gif', scale: 2 } }
       ],
       ['read_custom_face_svg', { path: '/tmp/a.svg' }]
     ]);

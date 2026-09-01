@@ -102,6 +102,53 @@ describe('custom face editor reducer', () => {
     expect(moved.past).toHaveLength(state.past.length + 1);
   });
 
+  test('moves only active pixels and preserves existing target pixels', () => {
+    let state = createEditorState(group(), profile);
+    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [
+      { x: 1, y: 1, active: true },
+      { x: 3, y: 1, active: true }
+    ] });
+    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 2, height: 2 } });
+    const moved = editorReducer(state, { type: 'move-selection', dx: 2, dy: 0 });
+    const pixels = new Uint8Array(moved.presentGroup.faces[0].frames[0].packedPixels);
+    expect(getPixel(pixels, profile, 1, 1)).toBe(false);
+    expect(getPixel(pixels, profile, 3, 1)).toBe(true);
+    expect(getPixel(pixels, profile, 4, 1)).toBe(false);
+    expect(getPixel(pixels, profile, 2, 2)).toBe(false);
+  });
+
+  test('rebuilds repeated selection moves from the original active-pixel baseline', () => {
+    let state = createEditorState(group(), profile);
+    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [
+      { x: 1, y: 1, active: true },
+      { x: 4, y: 1, active: true }
+    ] });
+    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 2, height: 2 } });
+    state = editorReducer(state, { type: 'move-selection', dx: 1, dy: 0 });
+    state = editorReducer(state, { type: 'move-selection', dx: 1, dy: 0 });
+    const pixels = new Uint8Array(state.presentGroup.faces[0].frames[0].packedPixels);
+    expect(getPixel(pixels, profile, 1, 1)).toBe(false);
+    expect(getPixel(pixels, profile, 3, 1)).toBe(true);
+    expect(getPixel(pixels, profile, 4, 1)).toBe(true);
+  });
+
+  test('cancel restores the original frame including pre-existing target pixels', () => {
+    let state = createEditorState(group(), profile);
+    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [
+      { x: 1, y: 1, active: true },
+      { x: 3, y: 1, active: true }
+    ] });
+    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 2, height: 2 } });
+    state = editorReducer(state, { type: 'move-selection', dx: 2, dy: 0 });
+    const canceled = editorReducer(state, { type: 'cancel-selection-move' });
+    const pixels = new Uint8Array(canceled.presentGroup.faces[0].frames[0].packedPixels);
+    expect(getPixel(pixels, profile, 1, 1)).toBe(true);
+    expect(getPixel(pixels, profile, 3, 1)).toBe(true);
+    expect(getPixel(pixels, profile, 4, 1)).toBe(false);
+    expect(canceled.selectionMoveBaseline).toBeNull();
+
+  });
+
   test('does not create history when a selection is already at the requested boundary', () => {
     const state = editorReducer(editorReducer(createEditorState(group(), profile), { type: 'set-selection', selection: { x: 0, y: 0, width: 2, height: 2 } }), { type: 'move-selection', dx: -1, dy: 0 });
     expect(state.past).toHaveLength(0);

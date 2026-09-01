@@ -60,15 +60,13 @@ pub fn custom_face_profile_by_id(id: &str) -> Option<CustomFaceProfileSpec> {
     let (width, height) = value.split_once('x')?;
     let width = width.parse::<u16>().ok()?;
     let height = height.parse::<u16>().ok()?;
-    if !(10..=1024).contains(&width)
-        || !(10..=1024).contains(&height)
-        || usize::from(width) * usize::from(height) > 1_048_576
-    {
+    let area = usize::from(width) * usize::from(height);
+    if !(10..=1024).contains(&width) || !(10..=1024).contains(&height) || area > 1_048_576 {
         return None;
     }
-    let max_frames = if usize::from(width) * usize::from(height) <= 8192 {
+    let max_frames = if area <= 8192 {
         20
-    } else if usize::from(width) * usize::from(height) <= 76800 {
+    } else if area <= 76800 {
         10
     } else {
         5

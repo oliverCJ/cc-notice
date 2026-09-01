@@ -52,6 +52,7 @@ impl DeviceRuntimeService {
             transport: Some(device.transport.clone()),
             channels: device.channels.clone(),
             firmware_info: None,
+            custom_face_status: Default::default(),
             bundled_firmware_version: None,
             firmware_status: DeviceFirmwareStatus::Unknown,
             firmware_check_error: None,

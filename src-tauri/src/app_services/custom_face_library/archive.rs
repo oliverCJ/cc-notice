@@ -1,17 +1,14 @@
-use std::collections::HashMap;
-use std::fs;
-use std::io::{Cursor, Read, Write};
-use std::path::{Component, Path};
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use uuid::Uuid;
-use zip::write::SimpleFileOptions;
-use zip::{CompressionMethod, DateTime, ZipArchive, ZipWriter};
 
 use crate::core::custom_faces::CustomFaceGroup;
 use crate::infrastructure::file_config;
 
+use super::archive_common::{
+    build_archive, read_archive_entries, sha256_hex, unsafe_archive, MAX_ARCHIVE_BYTES,
+};
 use super::codec::{decode_stored_group, encode_stored_group};
 use super::model::{
     CustomFaceImportMode, CustomFaceImportPreview, CustomFaceImportStatus, CustomFaceLibraryError,
@@ -20,14 +17,6 @@ use super::model::{
 use super::service::CustomFaceLibraryService;
 
 const ARCHIVE_VERSION: &str = "ccface-archive-v1";
-const MANIFEST_ENTRY: &str = "manifest.json";
-const FRAMES_ENTRY: &str = "frames.bin";
-const CHECKSUMS_ENTRY: &str = "checksums.json";
-const EXPECTED_ENTRY_COUNT: usize = 3;
-const MAX_ARCHIVE_BYTES: u64 = 32 * 1024 * 1024;
-const MAX_METADATA_BYTES: u64 = 256 * 1024;
-const MAX_FRAMES_BYTES: u64 = 16 * 1024 * 1024;
-const MAX_UNCOMPRESSED_BYTES: u64 = 17 * 1024 * 1024;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -108,133 +97,23 @@ impl CustomFaceLibraryService {
     }
 }
 
-fn build_archive(
-    manifest: &[u8],
-    frames: &[u8],
-    checksums: &[u8],
-) -> Result<Vec<u8>, CustomFaceLibraryError> {
-    let writer = Cursor::new(Vec::new());
-    let mut archive = ZipWriter::new(writer);
-    let options = SimpleFileOptions::default()
-        .compression_method(CompressionMethod::Deflated)
-        .compression_level(Some(6))
-        .last_modified_time(DateTime::default())
-        .unix_permissions(0o644);
-    for (name, content) in [
-        (MANIFEST_ENTRY, manifest),
-        (FRAMES_ENTRY, frames),
-        (CHECKSUMS_ENTRY, checksums),
-    ] {
-        archive.start_file(name, options).map_err(zip_error)?;
-        archive.write_all(content).map_err(io_error)?;
-    }
-    archive
-        .finish()
-        .map(|cursor| cursor.into_inner())
-        .map_err(zip_error)
-}
-
 fn read_archive(path: &Path) -> Result<DecodedArchive, CustomFaceLibraryError> {
-    let metadata = fs::metadata(path).map_err(io_error)?;
-    if !metadata.is_file() || metadata.len() > MAX_ARCHIVE_BYTES {
-        return Err(unsafe_archive("archive is not a file or exceeds 32 MiB"));
-    }
-    let file = fs::File::open(path).map_err(io_error)?;
-    let mut archive = ZipArchive::new(file).map_err(zip_error)?;
-    if archive.len() != EXPECTED_ENTRY_COUNT {
-        return Err(unsafe_archive("archive must contain exactly three entries"));
-    }
-
-    let mut entries = HashMap::with_capacity(EXPECTED_ENTRY_COUNT);
-    let mut uncompressed_bytes = 0u64;
-    for index in 0..archive.len() {
-        let mut entry = archive.by_index(index).map_err(zip_error)?;
-        let name = validate_entry(&entry)?;
-        let limit = entry_limit(&name)?;
-        uncompressed_bytes = uncompressed_bytes
-            .checked_add(entry.size())
-            .filter(|size| *size <= MAX_UNCOMPRESSED_BYTES)
-            .ok_or_else(|| unsafe_archive("archive expands beyond 17 MiB"))?;
-        if entry.size() > limit {
-            return Err(unsafe_archive("archive entry exceeds its size limit"));
-        }
-        let entry_size = entry.size();
-        let mut content = Vec::with_capacity(entry_size as usize);
-        (&mut entry)
-            .take(limit + 1)
-            .read_to_end(&mut content)
-            .map_err(io_error)?;
-        if content.len() as u64 != entry_size || content.len() as u64 > limit {
-            return Err(unsafe_archive("archive entry size is inconsistent"));
-        }
-        if entries.insert(name, content).is_some() {
-            return Err(unsafe_archive("archive contains a duplicate entry"));
-        }
-    }
-    if entries.len() != EXPECTED_ENTRY_COUNT {
-        return Err(unsafe_archive("archive is missing a required entry"));
-    }
-
-    let manifest = remove_entry(&mut entries, MANIFEST_ENTRY)?;
-    let frames = remove_entry(&mut entries, FRAMES_ENTRY)?;
+    let entries = read_archive_entries(path)?;
     let checksums: ArchiveChecksums =
-        serde_json::from_slice(&remove_entry(&mut entries, CHECKSUMS_ENTRY)?)
-            .map_err(json_error)?;
+        serde_json::from_slice(&entries.checksums).map_err(json_error)?;
     if checksums.version != ARCHIVE_VERSION
-        || checksums.manifest_sha256 != sha256_hex(&manifest)
-        || checksums.frames_sha256 != sha256_hex(&frames)
+        || checksums.manifest_sha256 != sha256_hex(&entries.manifest)
+        || checksums.frames_sha256 != sha256_hex(&entries.frames)
     {
         return Err(unsafe_archive("archive checksum or version does not match"));
     }
-    let stored: StoredCustomFaceManifest = serde_json::from_slice(&manifest).map_err(json_error)?;
-    let group = decode_stored_group(&stored, &frames)?;
+    let stored: StoredCustomFaceManifest =
+        serde_json::from_slice(&entries.manifest).map_err(json_error)?;
+    let group = decode_stored_group(&stored, &entries.frames)?;
     Ok(DecodedArchive {
         group,
         library_hash: stored.library_hash,
     })
-}
-
-fn validate_entry(entry: &zip::read::ZipFile<'_>) -> Result<String, CustomFaceLibraryError> {
-    let name = entry.name().to_string();
-    if entry.encrypted() || entry.is_dir() || entry.is_symlink() || !entry.is_file() {
-        return Err(unsafe_archive(
-            "archive entries must be unencrypted regular files",
-        ));
-    }
-    if entry.enclosed_name().as_deref() != Some(Path::new(&name))
-        || Path::new(&name).components().count() != 1
-        || !matches!(
-            Path::new(&name).components().next(),
-            Some(Component::Normal(_))
-        )
-    {
-        return Err(unsafe_archive("archive entry path is unsafe"));
-    }
-    if let Some(mode) = entry.unix_mode() {
-        let file_type = mode & 0o170000;
-        if file_type != 0 && file_type != 0o100000 {
-            return Err(unsafe_archive("archive entry has a special Unix mode"));
-        }
-    }
-    entry_limit(&name)?;
-    Ok(name)
-}
-
-fn entry_limit(name: &str) -> Result<u64, CustomFaceLibraryError> {
-    match name {
-        MANIFEST_ENTRY | CHECKSUMS_ENTRY => Ok(MAX_METADATA_BYTES),
-        FRAMES_ENTRY => Ok(MAX_FRAMES_BYTES),
-        _ => Err(unsafe_archive("archive contains an unknown entry")),
-    }
-}
-
-fn remove_entry(
-    entries: &mut HashMap<String, Vec<u8>>,
-    name: &str,
-) -> Result<Vec<u8>, CustomFaceLibraryError> {
-    entries
-        .remove(name)
-        .ok_or_else(|| unsafe_archive("archive is missing a required entry"))
 }
 
 fn copy_group(mut group: CustomFaceGroup) -> CustomFaceGroup {
@@ -251,22 +130,6 @@ fn copy_group(mut group: CustomFaceGroup) -> CustomFaceGroup {
     group
 }
 
-fn sha256_hex(content: &[u8]) -> String {
-    hex::encode(Sha256::digest(content))
-}
-
-fn unsafe_archive(message: &str) -> CustomFaceLibraryError {
-    CustomFaceLibraryError::UnsafeArchive(message.to_string())
-}
-
-fn io_error(error: std::io::Error) -> CustomFaceLibraryError {
-    CustomFaceLibraryError::Io(error.to_string())
-}
-
 fn json_error(error: serde_json::Error) -> CustomFaceLibraryError {
     CustomFaceLibraryError::Json(error.to_string())
-}
-
-fn zip_error(error: zip::result::ZipError) -> CustomFaceLibraryError {
-    CustomFaceLibraryError::UnsafeArchive(error.to_string())
 }

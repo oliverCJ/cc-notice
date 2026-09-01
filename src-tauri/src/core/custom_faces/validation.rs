@@ -8,7 +8,7 @@ use super::contract_generated::{
     custom_face_profile_by_id, CUSTOM_FACE_FRAME_DURATION_MAX_MS,
     CUSTOM_FACE_FRAME_DURATION_MIN_MS, CUSTOM_FACE_MAX_FACES_PER_GROUP,
 };
-use super::model::CustomFaceGroup;
+use super::model::{CustomFace, CustomFaceGroup};
 
 const CUSTOM_FACE_SCHEMA_VERSION: u16 = 1;
 const CUSTOM_FACE_NAME_MAX_CHARS: usize = 40;
@@ -58,7 +58,7 @@ pub fn validate_group(group: &CustomFaceGroup) -> Result<(), CustomFaceValidatio
     Uuid::parse_str(&group.group_id)
         .map_err(|_| CustomFaceValidationError::InvalidGroupId(group.group_id.clone()))?;
     validate_name(&group.name)?;
-    let profile = custom_face_profile_by_id(&group.display_profile_id).ok_or_else(|| {
+    custom_face_profile_by_id(&group.display_profile_id).ok_or_else(|| {
         CustomFaceValidationError::UnknownProfile(group.display_profile_id.clone())
     })?;
     if group.faces.is_empty() {
@@ -74,41 +74,16 @@ pub fn validate_group(group: &CustomFaceGroup) -> Result<(), CustomFaceValidatio
     let mut face_ids = HashSet::new();
     let mut face_names = HashSet::new();
     for face in &group.faces {
-        Uuid::parse_str(&face.face_id)
-            .map_err(|_| CustomFaceValidationError::InvalidFaceId(face.face_id.clone()))?;
+        validate_face_for_profile(&group.display_profile_id, face)?;
         if !face_ids.insert(face.face_id.clone()) {
             return Err(CustomFaceValidationError::DuplicateFaceId(
                 face.face_id.clone(),
             ));
         }
-        let normalized_name = validate_name(&face.name)?;
+        let normalized_name = normalize_custom_face_name(&face.name);
         let name_key = normalized_name.to_lowercase();
         if !face_names.insert(name_key.clone()) {
             return Err(CustomFaceValidationError::DuplicateFaceName(name_key));
-        }
-        if face.frames.is_empty() {
-            return Err(CustomFaceValidationError::NoFrames);
-        }
-        if face.frames.len() > usize::from(profile.max_frames) {
-            return Err(CustomFaceValidationError::TooManyFrames {
-                max: usize::from(profile.max_frames),
-                actual: face.frames.len(),
-            });
-        }
-        for frame in &face.frames {
-            if !(CUSTOM_FACE_FRAME_DURATION_MIN_MS..=CUSTOM_FACE_FRAME_DURATION_MAX_MS)
-                .contains(&frame.duration_ms)
-            {
-                return Err(CustomFaceValidationError::InvalidFrameDuration(
-                    frame.duration_ms,
-                ));
-            }
-            if frame.packed_pixels.len() != profile.framebuffer_bytes {
-                return Err(CustomFaceValidationError::InvalidFramebufferLength {
-                    expected: profile.framebuffer_bytes,
-                    actual: frame.packed_pixels.len(),
-                });
-            }
         }
     }
 
@@ -116,6 +91,42 @@ pub fn validate_group(group: &CustomFaceGroup) -> Result<(), CustomFaceValidatio
         return Err(CustomFaceValidationError::DefaultFaceMissing(
             group.default_face_id.clone(),
         ));
+    }
+    Ok(())
+}
+
+pub fn validate_face_for_profile(
+    profile_id: &str,
+    face: &CustomFace,
+) -> Result<(), CustomFaceValidationError> {
+    Uuid::parse_str(&face.face_id)
+        .map_err(|_| CustomFaceValidationError::InvalidFaceId(face.face_id.clone()))?;
+    validate_name(&face.name)?;
+    let profile = custom_face_profile_by_id(profile_id)
+        .ok_or_else(|| CustomFaceValidationError::UnknownProfile(profile_id.to_string()))?;
+    if face.frames.is_empty() {
+        return Err(CustomFaceValidationError::NoFrames);
+    }
+    if face.frames.len() > usize::from(profile.max_frames) {
+        return Err(CustomFaceValidationError::TooManyFrames {
+            max: usize::from(profile.max_frames),
+            actual: face.frames.len(),
+        });
+    }
+    for frame in &face.frames {
+        if !(CUSTOM_FACE_FRAME_DURATION_MIN_MS..=CUSTOM_FACE_FRAME_DURATION_MAX_MS)
+            .contains(&frame.duration_ms)
+        {
+            return Err(CustomFaceValidationError::InvalidFrameDuration(
+                frame.duration_ms,
+            ));
+        }
+        if frame.packed_pixels.len() != profile.framebuffer_bytes {
+            return Err(CustomFaceValidationError::InvalidFramebufferLength {
+                expected: profile.framebuffer_bytes,
+                actual: frame.packed_pixels.len(),
+            });
+        }
     }
     Ok(())
 }
