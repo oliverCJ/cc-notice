@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useI18n } from '@/i18n';
 
 type Props = {
   width: number;
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export function CustomFacePixelPreview({ width, height, packedPixels, ariaLabel, className, displayScale = 1 }: Props) {
+  const t = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hasPixels = packedPixels.length >= Math.ceil(width * height / 8);
   const hasActivePixel = hasPixels && Array.from(packedPixels).some((value) => value !== 0);
@@ -32,7 +34,7 @@ export function CustomFacePixelPreview({ width, height, packedPixels, ariaLabel,
     }
   }, [hasActivePixel, height, packedPixels, width]);
 
-  if (!hasActivePixel) return <div className={className ?? 'flex h-full items-center justify-center text-xs text-muted-foreground'}>空白帧</div>;
+  if (!hasActivePixel) return <div className={className ?? 'flex h-full items-center justify-center text-xs text-muted-foreground'}>{t('customFaceEditor.canvas.emptyFrame')}</div>;
   const scale = Math.max(1, Math.floor(displayScale));
   if (!className) return <canvas ref={canvasRef} aria-label={ariaLabel} data-testid="custom-face-pixel-preview-canvas" height={height} role="img" width={width} style={{ display: 'block', imageRendering: 'pixelated', width: `${width * scale}px`, height: `${height * scale}px` }} />;
   return <div className={className} style={{ aspectRatio: `${width} / ${height}`, minWidth: 1, minHeight: 1, overflow: 'hidden', background: '#000' }}><canvas ref={canvasRef} aria-label={ariaLabel} data-testid="custom-face-pixel-preview-canvas" height={height} role="img" width={width} style={{ display: 'block', imageRendering: 'pixelated', width: '100%', height: '100%' }} /></div>;

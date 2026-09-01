@@ -60,6 +60,7 @@ const DEBUG_REFRESH_INTERVAL_MS = 2_000;
 const DESKTOP_NOTICE_WINDOW_BOUNDS_CHANGED_EVENT =
   'cc-notice://desktop-notice-window-bounds-changed';
 const CUSTOM_FACE_EDITOR_STATE_EVENT = 'cc-notice://custom-face-editor-state-changed';
+const APP_CONFIG_UPDATED_EVENT = 'cc-notice://app-config-updated';
 const DESKTOP_NOTICE_RUNTIME_BOUNDS_SAVE_DELAY_MS = 500;
 const MonitorPage = lazy(() =>
   import('./pages/monitor/MonitorPage').then((module) => ({ default: module.MonitorPage }))
@@ -80,7 +81,7 @@ declare global {
 
 export default function App() {
   if (window.location.pathname === '/custom-face-editor') {
-    return <CustomFaceEditorWindow />;
+    return <CustomFaceEditorWindowApp />;
   }
   const desktopNoticeInstanceId = getDesktopNoticeWindowInstanceId();
   if (desktopNoticeInstanceId) {
@@ -274,6 +275,20 @@ export default function App() {
       desktopNoticeBoundsSaveTimersRef.current.forEach((timer) => window.clearTimeout(timer));
       desktopNoticeBoundsSaveTimersRef.current.clear();
     };
+  }, []);
+
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<AppConfigView>(APP_CONFIG_UPDATED_EVENT, (event) => {
+      if (disposed) return;
+      appConfigRef.current = event.payload;
+      setAppConfig(event.payload);
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize app config listener', error));
+    return () => { disposed = true; unlisten?.(); };
   }, []);
 
   useEffect(() => {
@@ -664,6 +679,45 @@ export default function App() {
   );
 }
 
+function CustomFaceEditorWindowApp() {
+  const [language, setLanguage] = useState<Language>('zh-CN');
+  const [themeMode, setThemeMode] = useState<AppConfigView['ui']['themeMode']>('system');
+  useThemeMode(themeMode);
+
+  useEffect(() => {
+    let disposed = false;
+    let configEventVersion = 0;
+    let unlisten: (() => void) | null = null;
+    void listen<AppConfigView>(APP_CONFIG_UPDATED_EVENT, (event) => {
+      if (disposed) return;
+      configEventVersion += 1;
+      setLanguage(event.payload.ui.language as Language);
+      setThemeMode(event.payload.ui.themeMode ?? 'system');
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize custom face editor config listener', error));
+    void getAppConfig()
+      .then((config) => {
+        if (!disposed && configEventVersion === 0) {
+          setLanguage(config.ui.language as Language);
+          setThemeMode(config.ui.themeMode ?? 'system');
+        }
+      })
+      .catch((error) => console.warn('failed to load app config for custom face editor window', error));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
+  return (
+    <I18nProvider language={language}>
+      <CustomFaceEditorWindow />
+    </I18nProvider>
+  );
+}
+
 function DesktopNoticeWindowApp({ instanceId }: { instanceId: string }) {
   const [language, setLanguage] = useState<Language>('zh-CN');
   const [themeMode, setThemeMode] = useState<AppConfigView['ui']['themeMode']>('system');
@@ -693,6 +747,15 @@ function DesktopNoticeWindowApp({ instanceId }: { instanceId: string }) {
 
   useEffect(() => {
     let disposed = false;
+    let unlistenConfig: (() => void) | null = null;
+    void listen<AppConfigView>(APP_CONFIG_UPDATED_EVENT, (event) => {
+      if (disposed) return;
+      setLanguage(event.payload.ui.language as Language);
+      setThemeMode(event.payload.ui.themeMode ?? 'system');
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlistenConfig = dispose;
+    }).catch((error) => console.warn('failed to initialize desktop notice config listener', error));
     const bootstrapPayload = window.__CC_NOTICE_DESKTOP_NOTICE_PAYLOAD__;
     if (bootstrapPayload) {
       console.info('desktop notice window bootstrap payload loaded', {
@@ -705,6 +768,7 @@ function DesktopNoticeWindowApp({ instanceId }: { instanceId: string }) {
       setPayload(bootstrapPayload);
       return () => {
         disposed = true;
+        unlistenConfig?.();
       };
     }
     const timer = window.setTimeout(() => {
@@ -730,6 +794,7 @@ function DesktopNoticeWindowApp({ instanceId }: { instanceId: string }) {
     }, 800);
     return () => {
       disposed = true;
+      unlistenConfig?.();
       window.clearTimeout(timer);
     };
   }, [instanceId]);
@@ -782,6 +847,15 @@ function DeviceMonitorWindowApp({ deviceId }: { deviceId: string }) {
 
   useEffect(() => {
     let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<AppConfigView>(APP_CONFIG_UPDATED_EVENT, (event) => {
+      if (disposed) return;
+      setLanguage(event.payload.ui.language as Language);
+      setThemeMode(event.payload.ui.themeMode ?? 'system');
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize device monitor config listener', error));
     void getAppConfig()
       .then((config) => {
         if (!disposed) {
@@ -794,6 +868,7 @@ function DeviceMonitorWindowApp({ deviceId }: { deviceId: string }) {
       });
     return () => {
       disposed = true;
+      unlisten?.();
     };
   }, []);
 

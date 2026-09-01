@@ -133,6 +133,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     const baseline = state.selectionMoveBaseline;
     const faceId = baseline?.faceId ?? state.selectedFaceId;
     const frameIndex = baseline?.frameIndex ?? state.selectedFrameIndex;
+    if (!faceId) return state;
     const face = state.presentGroup.faces.find((item) => item.faceId === faceId);
     const frame = face?.frames[frameIndex];
     if (!frame) return state;

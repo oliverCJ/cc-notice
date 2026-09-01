@@ -1028,10 +1028,89 @@ export const enMessages = {
     }
   },
   customFaceEditor: {
+    library: {
+      title: 'My Face Groups',
+      description: 'Manage local custom faces. Each group uses one display resolution and contains up to 15 faces; the default face is used for group previews and device face recovery.',
+      newResolution: 'New resolution',
+      customResolution: 'Custom resolution',
+      customWidth: 'Custom width',
+      customHeight: 'Custom height',
+      newGroup: 'New group',
+      importGroup: 'Import .ccface',
+      hint: 'After creating a group, you can edit it frame by frame.',
+      empty: 'No face groups yet. Create a face group first.',
+      previewUnavailable: 'Preview unavailable',
+      defaultFacePreview: '{{name}} default face preview',
+      faceCount: '{{count}} faces',
+      open: 'Open',
+      copy: 'Copy',
+      resizeCopy: 'Save as another resolution',
+      rename: 'Rename',
+      export: 'Export',
+      remove: 'Delete',
+      revision: 'Revision {{revision}}',
+      profileFrames: '{{width}} × {{height}} · up to {{max}} frames',
+      invalidProfile: 'Invalid custom resolution',
+      loading: 'Loading face groups...'
+    },
+    groupDialogs: {
+      resizeTitle: 'Save as another resolution',
+      resizeDescription: 'Create a new group without changing the original; the new group opens for editing when ready.',
+      targetResolution: 'Target resolution',
+      selectResolution: 'Choose a resolution',
+      newGroupName: 'New group name',
+      customWidth: 'Width',
+      customHeight: 'Height',
+      maxFrames: 'Up to {{max}} frames',
+      trimFrames: '; {{count}} frames are expected to be trimmed.',
+      keepFrames: '; current frames will not be trimmed.',
+      create: 'Create and open',
+      creating: 'Creating...',
+      renameTitle: 'Rename face group',
+      renameDescription: 'The name only affects the local face library.',
+      groupName: 'Group name',
+      save: 'Save',
+      saving: 'Saving...',
+      confirmRename: 'Rename',
+      deleteTitle: 'Delete face group?',
+      deleteDescription: 'This deletes “{{name}}”, resolution {{profile}}, with {{count}} faces. This cannot be undone.',
+      deleting: 'Deleting...',
+      confirmDelete: 'Delete',
+      cancel: 'Cancel'
+    },
+    toolbar: {
+      ariaLabel: 'Face editing toolbar',
+      groups: { selection: 'Selection', drawing: 'Drawing', shapes: 'Shapes', history: 'History' },
+      tools: {
+        select: { label: 'Select', hint: 'Drag to create a selection, then copy, paste, or clear it' },
+        brush: { label: 'Brush', hint: 'Click pixels to toggle their highlighted state' },
+        eraser: { label: 'Eraser', hint: 'Drag to erase the configured area' },
+        line: { label: 'Line', hint: 'Drag to preview, then release to apply' },
+        rectangle: { label: 'Rectangle', hint: 'Drag to preview; choose outline or filled in the properties' },
+        circle: { label: 'Circle', hint: 'Drag a bounding box; preview matches the result' },
+        triangle: { label: 'Triangle', hint: 'Drag a bounding box to draw a triangle' },
+        pen: { label: 'Pen', hint: 'Place points, then finish with double-click or the properties button' }
+      },
+      expand: 'Expand toolbar', collapse: 'Collapse toolbar', undo: 'Undo', redo: 'Redo', undoHint: 'Undo the latest complete operation', redoHint: 'Redo the latest undone operation'
+    },
+    defaults: { unnamedGroup: 'Unnamed group', staticFace: 'Static face', copySuffix: 'copy', importSuffix: '-import', fileName: 'custom-face' },
+    timeline: {
+      label: 'Face timeline', play: 'Preview all', pause: 'Pause', selectedPreview: 'Preview selected', totalFrames: 'Total frames {{count}}', totalDuration: 'Total duration {{duration}} ms', selected: '{{count}} selected', current: 'Frame {{current}} / {{total}}', insert: 'Insertion point', selectFrame: 'Select frame {{index}}', framePreview: 'Preview frame {{index}}', frame: 'Frame {{index}}', deleteFrame: 'Delete frame {{index}}', keepOne: 'Keep at least one frame', addFrame: 'Add frame', addFrameHint: 'Copy the current frame and append it'
+    },
+    rulers: {
+      horizontal: 'Horizontal scale', vertical: 'Vertical scale', horizontalGuide: 'Horizontal guide', verticalGuide: 'Vertical guide', addHorizontal: 'Add horizontal guide', addVertical: 'Add vertical guide', horizontalRow: 'Horizontal guide · row', verticalColumn: 'Vertical guide · column', coordinate: 'Guide coordinate', delete: 'Delete guide', close: 'Close'
+    },
+    assets: {
+      label: 'Asset library', close: 'Close asset library', groupTab: 'Current group assets', publicTab: 'Public assets', filter: 'Filter by tag', clearFilter: 'Clear filter', tags: 'Tags: {{tags}}', rename: 'Rename', confirmRename: 'Confirm', tag: 'Tags', confirmTags: 'Confirm tags', delete: 'Delete', empty: 'No assets', saveGroup: 'Save to current group', savePublic: 'Save as public asset', deleteConfirm: 'Delete personal asset “{{name}}”?', name: 'New personal asset name', tagInput: 'Asset tags', preview: '{{name}} preview'
+    },
+    canvasOverlay: { pendingImport: 'Pending import', pendingImportPreview: 'Pending import {{width}} × {{height}}', magnifierArea: 'Magnified area', currentPixel: 'Current pixel', originalSelection: 'Original selection', selection: 'Current selection', eraserArea: 'Erase area', toolPreview: 'Tool preview', penPreview: 'Pen path preview', pixelGrid: 'Pixel grid' },
+    workbench: { initialStatus: 'Choose a tool and work on the canvas.', toolHints: { select: 'Drag on the canvas to create a selection, then use selection actions on the right.', brush: 'Click a pixel to toggle its highlighted state.', eraser: 'Adjust the erase area, then drag and release to apply it.', line: 'Press to set the start, drag to preview, and release to apply.', rectangle: 'Drag to preview the rectangle, then release to apply.', circle: 'Drag a bounding box; preview and final ellipse use the same bounds.', triangle: 'The first click fixes the vertex; drag to adjust the base.', pen: 'Click points to create a path, then finish with double-click or the button.' }, constraints: { line: 'Constrain to horizontal, vertical, or 45°', rectangle: 'Constrain to a square', circle: 'Constrain to a circle', triangle: 'Constrain to an isosceles triangle' },
+      back: 'Back to groups', save: 'Save', saving: 'Saving...', importSvg: 'Import SVG', assets: 'Assets', groupName: 'Group name', applyGroupName: 'Apply group name', modified: 'Unsaved changes', saved: 'Saved', saveFailed: 'Save failed: {{error}}', saveSuccess: 'Face group saved.', saveConflict: 'Save conflict: the face group changed on disk.', reloadSuccess: 'Disk version reloaded; local unsaved changes were discarded.', reloadFailed: 'Reload failed: {{error}}', discardFailed: 'Failed to discard changes: {{error}}', closeFailed: 'Failed to close editor: {{error}}', switchFace: 'Switched face and loaded its first frame.', frameAdded: 'Copied the current frame and appended it to the timeline.', faceRenamed: 'Renamed to “{{name}}”.', maxFaces: 'A group can contain up to 15 faces.', newFace: 'New face', copyFace: 'Copy face', addedFace: 'Added “{{name}}”.', copySuffix: 'copy', copiedFace: 'Copied as “{{name}}”.', emptyFaceName: 'Face name cannot be empty.', duplicateFaceName: 'Face names must be unique within a group.', minFaces: 'A group must keep at least one face.', deleteFaceConfirm: 'Delete face “{{name}}”?', groupNameChanged: 'Group name changed to “{{name}}”.', frameApplied: 'Temporary object applied to the current frame.', copiedSelection: 'Selection copied. You can paste it after switching frames.', selectionCreated: 'Selected a {{width}} × {{height}} pixel area.', assetApplied: 'Personal asset loaded onto the canvas. Adjust it and confirm to apply.', assetSaved: 'Current frame saved as a personal asset.', svgApplied: 'SVG loaded onto the canvas. Adjust its position and confirm the import.', currentFace: 'Current face', selectFace: 'Select face', faceName: 'Face name', currentFrame: 'Frame {{current}} / {{total}}', applyName: 'Apply name', defaultFace: 'Default', setDefault: 'Set as default face', deleteFace: 'Delete face', frameName: 'Frame', frameDuration: 'Frame duration', resolutionFaces: 'Resolution {{width}} × {{height}} · faces {{count}} / 15', toolProperties: 'Tool properties', currentTool: 'Current tool: {{tool}}', outline: 'Outline', filled: 'Filled', eraseArea: 'Erase area: {{size}} × {{size}}', start: 'Start: {{point}}', end: 'End: ' + '{{point}}', bounds: 'Bounds: {{width}} × {{height}}', selectionInfo: 'Selection: {{x}},{{y}} · {{width}} × {{height}}', moveStep: 'Selection move step', up: 'Move selection up', left: 'Move selection left', down: 'Move selection down', right: 'Move selection right', confirmMove: 'Confirm move', copy: 'Copy', paste: 'Paste', pasteHint: 'Paste at the top-left of the current selection', clipboardEmpty: 'Clipboard is empty. Copy a selection first.', selectTarget: 'Select a paste target area first.', clear: 'Clear', highlight: 'Highlight', dim: 'Turn off', cancelMove: 'Cancel move', cancel: 'Cancel', selectHint: 'Drag on the canvas to create a selection.', points: 'Points: {{count}}', finishPath: 'Finish path', cancelPath: 'Cancel path', saveConflictTitle: 'Save conflict detected', saveConflictDescription: 'The face group changed on disk. Reloading discards local changes; overwriting replaces the disk version with the local version.', reloadDisk: 'Reload disk version', overwrite: 'Overwrite', leaveTitle: 'Save unfinished changes?', leaveDescription: 'The current face group has unsaved changes. The editor stays open if saving fails.', discard: 'Discard changes', saveAndClose: 'Save and close', pendingTitle: 'Asset pending confirmation', pendingDescription: 'Drag on the canvas to adjust its position, then confirm to write it to the current frame.', pendingScale: 'Scale: {{scale}}', pendingScaleLabel: 'Pending asset scale', copyFirst: 'Copy a selection first', cancelApply: 'Cancel apply', confirmApply: 'Apply', pasteTarget: 'Select a paste target area first.' },
     canvas: {
       label: 'Custom face canvas {{width}} × {{height}}',
       coordinate: 'Coordinates {{x}}, {{y}} · ',
-      scale: 'Scale {{scale}}×'
+      scale: 'Scale {{scale}}×',
+      emptyFrame: 'Blank frame'
     },
     magnifier: {
       show: 'Magnify area',
@@ -1072,6 +1151,7 @@ export const enMessages = {
       invertImageHint: 'Only the detected image content is inverted; transparent background stays off.',
       imported: 'Imported “{{name}}”. It has not been saved yet.'
     },
+    svgImport: { title: 'Import SVG', filterName: 'SVG image', mergeLabel: 'Merge into current frame', replaceLabel: 'Replace current frame', description: 'Convert SVG using native static rendering into monochrome pixels. Transparent backgrounds and opaque foregrounds are recommended; opaque backgrounds are also lit.', read: 'Reading...', selectFile: 'Choose SVG file', metadata: 'Source {{width}} × {{height}} · {{elements}} elements · target {{targetWidth}} × {{targetHeight}}', noFile: 'Choose an SVG file', updating: 'Updating preview...', mode: 'Import mode', merge: 'Merge', replace: 'Replace', x: 'Horizontal position X', y: 'Vertical offset', offsetXLabel: 'Horizontal offset', offsetYLabel: 'Vertical offset', scaleLabel: 'Scale', rotationLabel: 'Rotation', thresholdLabel: 'Pixel coverage threshold', center: 'Center', topLeft: 'Top left', reset: 'Reset', offsetX: 'Horizontal offset: {{value}}', offsetY: 'Vertical offset: {{value}}', scale: 'Scale: {{value}}', rotation: 'Rotation: {{value}}°', threshold: 'Pixel coverage threshold: {{value}}', thresholdHint: 'Lower values preserve more fine lines; higher values tighten edges.', activePixels: 'Highlighted pixels: {{count}}', clipped: 'Content outside the screen was clipped', cancel: 'Cancel', apply: 'Apply to current frame', preview: 'SVG preview {{width}} × {{height}}' },
     faceExport: {
       item: 'Export editable face',
       gif: 'Export GIF',

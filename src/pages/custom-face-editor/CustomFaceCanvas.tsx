@@ -433,7 +433,7 @@ export function CustomFaceCanvas({
                 onMagnifierPointerMove={handleMagnifierFramePointerMove}
                 onMagnifierPointerUp={handleMagnifierFramePointerUp}
               />
-              {pendingImportPixels ? <div aria-label="待确认导入对象" className="pointer-events-auto absolute inset-0 cursor-move border-2 border-dashed border-fuchsia-400 bg-fuchsia-400/10" onPointerDown={handlePendingPointerDown} onPointerMove={handlePendingPointerMove} onPointerUp={handlePendingPointerUp} onPointerCancel={handlePendingPointerUp}><div className="pointer-events-none absolute left-0 top-0 opacity-60" style={{ width: `${pendingImportSize.width * displayScale}px`, height: `${pendingImportSize.height * displayScale}px`, transform: `translate(${pendingImportOffset.x * displayScale}px, ${pendingImportOffset.y * displayScale}px)` }}><CustomFacePixelPreview width={pendingImportSize.width} height={pendingImportSize.height} displayScale={displayScale} packedPixels={pendingImportPixels} ariaLabel={`待确认导入 ${pendingImportSize.width} × ${pendingImportSize.height}`} /></div></div> : null}
+              {pendingImportPixels ? <div aria-label={t('customFaceEditor.canvasOverlay.pendingImport')} className="pointer-events-auto absolute inset-0 cursor-move border-2 border-dashed border-fuchsia-400 bg-fuchsia-400/10" onPointerDown={handlePendingPointerDown} onPointerMove={handlePendingPointerMove} onPointerUp={handlePendingPointerUp} onPointerCancel={handlePendingPointerUp}><div className="pointer-events-none absolute left-0 top-0 opacity-60" style={{ width: `${pendingImportSize.width * displayScale}px`, height: `${pendingImportSize.height * displayScale}px`, transform: `translate(${pendingImportOffset.x * displayScale}px, ${pendingImportOffset.y * displayScale}px)` }}><CustomFacePixelPreview width={pendingImportSize.width} height={pendingImportSize.height} displayScale={displayScale} packedPixels={pendingImportPixels} ariaLabel={t('customFaceEditor.canvasOverlay.pendingImportPreview', { width: pendingImportSize.width, height: pendingImportSize.height })} /></div></div> : null}
             </div>
           </CustomFaceViewport>
         </div>
@@ -495,6 +495,7 @@ function ToolOverlay({ width, height, tool, start, end, bounds, selection, selec
   onMagnifierPointerUp?: (event: React.PointerEvent<HTMLDivElement>) => void;
   viewport?: LogicalViewport;
 }) {
+  const t = useI18n();
   const visible = viewport ?? { originX: 0, originY: 0, width, height };
   const styleFor = (value: CanvasSelection) => ({
     left: `${(value.x - visible.originX) / visible.width * 100}%`,
@@ -506,7 +507,7 @@ function ToolOverlay({ width, height, tool, start, end, bounds, selection, selec
     <>
       {magnifierBounds && !viewport ? (
         <div
-          aria-label="放大区域"
+          aria-label={t('customFaceEditor.canvasOverlay.magnifierArea')}
           className={`absolute border-2 border-dashed border-fuchsia-300 bg-fuchsia-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.95)] ${magnifierMode === 'locked' ? 'pointer-events-auto cursor-move' : 'pointer-events-none'}`}
           style={styleFor(magnifierBounds)}
           onPointerDown={onMagnifierPointerDown}
@@ -515,12 +516,12 @@ function ToolOverlay({ width, height, tool, start, end, bounds, selection, selec
           onPointerCancel={onMagnifierPointerUp}
         />
       ) : null}
-      {pointerBounds ? <div aria-label="当前像素" className="pointer-events-none absolute border-2 border-cyan-300 shadow-[0_0_0_1px_rgba(0,0,0,.95)]" style={styleFor(pointerBounds)} /> : null}
-      {selectionOrigin ? <div aria-label="原始选区" className="pointer-events-none absolute border-2 border-dashed border-yellow-300 bg-yellow-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(selectionOrigin)} /> : null}
-      {selection ? <div aria-label="当前选区" className="pointer-events-none absolute border-2 border-solid border-cyan-300 bg-cyan-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(selection)} /> : null}
-      {eraserBounds ? <div aria-label="擦除范围" className="pointer-events-none absolute border-2 border-red-400 bg-red-400/15 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(eraserBounds)} /> : null}
+      {pointerBounds ? <div aria-label={t('customFaceEditor.canvasOverlay.currentPixel')} className="pointer-events-none absolute border-2 border-cyan-300 shadow-[0_0_0_1px_rgba(0,0,0,.95)]" style={styleFor(pointerBounds)} /> : null}
+      {selectionOrigin ? <div aria-label={t('customFaceEditor.canvasOverlay.originalSelection')} className="pointer-events-none absolute border-2 border-dashed border-yellow-300 bg-yellow-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(selectionOrigin)} /> : null}
+      {selection ? <div aria-label={t('customFaceEditor.canvasOverlay.selection')} className="pointer-events-none absolute border-2 border-solid border-cyan-300 bg-cyan-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(selection)} /> : null}
+      {eraserBounds ? <div aria-label={t('customFaceEditor.canvasOverlay.eraserArea')} className="pointer-events-none absolute border-2 border-red-400 bg-red-400/15 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(eraserBounds)} /> : null}
       {start && end && bounds ? (
-        <svg aria-label="工具预览" className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`${visible.originX} ${visible.originY} ${visible.width} ${visible.height}`} preserveAspectRatio="none">
+        <svg aria-label={t('customFaceEditor.canvasOverlay.toolPreview')} className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`${visible.originX} ${visible.originY} ${visible.width} ${visible.height}`} preserveAspectRatio="none">
           {tool === 'line' ? <line x1={start[0] + 0.5} y1={start[1] + 0.5} x2={end[0] + 0.5} y2={end[1] + 0.5} {...previewStroke()} /> : null}
           {tool === 'rectangle' || tool === 'select' ? <rect x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} fill="rgba(103,232,249,.1)" {...previewStroke(tool === 'select' ? SELECTION_STROKE : PREVIEW_STROKE)} /> : null}
           {tool === 'circle' ? <ellipse cx={bounds.x + bounds.width / 2} cy={bounds.y + bounds.height / 2} rx={bounds.width / 2} ry={bounds.height / 2} fill="rgba(103,232,249,.1)" {...previewStroke()} /> : null}
@@ -529,7 +530,7 @@ function ToolOverlay({ width, height, tool, start, end, bounds, selection, selec
         </svg>
       ) : null}
       {penPoints.length > 0 ? (
-        <svg aria-label="钢笔路径预览" className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`${visible.originX} ${visible.originY} ${visible.width} ${visible.height}`} preserveAspectRatio="none">
+        <svg aria-label={t('customFaceEditor.canvasOverlay.penPreview')} className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`${visible.originX} ${visible.originY} ${visible.width} ${visible.height}`} preserveAspectRatio="none">
           <polyline points={penPoints.map(([x, y]) => `${x + 0.5},${y + 0.5}`).join(' ')} fill="none" {...previewStroke()} />
           {penPoints.slice(0, -1).map(([x, y], index) => <circle key={`${x}:${y}:${index}`} cx={x + 0.5} cy={y + 0.5} r="0.75" fill={PREVIEW_STROKE} stroke={PREVIEW_HALO} strokeWidth="0.35" />)}
         </svg>

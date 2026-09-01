@@ -50,7 +50,20 @@ const checkedFiles = [
   'pages/rules/template-variables/TemplateVariablePopover.tsx',
   'pages/debug/DebugPage.tsx',
   'components/workbench/dialog.tsx',
-  'state/appStore.ts'
+  'state/appStore.ts',
+  'pages/custom-face-editor/CustomFaceEditorWindow.tsx',
+  'pages/custom-face-editor/CustomFaceGroupLibrary.tsx',
+  'pages/custom-face-editor/CustomFaceGroupDialogs.tsx',
+  'pages/custom-face-editor/CustomFaceEditorWorkbench.tsx',
+  'pages/custom-face-editor/CustomFaceToolbar.tsx',
+  'pages/custom-face-editor/CustomFaceAssetLibrary.tsx',
+  'pages/custom-face-editor/CustomFaceTimeline.tsx',
+  'pages/custom-face-editor/CustomFaceRulers.tsx',
+  'pages/custom-face-editor/CustomFaceCanvas.tsx',
+  'pages/custom-face-editor/CustomFaceSvgImportDialog.tsx',
+  'pages/custom-face-editor/CustomFacePixelPreview.tsx',
+  'pages/custom-face-editor/CustomFaceViewport.tsx',
+  'pages/custom-face-editor/CustomFaceMagnifier.tsx'
 ];
 
 describe('hardcoded UI text guard', () => {

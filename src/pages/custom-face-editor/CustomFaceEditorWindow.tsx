@@ -3,6 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { closeCustomFaceEditor, deleteCustomFaceGroup, exportCustomFaceGroup, getCustomFaceGroup, getCustomFaceGroups, importCustomFaceGroup, previewCustomFaceGroupImport, saveCustomFaceGroup } from '@/api/tauriApi';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import type { CustomFaceGroup, CustomFaceGroupSummary, SaveCustomFaceGroupResult } from '@/api/tauriApi';
+import { useI18n } from '@/i18n';
 import { CUSTOM_FACE_CONTRACT } from '@/domain/customFaces/generated/customFaceContract.generated';
 import { createEditorState } from '@/domain/customFaces/editor/reducer';
 import { resizeCustomFaceGroup } from '@/domain/customFaces/editor/resize';
@@ -11,6 +12,7 @@ import { editorProfileFromId } from '@/domain/customFaces/editor/profile';
 import { CustomFaceEditorWorkbench } from './CustomFaceEditorWorkbench';
 
 export function CustomFaceEditorWindow() {
+  const t = useI18n();
   const [groups, setGroups] = useState<CustomFaceGroupSummary[]>([]);
   const [previews, setPreviews] = useState<Record<string, CustomFaceGroup>>({});
   const [current, setCurrent] = useState<CustomFaceGroup | null>(null);
@@ -34,18 +36,18 @@ export function CustomFaceEditorWindow() {
     }).then((dispose) => { if (disposed) dispose(); else unlisten = dispose; }).catch((error) => console.warn('failed to register custom face library close handler', error));
     return () => { disposed = true; unlisten?.(); };
   }, [current]);
-  if (loading) return <main className="flex h-screen items-center justify-center bg-background text-sm text-muted-foreground">加载表情组…</main>;
+  if (loading) return <main className="flex h-screen items-center justify-center bg-background text-sm text-muted-foreground">{t('customFaceEditor.library.loading')}</main>;
 
   if (!current) {
     return <CustomFaceGroupLibrary groups={groups} previews={previews} onOpen={async (id) => setCurrent(await getCustomFaceGroup(id))} onCreate={async (profileId) => {
       const profile = editorProfileFromId(profileId);
-      if (!profile) throw new Error('自定义分辨率无效');
+      if (!profile) throw new Error(t('customFaceEditor.library.invalidProfile'));
       const groupId = crypto.randomUUID(); const faceId = crypto.randomUUID();
-      const saved = await saveCustomFaceGroup({ group: { schemaVersion: 1, groupId, name: '未命名组', displayProfileId: profile.id, revision: 1, defaultFaceId: faceId, faces: [{ faceId, name: '静态表情', color: { red: 255, green: 255, blue: 255 }, frames: [{ durationMs: 200, packedPixels: Array(profile.framebufferBytes).fill(0) }] }] }, expectedLibraryHash: null });
+      const saved = await saveCustomFaceGroup({ group: { schemaVersion: 1, groupId, name: t('customFaceEditor.defaults.unnamedGroup'), displayProfileId: profile.id, revision: 1, defaultFaceId: faceId, faces: [{ faceId, name: t('customFaceEditor.defaults.staticFace'), color: { red: 255, green: 255, blue: 255 }, frames: [{ durationMs: 200, packedPixels: Array(profile.framebufferBytes).fill(0) }] }] }, expectedLibraryHash: null });
       addSaved(saved); setCurrent(saved.group);
     }} onCopy={async (id) => {
       const source = await getCustomFaceGroup(id); const faceIds = new Map(source.faces.map((face) => [face.faceId, crypto.randomUUID()]));
-      const saved = await saveCustomFaceGroup({ group: { ...source, groupId: crypto.randomUUID(), revision: 1, name: `${source.name} 副本`, defaultFaceId: faceIds.get(source.defaultFaceId)!, faces: source.faces.map((face) => ({ ...face, faceId: faceIds.get(face.faceId)!, frames: face.frames.map((frame) => ({ ...frame, packedPixels: [...frame.packedPixels] })) })) }, expectedLibraryHash: null });
+      const saved = await saveCustomFaceGroup({ group: { ...source, groupId: crypto.randomUUID(), revision: 1, name: `${source.name} ${t('customFaceEditor.defaults.copySuffix')}`, defaultFaceId: faceIds.get(source.defaultFaceId)!, faces: source.faces.map((face) => ({ ...face, faceId: faceIds.get(face.faceId)!, frames: face.frames.map((frame) => ({ ...frame, packedPixels: [...frame.packedPixels] })) })) }, expectedLibraryHash: null });
       addSaved(saved); setPreviews((items) => ({ ...items, [saved.group.groupId]: saved.group }));
     }} onResizeCopy={async (id, profileId, name) => {
       const converted = resizeCustomFaceGroup(await getCustomFaceGroup(id), profileId, () => crypto.randomUUID());
@@ -63,7 +65,7 @@ export function CustomFaceEditorWindow() {
       const preview = await previewCustomFaceGroupImport(path);
       const mode = preview.status === 'conflict' ? 'update' : 'copy';
       const imported = await importCustomFaceGroup({ path, mode });
-      const importedName = uniqueImportedGroupName(imported.group.name, groups);
+      const importedName = uniqueImportedGroupName(imported.group.name, groups, t('customFaceEditor.defaults.importSuffix'));
       const saved = await saveCustomFaceGroup({ group: { ...imported.group, name: importedName }, expectedLibraryHash: imported.libraryHash });
       setGroups((items) => { const next = items.filter((item) => item.groupId !== saved.group.groupId); return [...next, summary(saved)]; });
       setPreviews((items) => ({ ...items, [saved.group.groupId]: saved.group }));
@@ -75,7 +77,7 @@ export function CustomFaceEditorWindow() {
   }
 
   const profile = editorProfileFromId(current.displayProfileId);
-  if (!profile) return <main className="p-6 text-sm text-destructive">当前表情组分辨率档案不可用</main>;
+  if (!profile) return <main className="p-6 text-sm text-destructive">{t('customFaceEditor.library.invalidProfile')}</main>;
   const item = groups.find((group) => group.groupId === current.groupId);
   return <CustomFaceEditorWorkbench initialState={createEditorState(current, profile)} expectedLibraryHash={item?.libraryHash} onBack={() => setCurrent(null)} onSaved={(saved) => { setGroups((items) => items.map((group) => group.groupId === saved.group.groupId ? summary(saved) : group)); setPreviews((items) => ({ ...items, [saved.group.groupId]: saved.group })); setCurrent(saved.group); }} />;
 }
@@ -84,9 +86,9 @@ function summary(saved: SaveCustomFaceGroupResult): CustomFaceGroupSummary {
   return { groupId: saved.group.groupId, name: saved.group.name, displayProfileId: saved.group.displayProfileId, revision: saved.group.revision, defaultFaceId: saved.group.defaultFaceId, faceCount: saved.group.faces.length, libraryHash: saved.libraryHash };
 }
 
-export function uniqueImportedGroupName(baseName: string, groups: CustomFaceGroupSummary[]) {
+export function uniqueImportedGroupName(baseName: string, groups: CustomFaceGroupSummary[], importSuffix = '-import') {
   const names = new Set(groups.map((group) => group.name.trim().toLocaleLowerCase()));
-  const base = `${baseName.trim()}-import`;
+  const base = `${baseName.trim()}${importSuffix}`;
   if (!names.has(base.toLocaleLowerCase())) return base;
   for (let index = 2; index <= 99; index += 1) {
     const candidate = `${base}-${index}`;

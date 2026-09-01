@@ -1,4 +1,5 @@
 import type { CSSProperties, PointerEvent, ReactNode } from 'react';
+import { useI18n } from '@/i18n';
 import { CustomFaceRulers, type CanvasGuide } from './CustomFaceRulers';
 
 type Props = {
@@ -99,5 +100,6 @@ export function logicalPointFromViewportClientPoint(
 }
 
 export function PixelGrid({ scale }: { scale: number }) {
-  return <div aria-label="像素网格" className="pointer-events-none absolute inset-0" style={{ backgroundImage: 'linear-gradient(to right, rgba(130, 165, 178, 0.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(130, 165, 178, 0.28) 1px, transparent 1px)', backgroundSize: `${scale}px ${scale}px` }} />;
+  const t = useI18n();
+  return <div aria-label={t('customFaceEditor.canvasOverlay.pixelGrid')} className="pointer-events-none absolute inset-0" style={{ backgroundImage: 'linear-gradient(to right, rgba(130, 165, 178, 0.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(130, 165, 178, 0.28) 1px, transparent 1px)', backgroundSize: `${scale}px ${scale}px` }} />;
 }

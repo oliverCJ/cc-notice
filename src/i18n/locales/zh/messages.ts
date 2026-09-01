@@ -1010,10 +1010,89 @@ export const zhMessages = {
     }
   },
   customFaceEditor: {
+    library: {
+      title: '我的表情组',
+      description: '管理本地自定义表情。每组绑定一个屏幕分辨率，最多包含 15 个表情；默认表情用于组预览和设备表情到期后的恢复显示。',
+      newResolution: '新建分辨率',
+      customResolution: '自定义分辨率',
+      customWidth: '自定义宽度',
+      customHeight: '自定义高度',
+      newGroup: '新建组',
+      importGroup: '导入 .ccface',
+      hint: '新组创建后可继续逐帧编辑。',
+      empty: '暂无表情组，请先新建一个表情组。',
+      previewUnavailable: '预览不可用',
+      defaultFacePreview: '{{name}} 默认表情预览',
+      faceCount: '{{count}} 个表情',
+      open: '打开',
+      copy: '复制',
+      resizeCopy: '另存为其他分辨率',
+      rename: '重命名',
+      export: '导出',
+      remove: '删除',
+      revision: '版本 {{revision}}',
+      profileFrames: '{{width}} × {{height}} · 最多 {{max}} 帧',
+      invalidProfile: '自定义分辨率无效',
+      loading: '加载表情组…'
+    },
+    groupDialogs: {
+      resizeTitle: '另存为其他分辨率',
+      resizeDescription: '创建新组，原组保持不变；完成后自动打开新组编辑。',
+      targetResolution: '目标分辨率',
+      selectResolution: '选择分辨率',
+      newGroupName: '新组名称',
+      customWidth: '宽',
+      customHeight: '高',
+      maxFrames: '目标最多 {{max}} 帧',
+      trimFrames: '，预计裁减 {{count}} 帧。',
+      keepFrames: '，不会裁减当前帧。',
+      create: '创建并打开',
+      creating: '创建中…',
+      renameTitle: '重命名表情组',
+      renameDescription: '名称只影响本地表情库显示。',
+      groupName: '组名称',
+      save: '保存',
+      saving: '保存中…',
+      confirmRename: '确认重命名',
+      deleteTitle: '确认删除表情组',
+      deleteDescription: '将删除“{{name}}”，分辨率 {{profile}}，包含 {{count}} 个表情。此操作不可恢复。',
+      deleting: '删除中…',
+      confirmDelete: '确认删除',
+      cancel: '取消'
+    },
+    toolbar: {
+      ariaLabel: '表情编辑工具条',
+      groups: { selection: '选区', drawing: '绘制', shapes: '形状', history: '历史' },
+      tools: {
+        select: { label: '框选', hint: '拖拽建立选区，再执行复制、粘贴或清空' },
+        brush: { label: '画笔', hint: '点击像素切换高亮状态' },
+        eraser: { label: '橡皮擦', hint: '拖动擦除工具属性中设置的区域' },
+        line: { label: '直线', hint: '拖拽预览，释放后提交' },
+        rectangle: { label: '矩形', hint: '拖拽预览，属性区选择空心或实心' },
+        circle: { label: '圆形', hint: '拖拽外接框，预览与最终结果一致' },
+        triangle: { label: '三角形', hint: '拖拽边界框绘制三角形' },
+        pen: { label: '钢笔', hint: '逐点建立路径，双击或属性区按钮完成' }
+      },
+      expand: '展开工具条', collapse: '收起工具条', undo: '撤销', redo: '重做', undoHint: '撤销最近一次完整操作', redoHint: '恢复最近一次已撤销操作'
+    },
+    defaults: { unnamedGroup: '未命名组', staticFace: '静态表情', copySuffix: '副本', importSuffix: '-import', fileName: 'custom-face' },
+    timeline: {
+      label: '表情时间轴', play: '预览全部', pause: '暂停', selectedPreview: '预览选中', totalFrames: '总帧数 {{count}}', totalDuration: '总时长 {{duration}} ms', selected: '已选 {{count}} 帧', current: '当前帧 {{current}} / {{total}}', insert: '插入位置', selectFrame: '勾选第 {{index}} 帧', framePreview: '第 {{index}} 帧预览', frame: '帧 {{index}}', deleteFrame: '删除帧 {{index}}', keepOne: '至少保留一帧', addFrame: '新增帧', addFrameHint: '复制当前帧并追加到末尾'
+    },
+    rulers: {
+      horizontal: '横向刻度', vertical: '纵向刻度', horizontalGuide: '横向辅助线', verticalGuide: '纵向辅助线', addHorizontal: '新增横向辅助线', addVertical: '新增纵向辅助线', horizontalRow: '横向辅助线 · 行', verticalColumn: '纵向辅助线 · 列', coordinate: '辅助线坐标', delete: '删除辅助线', close: '关闭'
+    },
+    assets: {
+      label: '素材库', close: '关闭素材库', groupTab: '当前组素材', publicTab: '公共素材', filter: '按标签筛选', clearFilter: '清除筛选', tags: '标签：{{tags}}', rename: '重命名', confirmRename: '确认', tag: '标签', confirmTags: '确认标签', delete: '删除', empty: '暂无素材', saveGroup: '保存到当前组', savePublic: '保存为公共素材', deleteConfirm: '确定删除个人素材“{{name}}”吗？', name: '个人素材新名称', tagInput: '素材标签', preview: '{{name}} 预览'
+    },
+    canvasOverlay: { pendingImport: '待确认导入对象', pendingImportPreview: '待确认导入 {{width}} × {{height}}', magnifierArea: '放大区域', currentPixel: '当前像素', originalSelection: '原始选区', selection: '当前选区', eraserArea: '擦除范围', toolPreview: '工具预览', penPreview: '钢笔路径预览', pixelGrid: '像素网格' },
+    workbench: { initialStatus: '选择工具后在画布中操作。', toolHints: { select: '在画布拖拽建立选区，然后在右侧执行选区操作。', brush: '点击一个像素切换高亮状态。', eraser: '调整擦除范围后拖动，松开时作为一次操作提交。', line: '按下建立起点，拖动查看线段预览，松开提交。', rectangle: '拖动查看预览框，松开提交。', circle: '拖动外接框，预览和最终椭圆共用同一范围。', triangle: '首次点击点固定为顶点，拖动调整底边。', pen: '逐点点击建立路径，双击或右侧按钮完成。' }, constraints: { line: '约束到水平、垂直或 45°', rectangle: '约束为正方形', circle: '约束为正圆', triangle: '约束为等腰三角形' },
+      back: '返回组管理', save: '保存', saving: '保存中…', importSvg: '导入 SVG', assets: '素材库', groupName: '组名称', applyGroupName: '应用组名称', modified: '有未保存修改', saved: '已保存', saveFailed: '保存失败：{{error}}', saveSuccess: '已保存当前表情组。', saveConflict: '保存冲突：磁盘中的表情组已被其他操作修改。', reloadSuccess: '已重新加载磁盘版本，本地未保存修改已丢弃。', reloadFailed: '重新加载失败：{{error}}', discardFailed: '丢弃修改失败：{{error}}', closeFailed: '关闭编辑器失败：{{error}}', switchFace: '已切换表情并加载第一帧。', frameAdded: '已复制当前帧并追加到时间轴末尾。', faceRenamed: '已重命名为“{{name}}”。', maxFaces: '每组最多 15 个表情。', newFace: '新表情', copyFace: '复制表情', addedFace: '已新增“{{name}}”。', copySuffix: '副本', copiedFace: '已复制为“{{name}}”。', emptyFaceName: '表情名称不能为空。', duplicateFaceName: '当前组内表情名称不能重复。', minFaces: '每组至少保留一个表情。', deleteFaceConfirm: '确定删除表情“{{name}}”吗？', groupNameChanged: '组名称已修改为“{{name}}”。', frameApplied: '临时对象已应用到当前帧。', copiedSelection: '已复制选区，可切换帧后粘贴。', selectionCreated: '已框选 {{width}} × {{height}} 像素区域。', assetApplied: '个人素材已加载到画布，请调整后确认应用。', assetSaved: '当前帧已保存为个人素材。', svgApplied: 'SVG 已加载到画布，请调整位置后确认导入。', currentFace: '当前表情', selectFace: '选择表情', faceName: '表情名称', currentFrame: '当前帧 {{current}} / {{total}}', applyName: '应用名称', defaultFace: '默认', setDefault: '设为默认表情', deleteFace: '删除表情', frameName: '帧', frameDuration: '帧时长', resolutionFaces: '分辨率 {{width}} × {{height}} · 表情 {{count}} / 15', toolProperties: '工具属性', currentTool: '当前工具：{{tool}}', outline: '空心', filled: '实心', eraseArea: '擦除范围：{{size}} × {{size}}', start: '起点：{{point}}', end: '终点：{{point}}', bounds: '范围：{{width}} × {{height}}', selectionInfo: '选区：{{x}},{{y}} · {{width}} × {{height}}', moveStep: '选区移动步长', up: '向上移动选区', left: '向左移动选区', down: '向下移动选区', right: '向右移动选区', confirmMove: '确认移动', copy: '复制', paste: '粘贴', pasteHint: '粘贴到当前选区左上角', clipboardEmpty: '剪贴板为空，请先复制选区。', selectTarget: '请先框选粘贴目标区域。', clear: '清空', highlight: '高亮', dim: '熄灭', cancelMove: '取消移动', cancel: '取消', selectHint: '请在画布中拖拽建立选区。', points: '顶点：{{count}}', finishPath: '完成路径', cancelPath: '取消路径', saveConflictTitle: '检测到保存冲突', saveConflictDescription: '磁盘中的表情组已被其他操作修改。重新加载会丢弃当前本地修改；覆盖保存会以当前本地版本替换磁盘版本。', reloadDisk: '重新加载磁盘版本', overwrite: '覆盖保存', leaveTitle: '保存未完成的修改？', leaveDescription: '当前表情组包含尚未正式保存的修改。保存失败时编辑器会保持打开。', discard: '丢弃修改', saveAndClose: '保存并关闭', pendingTitle: '素材待确认应用', pendingDescription: '拖动画布调整位置，确认后写入当前帧。', pendingScale: '缩放：{{scale}}', pendingScaleLabel: '临时素材缩放', copyFirst: '请先复制选区', cancelApply: '取消应用', confirmApply: '确认应用', pasteTarget: '请先框选粘贴目标区域。' },
     canvas: {
       label: '自定义表情画布 {{width}} × {{height}}',
       coordinate: '坐标 {{x}}, {{y}} · ',
-      scale: '缩放 {{scale}}×'
+      scale: '缩放 {{scale}}×',
+      emptyFrame: '空白帧'
     },
     magnifier: {
       show: '局部放大',
@@ -1054,6 +1133,7 @@ export const zhMessages = {
       invertImageHint: '只反转图像内容区域，透明背景保持熄灭。',
       imported: '已导入“{{name}}”，尚未保存。'
     },
+    svgImport: { title: '导入 SVG', filterName: 'SVG 图像', mergeLabel: '叠加到当前帧', replaceLabel: '覆盖当前帧', description: '使用 SVG 原生静态渲染转换为单色像素。推荐透明背景和任意不透明前景；不透明底色也会被点亮。', read: '读取中…', selectFile: '选择 SVG 文件', metadata: '原始尺寸 {{width}} × {{height}} · {{elements}} 个元素 · 目标分辨率 {{targetWidth}} × {{targetHeight}}', noFile: '请选择 SVG 文件', updating: '正在更新预览…', mode: '导入方式', merge: '叠加', replace: '覆盖', x: '水平位置 X', y: '垂直偏移', offsetXLabel: '水平偏移', offsetYLabel: '垂直偏移', scaleLabel: '缩放', rotationLabel: '旋转', thresholdLabel: '像素覆盖阈值', center: '居中', topLeft: '左上角', reset: '重置', offsetX: '水平偏移：{{value}}', offsetY: '垂直偏移：{{value}}', scale: '缩放：{{value}}', rotation: '旋转：{{value}}°', threshold: '像素覆盖阈值：{{value}}', thresholdHint: '低值保留更多细线，高值会收紧边缘。', activePixels: '高亮像素：{{count}}', clipped: '已裁切屏幕外内容', cancel: '取消', apply: '应用到当前帧', preview: 'SVG 预览 {{width}} × {{height}}' },
     faceExport: {
       item: '导出可编辑表情',
       gif: '导出 GIF',
