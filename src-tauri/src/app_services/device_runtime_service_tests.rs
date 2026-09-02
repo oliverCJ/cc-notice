@@ -1,14 +1,18 @@
 use std::sync::{Arc, Mutex};
 
 use super::{DeviceInputEventCallback, DeviceRuntimeService};
-use crate::app_services::device_io_worker::{DeviceIoError, DeviceIoErrorCode};
+use crate::app_services::device_io_worker::{
+    DeviceIoCommandResult, DeviceIoError, DeviceIoErrorCode,
+};
 use crate::core::device::{
     ActiveLevel, DeviceChannel, DeviceChannelAction, DeviceChannelActionType,
-    DeviceConnectionStatus, DeviceExtensionAction, DeviceExtensionActionType, DeviceFirmwareStatus,
-    DeviceHeartbeatStatus, DeviceInstance, DeviceOperationKind, DeviceRuntimeErrorCode,
-    DeviceTransportConfig,
+    DeviceConnectionStatus, DeviceCustomFaceCapabilities, DeviceCustomFaceErrorCode,
+    DeviceCustomFaceStatusState, DeviceExtensionAction, DeviceExtensionActionType,
+    DeviceFirmwareInfo, DeviceFirmwareStatus, DeviceHeartbeatStatus, DeviceInstance,
+    DeviceOperationKind, DeviceRuntimeErrorCode, DeviceTransportConfig,
 };
 use crate::core::firmware::FirmwareArtifact;
+use crate::core::protocol::ProtocolCommandV2;
 use crate::infrastructure::transports::mock::MockDeviceTransport;
 
 #[test]
@@ -758,6 +762,144 @@ fn device_info_timeout_uses_error_code_instead_of_message_text() {
 }
 
 #[test]
+fn serializes_custom_face_status_query_as_protocol_v2_line() {
+    assert_eq!(
+        "{\"v\":2,\"type\":\"custom_face_status\"}\n",
+        ProtocolCommandV2::custom_face_status()
+            .to_json_line()
+            .expect("custom face status query should serialize")
+    );
+}
+
+#[test]
+fn device_info_with_valid_capability_queries_custom_face_status() {
+    let device = test_device("desk-pico");
+    let transport = MockDeviceTransport::with_received_lines(vec![
+        r#"{"ok":true,"v":2,"type":"device_info","board_id":"rp2040-pico-oled-091","device_uid":"rp2040-pico-oled-091:0011223344556677","firmware_version":"0.1.2","protocol_version":2,"custom_face":{"protocol_version":1,"profile_code":1,"pixel_width":128,"pixel_height":32,"max_faces":15,"max_frames_per_face":20,"max_group_bytes":131072,"chunk_bytes":512,"incremental_update":true}}"#.to_string(),
+        r#"{"ok":true,"v":2,"type":"custom_face_status","state":"empty"}"#.to_string(),
+    ]);
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(transport));
+
+    service
+        .query_device_info(&bundled_artifact_for_board(
+            "rp2040-pico-oled-091",
+            "0.1.2",
+            2,
+        ))
+        .expect("device info should query custom face status");
+
+    assert_eq!(
+        vec![
+            "{\"v\":2,\"type\":\"device_info\"}\n",
+            "{\"v\":2,\"type\":\"custom_face_status\"}\n",
+        ],
+        service.sent_lines()
+    );
+    assert_eq!(
+        DeviceCustomFaceStatusState::Empty,
+        service.state().custom_face_status.state
+    );
+}
+
+#[test]
+fn invalid_or_missing_capability_does_not_query_custom_face_status() {
+    let device = test_device("desk-pico");
+    let transport = MockDeviceTransport::with_received_lines(vec![
+        r#"{"ok":true,"v":2,"type":"device_info","board_id":"rp2040-pico-oled-091","device_uid":"rp2040-pico-oled-091:0011223344556677","firmware_version":"0.1.2","protocol_version":2}"#.to_string(),
+    ]);
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(transport));
+
+    service
+        .query_device_info(&bundled_artifact_for_board(
+            "rp2040-pico-oled-091",
+            "0.1.2",
+            2,
+        ))
+        .expect("device info without capability should not query custom face status");
+
+    assert_eq!(
+        vec!["{\"v\":2,\"type\":\"device_info\"}\n"],
+        service.sent_lines()
+    );
+    assert_eq!(
+        DeviceCustomFaceStatusState::Unknown,
+        service.state().custom_face_status.state
+    );
+}
+
+#[test]
+fn custom_face_status_timeout_does_not_break_normal_connection() {
+    let device = test_device("desk-pico");
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(MockDeviceTransport::default()));
+    service.apply_firmware_info(
+        firmware_info_with_custom_face(),
+        &bundled_artifact_for_board("rp2040-pico-oled-091", "0.1.2", 2),
+    );
+    let prepared = service
+        .prepare_custom_face_status_query()
+        .expect("connected custom face device should prepare status query");
+
+    service
+        .complete_custom_face_status_query(
+            prepared.session_id,
+            Err(DeviceIoError::new(
+                DeviceIoErrorCode::ActionTimeout,
+                "localized custom face timeout",
+            )),
+        )
+        .expect("custom face timeout should be isolated");
+
+    let state = service.state();
+    assert_eq!(DeviceConnectionStatus::Connected, state.status);
+    assert_eq!(
+        DeviceCustomFaceStatusState::Unavailable,
+        state.custom_face_status.state
+    );
+    assert_eq!(
+        Some(DeviceCustomFaceErrorCode::CustomFaceStatusTimeout),
+        state.custom_face_status.error_code
+    );
+    assert_eq!(None, state.last_error);
+}
+
+#[test]
+fn disconnect_preserves_last_confirmed_custom_face_status() {
+    let device = test_device("desk-pico");
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(MockDeviceTransport::default()));
+    service.apply_firmware_info(
+        firmware_info_with_custom_face(),
+        &bundled_artifact_for_board("rp2040-pico-oled-091", "0.1.2", 2),
+    );
+    let prepared = service
+        .prepare_custom_face_status_query()
+        .expect("connected custom face device should prepare status query");
+
+    service
+        .complete_custom_face_status_query(
+            prepared.session_id,
+            Ok(DeviceIoCommandResult {
+                ack: Some(r#"{"ok":true,"v":2,"type":"custom_face_status","state":"installed","profile_code":1,"group_id":"10000000-0000-4000-8000-000000000001","group_runtime_hash":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","default_face_id":"20000000-0000-4000-8000-000000000001","face_count":12,"encoded_bytes":82416}"#.to_string()),
+            }),
+        )
+        .expect("installed custom face status should be accepted");
+    let confirmed_at = service.state().custom_face_status.last_confirmed_at.clone();
+
+    service.disconnect();
+
+    let state = service.state();
+    assert_eq!(DeviceConnectionStatus::Disconnected, state.status);
+    assert_eq!(
+        DeviceCustomFaceStatusState::Installed,
+        state.custom_face_status.state
+    );
+    assert_eq!(confirmed_at, state.custom_face_status.last_confirmed_at);
+}
+
+#[test]
 fn background_read_error_stops_worker_without_retrying_forever() {
     let device = test_device("desk-pico");
     let mut transport = MockDeviceTransport::default();
@@ -829,6 +971,27 @@ fn set_device_uid_transport_error_records_error_code() {
         Some("localized transport disconnected".to_string()),
         state.last_error
     );
+}
+
+fn firmware_info_with_custom_face() -> DeviceFirmwareInfo {
+    DeviceFirmwareInfo {
+        board_id: "rp2040-pico-oled-091".to_string(),
+        device_uid: "rp2040-pico-oled-091:0011223344556677".to_string(),
+        firmware_version: "0.1.2".to_string(),
+        protocol_version: 2,
+        custom_face: Some(DeviceCustomFaceCapabilities {
+            protocol_version: 1,
+            profile_code: 1,
+            pixel_width: 128,
+            pixel_height: 32,
+            max_faces: 15,
+            max_frames_per_face: 20,
+            max_group_bytes: 131_072,
+            chunk_bytes: 512,
+            incremental_update: true,
+        }),
+        custom_face_error: None,
+    }
 }
 
 fn test_device(device_id: &str) -> DeviceInstance {

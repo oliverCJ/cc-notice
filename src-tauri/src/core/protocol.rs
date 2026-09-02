@@ -121,6 +121,10 @@ impl ProtocolCommandV2 {
         Self::base_command("device_info")
     }
 
+    pub fn custom_face_status() -> Self {
+        Self::base_command("custom_face_status")
+    }
+
     pub fn set_device_uid(device_uid: String) -> Self {
         Self {
             device_uid: Some(device_uid),

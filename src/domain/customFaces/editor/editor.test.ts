@@ -53,8 +53,10 @@ describe('custom face editor reducer', () => {
     state = editorReducer(state, { type: 'add-frame' });
     expect(state.presentGroup.faces[0].frames).toHaveLength(2);
     expect(state.selectedFrameIndex).toBe(1);
-    state = editorReducer(state, { type: 'set-frame-duration', index: 1, durationMs: 99 });
-    expect(state.presentGroup.faces[0].frames[1].durationMs).toBe(120);
+    state = editorReducer(state, { type: 'set-frame-duration', index: 1, durationMs: 49 });
+    expect(state.presentGroup.faces[0].frames[1].durationMs).toBe(50);
+    state = editorReducer(state, { type: 'set-frame-duration', index: 1, durationMs: 50 });
+    expect(state.presentGroup.faces[0].frames[1].durationMs).toBe(50);
     state = editorReducer(state, { type: 'select-frame', index: 0 });
     expect(state.selectedFrameIndex).toBe(0);
   });
@@ -66,6 +68,29 @@ describe('custom face editor reducer', () => {
     state = editorReducer(state, { type: 'add-frame' });
     expect(state.presentGroup.faces[0].frames).toHaveLength(3);
     expect(state.selectedFrameIndex).toBe(2);
+  });
+
+  test('appends a blank frame with default duration and empty pixels', () => {
+    let state = createEditorState(group(), profile);
+    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [{ x: 4, y: 2, active: true }] });
+    const sourcePixels = [...state.presentGroup.faces[0].frames[0].packedPixels];
+    state = editorReducer(state, { type: 'add-blank-frame' });
+    const frames = state.presentGroup.faces[0].frames;
+    expect(frames).toHaveLength(2);
+    expect(frames[1]).toEqual({ durationMs: 200, packedPixels: Array(profile.framebufferBytes).fill(0) });
+    expect(frames[0].packedPixels).toEqual(sourcePixels);
+    expect(state.selectedFrameIndex).toBe(1);
+    const undone = editorReducer(state, { type: 'undo' });
+    expect(undone.presentGroup.faces[0].frames).toHaveLength(1);
+    expect(editorReducer(undone, { type: 'redo' }).presentGroup.faces[0].frames).toHaveLength(2);
+  });
+
+  test('does not add a blank frame beyond the profile frame limit', () => {
+    const limitedProfile = { ...profile, maxFrames: 1 };
+    const state = createEditorState(group(), limitedProfile);
+    const next = editorReducer(state, { type: 'add-blank-frame' });
+    expect(next).toBe(state);
+    expect(next.past).toHaveLength(0);
   });
 
   test('copies and clears a selected region', () => {

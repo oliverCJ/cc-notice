@@ -528,6 +528,35 @@ impl DeviceRuntimeRegistry {
         Ok(state)
     }
 
+    pub fn prepare_custom_face_status_query(
+        &self,
+        device_id: &str,
+    ) -> Result<PreparedDeviceCommand, String> {
+        let service = self
+            .services
+            .get(device_id)
+            .ok_or_else(|| format!("device is not registered: {device_id}"))?;
+        service.prepare_custom_face_status_query()
+    }
+
+    pub fn complete_custom_face_status_query(
+        &mut self,
+        device_id: &str,
+        session_id: u64,
+        result: Result<DeviceIoCommandResult, DeviceIoError>,
+    ) -> Result<DeviceRuntimeState, String> {
+        let state = {
+            let service = self
+                .services
+                .get_mut(device_id)
+                .ok_or_else(|| format!("device is not registered: {device_id}"))?;
+            service.complete_custom_face_status_query(session_id, result)?;
+            service.state()
+        };
+        self.drain_and_handle_input_events(device_id);
+        Ok(state)
+    }
+
     pub fn prepare_set_device_uid_command(
         &self,
         device_id: &str,

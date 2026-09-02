@@ -252,6 +252,27 @@ mod tests {
     }
 
     #[test]
+    fn preserves_50ms_frame_delay_in_gif_centiseconds() {
+        let root = std::env::temp_dir().join(format!("ccface-gif-{}", uuid::Uuid::new_v4()));
+        let path = root.join("fast.gif");
+        let mut face = test_face();
+        face.frames[0].duration_ms = 50;
+        let service = CustomFaceLibraryService::new(root.clone());
+        let result = service
+            .export_face_gif(&face, "custom-mono-128x32-v1", &path, 1)
+            .unwrap();
+        assert_eq!(result.frame_delays_ms, vec![50]);
+        assert_eq!(result.total_duration_ms, 50);
+
+        let mut options = DecodeOptions::new();
+        options.set_color_output(gif::ColorOutput::Indexed);
+        let mut reader = options.read_info(fs::File::open(&path).unwrap()).unwrap();
+        let frame = reader.read_next_frame().unwrap().unwrap();
+        assert_eq!(frame.delay, 5);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn exports_real_profile_size_and_rounds_frame_delay() {
         let root = std::env::temp_dir().join(format!("ccface-gif-{}", uuid::Uuid::new_v4()));
         let path = root.join("ready.gif");

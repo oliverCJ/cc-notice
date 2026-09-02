@@ -1,10 +1,12 @@
 use crate::app_services::device_operation::{next_operation_id, CANCELLED_RECONNECT_COOLDOWN_MS};
+use crate::core::custom_faces::parse_custom_face_status;
 use crate::core::device::{
     DeviceChannel, DeviceChannelAction, DeviceCommandOutputType, DeviceCommandResult,
-    DeviceConnectionStatus, DeviceExtensionAction, DeviceExtensionActionType, DeviceFirmwareInfo,
-    DeviceFirmwareStatus, DeviceHeartbeatStatus, DeviceInputEvent, DeviceInputEventAction,
-    DeviceInputKind, DeviceInstance, DeviceOperationKind, DeviceOperationSummary,
-    DeviceRuntimeErrorCode, DeviceRuntimeState, DeviceTransportConfig,
+    DeviceConnectionStatus, DeviceCustomFaceErrorCode, DeviceCustomFaceStatus,
+    DeviceCustomFaceStatusState, DeviceExtensionAction, DeviceExtensionActionType,
+    DeviceFirmwareInfo, DeviceFirmwareStatus, DeviceHeartbeatStatus, DeviceInputEvent,
+    DeviceInputEventAction, DeviceInputKind, DeviceInstance, DeviceOperationKind,
+    DeviceOperationSummary, DeviceRuntimeErrorCode, DeviceRuntimeState, DeviceTransportConfig,
 };
 use crate::core::firmware::FirmwareArtifact;
 use crate::core::protocol::{DeviceInfoAck, DeviceInputEventAck, ProtocolAck, ProtocolCommandV2};
@@ -688,6 +690,7 @@ impl DeviceRuntimeService {
             Ok(ack) => match firmware_info_from_ack(ack, &self.device.transport) {
                 Ok(info) => {
                     self.apply_firmware_info(info, artifact);
+                    let _ = self.query_custom_face_status();
                     Ok(())
                 }
                 Err(error) => {
@@ -854,6 +857,130 @@ impl DeviceRuntimeService {
         Ok(())
     }
 
+    pub fn prepare_custom_face_status_query(&self) -> Result<PreparedDeviceCommand, String> {
+        let Some(worker) = self.io_worker.clone() else {
+            return Err("device is not connected".to_string());
+        };
+        if self.state.status != DeviceConnectionStatus::Connected {
+            return Err("device is not connected".to_string());
+        }
+        if self
+            .state
+            .firmware_info
+            .as_ref()
+            .and_then(|info| info.custom_face.as_ref())
+            .is_none()
+        {
+            return Err("device firmware does not support custom_face_status".to_string());
+        }
+        Ok(PreparedDeviceCommand {
+            worker,
+            command: ProtocolCommandV2::custom_face_status(),
+            session_id: self.io_session_id,
+        })
+    }
+
+    pub fn complete_custom_face_status_query(
+        &mut self,
+        session_id: u64,
+        result: Result<DeviceIoCommandResult, DeviceIoError>,
+    ) -> Result<(), String> {
+        if !self.io_session_matches(session_id) {
+            tracing::debug!(
+                device_id = self.device.id,
+                session_id,
+                current_session_id = self.io_session_id,
+                "discarded stale custom_face_status query result"
+            );
+            return Ok(());
+        }
+        let Some(capability) = self
+            .state
+            .firmware_info
+            .as_ref()
+            .and_then(|info| info.custom_face.as_ref())
+            .cloned()
+        else {
+            return Ok(());
+        };
+        let side_effects = match self.apply_protocol_command_result(result) {
+            Ok(side_effects) => side_effects,
+            Err(error) => {
+                let (state, error_code) = match error.code {
+                    DeviceIoErrorCode::ActionTimeout => (
+                        DeviceCustomFaceStatusState::Unavailable,
+                        Some(DeviceCustomFaceErrorCode::CustomFaceStatusTimeout),
+                    ),
+                    _ => (
+                        DeviceCustomFaceStatusState::Unavailable,
+                        Some(DeviceCustomFaceErrorCode::CustomFaceStatusInvalid),
+                    ),
+                };
+                self.state.custom_face_status = DeviceCustomFaceStatus {
+                    state,
+                    installed: None,
+                    error_code,
+                    last_confirmed_at: self.state.custom_face_status.last_confirmed_at.clone(),
+                };
+                tracing::warn!(
+                    device_id = self.device.id,
+                    session_id,
+                    error_code = ?error.code,
+                    error = %error.message,
+                    "custom_face_status query failed without changing base connection state"
+                );
+                return Ok(());
+            }
+        };
+        let Some(ack_line) = side_effects.ack else {
+            self.state.custom_face_status = DeviceCustomFaceStatus {
+                state: DeviceCustomFaceStatusState::Unavailable,
+                installed: None,
+                error_code: Some(DeviceCustomFaceErrorCode::CustomFaceStatusTimeout),
+                last_confirmed_at: self.state.custom_face_status.last_confirmed_at.clone(),
+            };
+            return Ok(());
+        };
+        self.state.last_ack = Some(ack_line.clone());
+        match parse_custom_face_status(&ack_line, &capability) {
+            Ok(mut status) => {
+                status.last_confirmed_at = Some(current_local_timestamp());
+                self.state.custom_face_status = status;
+                Ok(())
+            }
+            Err(DeviceCustomFaceErrorCode::CustomFaceStorageError) => {
+                self.state.custom_face_status = DeviceCustomFaceStatus {
+                    state: DeviceCustomFaceStatusState::Unavailable,
+                    installed: None,
+                    error_code: Some(DeviceCustomFaceErrorCode::CustomFaceStorageError),
+                    last_confirmed_at: self.state.custom_face_status.last_confirmed_at.clone(),
+                };
+                tracing::warn!(
+                    device_id = self.device.id,
+                    session_id,
+                    error_code = "custom-face-storage-error",
+                    "custom_face_status reported storage error"
+                );
+                Ok(())
+            }
+            Err(_) => {
+                self.state.custom_face_status = DeviceCustomFaceStatus {
+                    state: DeviceCustomFaceStatusState::Unavailable,
+                    installed: None,
+                    error_code: Some(DeviceCustomFaceErrorCode::CustomFaceStatusInvalid),
+                    last_confirmed_at: self.state.custom_face_status.last_confirmed_at.clone(),
+                };
+                tracing::warn!(
+                    device_id = self.device.id,
+                    session_id,
+                    error_code = "custom-face-status-invalid",
+                    "custom_face_status response was invalid"
+                );
+                Ok(())
+            }
+        }
+    }
+
     pub(super) fn ping(&mut self) -> Result<(), String> {
         let prepared = self.prepare_ping_command()?;
         let session_id = prepared.session_id;
@@ -974,6 +1101,25 @@ impl DeviceRuntimeService {
         }
         self.clear_last_error();
         Ok(())
+    }
+
+    fn query_custom_face_status(&mut self) -> Result<(), String> {
+        let prepared = match self.prepare_custom_face_status_query() {
+            Ok(prepared) => prepared,
+            Err(error) => {
+                if error != "device firmware does not support custom_face_status" {
+                    tracing::debug!(
+                        device_id = self.device.id,
+                        error = %error,
+                        "skipped custom_face_status query"
+                    );
+                }
+                return Ok(());
+            }
+        };
+        let session_id = prepared.session_id;
+        let result = prepared.worker.send_protocol_command(prepared.command);
+        self.complete_custom_face_status_query(session_id, result)
     }
 
     pub fn complete_gpio_input_config_command(

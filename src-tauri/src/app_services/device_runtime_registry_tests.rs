@@ -2,8 +2,10 @@ use super::DeviceRuntimeRegistry;
 use crate::core::device::DeviceOperationKind;
 use crate::core::device::{
     ActiveLevel, DeviceChannel, DeviceChannelAction, DeviceChannelActionType,
-    DeviceConnectionStatus, DeviceHeartbeatStatus, DeviceInstance, DeviceTransportConfig,
+    DeviceConnectionStatus, DeviceCustomFaceStatusState, DeviceHeartbeatStatus, DeviceInstance,
+    DeviceTransportConfig,
 };
+use crate::core::firmware::FirmwareArtifact;
 use crate::infrastructure::transports::mock::MockDeviceTransport;
 
 #[test]
@@ -118,6 +120,64 @@ fn ping_connected_devices_only_pings_connected_runtime_services() {
 }
 
 #[test]
+fn completing_device_info_query_prepares_custom_face_status_without_blocking_registry() {
+    let mut registry = DeviceRuntimeRegistry::new(vec![test_device("desk-pico")]);
+    registry
+        .connect_with_transport(
+            "desk-pico",
+            Box::new(MockDeviceTransport::with_received_lines(vec![
+                r#"{"ok":true,"v":2,"type":"device_info","board_id":"rp2040-pico-oled-091","device_uid":"rp2040-pico-oled-091:0011223344556677","firmware_version":"0.1.2","protocol_version":2,"custom_face":{"protocol_version":1,"profile_code":1,"pixel_width":128,"pixel_height":32,"max_faces":15,"max_frames_per_face":20,"max_group_bytes":131072,"chunk_bytes":512,"incremental_update":true}}"#.to_string(),
+                r#"{"ok":true,"v":2,"type":"custom_face_status","state":"empty"}"#.to_string(),
+            ])),
+        )
+        .expect("device should connect");
+    let prepared = registry
+        .prepare_device_info_query("desk-pico")
+        .expect("device info query should prepare");
+    let device_info_result = prepared.worker.query_device_info_line();
+
+    let state = registry
+        .complete_device_info_query(
+            "desk-pico",
+            prepared.session_id,
+            &bundled_artifact_for_board("rp2040-pico-oled-091", "0.1.2", 2),
+            device_info_result,
+        )
+        .expect("device info query should complete");
+
+    assert_eq!(
+        vec!["{\"v\":2,\"type\":\"device_info\"}\n"],
+        registry.sent_lines("desk-pico")
+    );
+    assert_eq!(
+        DeviceCustomFaceStatusState::Unknown,
+        state.custom_face_status.state
+    );
+
+    let prepared_status = registry
+        .prepare_custom_face_status_query("desk-pico")
+        .expect("custom face status query should prepare after capability is applied");
+    let status_result = prepared_status
+        .worker
+        .send_protocol_command(prepared_status.command);
+    let state = registry
+        .complete_custom_face_status_query("desk-pico", prepared_status.session_id, status_result)
+        .expect("custom face status query should complete");
+
+    assert_eq!(
+        vec![
+            "{\"v\":2,\"type\":\"device_info\"}\n",
+            "{\"v\":2,\"type\":\"custom_face_status\"}\n",
+        ],
+        registry.sent_lines("desk-pico")
+    );
+    assert_eq!(
+        DeviceCustomFaceStatusState::Empty,
+        state.custom_face_status.state
+    );
+}
+
+#[test]
 fn begin_device_operation_marks_state_busy() {
     let mut registry = DeviceRuntimeRegistry::new(vec![test_device("desk-pico")]);
 
@@ -170,7 +230,12 @@ fn one_device_failure_does_not_affect_another_device_state() {
         .connect_with_transport("desk-pico", Box::new(failing_transport))
         .expect("device should connect");
     registry
-        .connect_with_transport("lab-pico", Box::new(MockDeviceTransport::default()))
+        .connect_with_transport(
+            "lab-pico",
+            Box::new(MockDeviceTransport::with_received_lines(vec![
+                "{\"ok\":true}".to_string(),
+            ])),
+        )
         .expect("device should connect");
 
     let failed = registry.send_action(&test_action(
@@ -388,6 +453,27 @@ fn connecting_unknown_device_returns_error() {
         .expect_err("unknown device should fail");
 
     assert_eq!("device is not registered: missing-pico", error);
+}
+
+fn bundled_artifact_for_board(
+    board_id: &str,
+    firmware_version: &str,
+    protocol_version: u16,
+) -> FirmwareArtifact {
+    FirmwareArtifact {
+        target_id: None,
+        board_id: board_id.to_string(),
+        firmware_version: firmware_version.to_string(),
+        protocol_version,
+        visible: true,
+        toolchain: None,
+        artifact_name: format!("cc-notice-{board_id}.uf2"),
+        artifact_type: "uf2".to_string(),
+        flash_strategy: "uf2_mount_copy".to_string(),
+        flash_volume_name: "RPI-RP2".to_string(),
+        relative_path: format!("{board_id}/cc-notice-{board_id}.uf2"),
+        upload: None,
+    }
 }
 
 fn test_device(device_id: &str) -> DeviceInstance {

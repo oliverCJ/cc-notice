@@ -6,12 +6,51 @@ export const CUSTOM_FACE_DEVICE_PROTOCOL = {
   "packageBinaryVersion": 1,
   "maxRawChunkBytes": 512,
   "minLineBufferBytes": 1024,
+  "install": {
+    "commands": [
+      "custom_face_install_begin",
+      "custom_face_install_chunk",
+      "custom_face_install_commit",
+      "custom_face_install_abort",
+      "custom_face_clear"
+    ],
+    "beginFields": [
+      "session_id",
+      "profile_code",
+      "group_id",
+      "group_runtime_hash",
+      "package_hash",
+      "total_bytes",
+      "chunk_bytes"
+    ],
+    "chunkFields": [
+      "session_id",
+      "offset",
+      "data"
+    ],
+    "commitFields": [
+      "session_id"
+    ],
+    "ackTypes": [
+      "custom_face_install_begin",
+      "custom_face_install_chunk",
+      "custom_face_install_commit",
+      "custom_face_install_abort",
+      "custom_face_clear"
+    ]
+  },
   "statusStates": [
     "empty",
     "installed"
   ],
   "errors": [
     "custom_face_storage_error",
-    "device_busy"
+    "device_busy",
+    "custom_face_install_session_invalid",
+    "custom_face_install_hash_mismatch",
+    "custom_face_install_capacity_exceeded",
+    "custom_face_install_offset_invalid",
+    "custom_face_install_profile_mismatch",
+    "custom_face_install_payload_invalid"
   ]
 } as const;

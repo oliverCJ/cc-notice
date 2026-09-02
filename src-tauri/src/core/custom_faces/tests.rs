@@ -67,6 +67,19 @@ fn validates_a_static_128x32_group() {
 }
 
 #[test]
+fn validates_50ms_frame_and_rejects_49ms_frame() {
+    let mut group = test_group("custom-mono-128x32-v1", 1, 1, 512);
+    group.faces[0].frames[0].duration_ms = 50;
+    assert_eq!(Ok(()), validate_group(&group));
+
+    group.faces[0].frames[0].duration_ms = 49;
+    assert_eq!(
+        Err(CustomFaceValidationError::InvalidFrameDuration(49)),
+        validate_group(&group)
+    );
+}
+
+#[test]
 fn rejects_duplicate_nfkc_casefolded_names() {
     let mut group = test_group("custom-mono-128x32-v1", 2, 1, 512);
     group.faces[0].name = "Ready".to_string();
@@ -81,11 +94,18 @@ fn rejects_duplicate_nfkc_casefolded_names() {
 }
 
 #[test]
-fn rejects_320x240_sixth_frame() {
+fn accepts_320x240_tenth_frame_and_rejects_eleventh_frame() {
     let group = test_group("custom-mono-320x240-v1", 1, 6, 9600);
 
+    assert_eq!(Ok(()), validate_group(&group));
+
+    let group = test_group("custom-mono-320x240-v1", 1, 11, 9600);
+
     assert_eq!(
-        Err(CustomFaceValidationError::TooManyFrames { max: 5, actual: 6 }),
+        Err(CustomFaceValidationError::TooManyFrames {
+            max: 10,
+            actual: 11
+        }),
         validate_group(&group)
     );
 }

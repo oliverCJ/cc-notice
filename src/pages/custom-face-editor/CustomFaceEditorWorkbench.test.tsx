@@ -139,8 +139,12 @@ test('exports the current unsaved face snapshot without saving', async () => {
 test('allows clearing frame duration input before committing a normalized value', () => {
   render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
   const input = screen.getByRole('spinbutton', { name: '帧时长' });
+  expect(input).toHaveAttribute('min', '50');
   fireEvent.change(input, { target: { value: '' } });
   expect(input).toHaveValue(null);
+  fireEvent.change(input, { target: { value: '49' } });
+  fireEvent.blur(input);
+  expect(input).toHaveValue(50);
   fireEvent.change(input, { target: { value: '450' } });
   expect(input).toHaveValue(450);
 });

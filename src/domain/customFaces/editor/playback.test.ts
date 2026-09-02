@@ -12,7 +12,9 @@ describe('custom face playback', () => {
   });
 
   test('normalizes duration and profile frame limits', () => {
-    expect(normalizeFrameDuration(1)).toBe(120);
+    expect(normalizeFrameDuration(49)).toBe(50);
+    expect(normalizeFrameDuration(50)).toBe(50);
+    expect(normalizeFrameDuration(51)).toBe(51);
     expect(normalizeFrameDuration(9999)).toBe(5000);
     expect(frameLimitForProfile('custom-mono-320x240-v1')).toBe(10);
     expect(frameLimitForProfile('custom-mono-128x64-v1')).toBe(20);

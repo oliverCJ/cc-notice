@@ -220,11 +220,13 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     if (!face?.frames[action.index]) return state;
     return { ...state, selectedFrameIndex: action.index, selection: null, selectionOrigin: null, selectionMoveBaseline: null };
   }
-  if (action.type === 'add-frame') {
+  if (action.type === 'add-frame' || action.type === 'add-blank-frame') {
     const group = clone(state.presentGroup);
     const face = group.faces.find((item) => item.faceId === state.selectedFaceId);
     if (!face || face.frames.length >= state.profile.maxFrames) return state;
-    const source = face.frames[state.selectedFrameIndex] ?? { durationMs: 200, packedPixels: new Array(state.profile.framebufferBytes).fill(0) };
+    const source = action.type === 'add-frame'
+      ? face.frames[state.selectedFrameIndex] ?? { durationMs: 200, packedPixels: new Array(state.profile.framebufferBytes).fill(0) }
+      : { durationMs: 200, packedPixels: new Array(state.profile.framebufferBytes).fill(0) };
     face.frames.push(clone(source));
     return commit(state, group, face.faceId, face.frames.length - 1);
   }

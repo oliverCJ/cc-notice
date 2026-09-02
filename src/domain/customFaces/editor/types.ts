@@ -52,6 +52,7 @@ export type EditorAction =
   | { type: 'clear-selection' }
   | { type: 'set-selection-active'; active: boolean }
   | { type: 'add-frame' }
+  | { type: 'add-blank-frame' }
   | { type: 'set-frame-duration'; index: number; durationMs: number }
   | { type: 'move-frame'; from: number; to: number }
   | { type: 'set-selected-frame-duration'; durationMs: number }

@@ -5,3 +5,20 @@ pub const CUSTOM_FACE_DEVICE_MAX_RAW_CHUNK_BYTES: usize = 512;
 pub const CUSTOM_FACE_DEVICE_MIN_LINE_BUFFER_BYTES: usize = 1_024;
 pub const CUSTOM_FACE_DEVICE_ERROR_STORAGE: &str = "custom_face_storage_error";
 pub const CUSTOM_FACE_DEVICE_ERROR_BUSY: &str = "device_busy";
+pub const CUSTOM_FACE_DEVICE_COMMAND_INSTALL_BEGIN: &str = "custom_face_install_begin";
+pub const CUSTOM_FACE_DEVICE_COMMAND_INSTALL_CHUNK: &str = "custom_face_install_chunk";
+pub const CUSTOM_FACE_DEVICE_COMMAND_INSTALL_COMMIT: &str = "custom_face_install_commit";
+pub const CUSTOM_FACE_DEVICE_COMMAND_INSTALL_ABORT: &str = "custom_face_install_abort";
+pub const CUSTOM_FACE_DEVICE_COMMAND_CLEAR: &str = "custom_face_clear";
+pub const CUSTOM_FACE_DEVICE_ERROR_INSTALL_SESSION_INVALID: &str =
+    "custom_face_install_session_invalid";
+pub const CUSTOM_FACE_DEVICE_ERROR_INSTALL_HASH_MISMATCH: &str =
+    "custom_face_install_hash_mismatch";
+pub const CUSTOM_FACE_DEVICE_ERROR_INSTALL_CAPACITY_EXCEEDED: &str =
+    "custom_face_install_capacity_exceeded";
+pub const CUSTOM_FACE_DEVICE_ERROR_INSTALL_OFFSET_INVALID: &str =
+    "custom_face_install_offset_invalid";
+pub const CUSTOM_FACE_DEVICE_ERROR_INSTALL_PROFILE_MISMATCH: &str =
+    "custom_face_install_profile_mismatch";
+pub const CUSTOM_FACE_DEVICE_ERROR_INSTALL_PAYLOAD_INVALID: &str =
+    "custom_face_install_payload_invalid";

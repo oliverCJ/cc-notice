@@ -1,12 +1,34 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { test, expect } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, test, expect, vi } from 'vitest';
 import { CustomFaceTimeline } from './CustomFaceTimeline';
+
+const onAdd = vi.fn();
+
+beforeEach(() => onAdd.mockReset());
 
 test('shows frame duration badges and total duration', () => {
   render(<CustomFaceTimeline frames={[{ durationMs: 200, packedPixels: [0] }, { durationMs: 400, packedPixels: [1] }]} selectedIndex={0} onSelect={() => undefined} onAdd={() => undefined} onDelete={() => undefined} />);
   expect(screen.getByText('200 ms')).toBeInTheDocument();
   expect(screen.getByText('400 ms')).toBeInTheDocument();
   expect(screen.getByText('总时长 600 ms')).toBeInTheDocument();
+});
+
+test('uses the main add button to copy the current frame and exposes a blank-frame option', async () => {
+  render(<CustomFaceTimeline frames={[{ durationMs: 200, packedPixels: [0] }]} selectedIndex={0} onSelect={() => undefined} onAdd={onAdd} onDelete={() => undefined} />);
+  fireEvent.click(screen.getByRole('button', { name: '新增帧' }));
+  expect(onAdd).toHaveBeenCalledWith('duplicate');
+  const optionsButton = screen.getByRole('button', { name: '选择新增帧方式' });
+  fireEvent.keyDown(optionsButton, { key: 'Enter' });
+  await waitFor(() => expect(screen.getByRole('menuitem', { name: '复制当前帧' })).toBeInTheDocument());
+  fireEvent.click(screen.getByRole('menuitem', { name: '创建空白帧' }));
+  expect(onAdd).toHaveBeenLastCalledWith('blank');
+});
+
+test('disables both frame-add controls during playback', () => {
+  render(<CustomFaceTimeline frames={[{ durationMs: 200, packedPixels: [0] }]} selectedIndex={0} onSelect={() => undefined} onAdd={onAdd} onDelete={() => undefined} />);
+  fireEvent.click(screen.getByRole('button', { name: /预览全部/ }));
+  expect(screen.getByRole('button', { name: '新增帧' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '选择新增帧方式' })).toBeDisabled();
 });
 
 test('renders actual frame pixels in each timeline item', () => {

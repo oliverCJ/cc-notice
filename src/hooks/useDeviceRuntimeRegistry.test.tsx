@@ -47,6 +47,7 @@ const connectedState: DeviceRuntimeState = {
   bundledFirmwareVersion: null,
   firmwareStatus: 'unknown',
   firmwareCheckError: null,
+  customFaceStatus: { state: 'unknown', installed: null, errorCode: null },
   heartbeatStatus: 'unknown',
   lastHeartbeatAt: null,
   heartbeatFailureCount: 0,

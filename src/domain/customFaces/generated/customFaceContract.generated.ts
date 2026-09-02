@@ -6,7 +6,7 @@ export const CUSTOM_FACE_CONTRACT = {
   "maxFacesPerGroup": 15,
   "frameDurationMs": {
     "default": 200,
-    "min": 120,
+    "min": 50,
     "max": 5000
   },
   "profiles": [

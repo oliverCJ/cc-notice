@@ -293,7 +293,15 @@ pub fn firmware_info_from_ack(
     let (custom_face, custom_face_error) = match ack.custom_face.as_ref() {
         Some(value) => match crate::core::custom_faces::parse_custom_face_capabilities(value) {
             Ok(capability) => (Some(capability), None),
-            Err(error) => (None, Some(error)),
+            Err(error) => {
+                tracing::warn!(
+                    board_id = %board_id,
+                    device_uid = %device_uid,
+                    error_code = ?error,
+                    "ignored invalid custom face capability from device_info"
+                );
+                (None, Some(error))
+            }
         },
         None => (None, None),
     };
