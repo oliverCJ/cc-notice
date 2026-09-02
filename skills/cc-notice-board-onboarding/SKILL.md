@@ -1,6 +1,6 @@
 ---
 name: cc-notice-board-onboarding
-description: 用于新增或更新 CC Notice 内置板卡支持、接入随应用发布的固件、定义板卡针脚和设备通道、规划板卡接入方案、修复板卡 catalog/manifest/识别注册/连接/说明弹窗相关问题。不要用于启用任意用户外部固件或动态用户板卡包，除非任务明确要求设计该未来能力。
+description: Use when 新增或更新 CC Notice 内置板卡支持、接入随应用发布的固件、定义板卡针脚和设备通道、规划板卡接入方案、修复板卡 catalog/manifest/识别注册/连接/说明弹窗相关问题，或新增或更新自定义表情固件能力。不要用于启用任意用户外部固件或动态用户板卡包，除非任务明确要求设计该未来能力。
 ---
 
 # CC Notice 板卡接入
@@ -51,6 +51,7 @@ description: 用于新增或更新 CC Notice 内置板卡支持、接入随应�
    - 通道集合、默认通道、只保留元数据的针脚
    - 同族或同物理板卡能力变体的继承、裁剪和保留针脚策略
    - 固件需要实现的协议命令
+   - 自定义表情固件能力门禁：是否具备 `custom-face-device-protocol-v1`、`custom-face-package-v1`、A/B 存储、1024 字节行缓冲、`custom_face_status`、断电保持和安装、存储与播放闭环
    - 设备识别、注册、连接和重连策略
    - 输入通道、输入绑定、GPIO 双模式和快捷键策略
    - IO worker、异步上行事件和通信监控接入策略
@@ -78,6 +79,13 @@ description: 用于新增或更新 CC Notice 内置板卡支持、接入随应�
 - 新增板卡必须明确输入能力、输出能力和扩展能力；按钮、GPIO 输入、屏幕、蜂鸣器等不得混在输出规则中描述。
 - 屏幕能力必须按屏幕尺寸和交互场景建模。只要固件声明 `deviceExtensions.display`，就必须实现并响应 `display_status`，因为输出规则页依赖该基础原语提供稳定的屏幕输出入口；固件可以自行决定 `display_status` 如何影响屏幕，例如大屏显示完整覆盖卡，小屏更新状态区，特殊屏只记录状态或按本地布局摘要显示，但不能 timeout 或假成功。`display_runtime` 表示设备长期显示的软件运行态，优先承载真实 Hook 后的最终统计和最近状态；`display_status` 表示输出规则触发的事件状态，不等同于运行态。若固件同时支持 `display_status` 和 `display_runtime`，必须明确二者共存策略：分区更新、状态卡短暂覆盖后回到 runtime，或其它确定行为；软件侧不能用跳过 runtime 或丢弃 status 来模拟这个行为。
 - 屏幕 payload 必须按板卡 display 能力裁剪。声明 `deviceExtensions.display` 的内置板卡必须显式填写 `sizeClass`，取值为 `compact`、`small`、`medium` 或 `large`；缺失值只允许作为历史数据兼容兜底，运行时默认按 `small` 处理。`compact` 适合 128x32 OLED 等极小屏，使用模板短句和 `E/O 事件数/输出数`；`small` 适合 128x64 OLED 等 2-4 行短文本；`medium` 适合 Wio 这类可显示完整摘要、多行文本和统计页的屏幕；`large` 预留给更大屏幕。`sizeClass` 只用于上位机选择文案详略，不约束固件内部布局，固件可以自由选择分区、覆盖卡或其它显示方式。不要复用 Wio、大屏或多行屏的长文案后暴力截断。
+- 自定义表情不是普通屏幕能力的自然延伸。仅有屏幕分辨率、`display.face`、`deviceExtensions.display` 或默认表情播放，都不能声明自定义表情固件能力。
+- 启用自定义表情前必须同时使用 `custom-face-device-protocol-v1` 和 `custom-face-package-v1` 的已生成常量与结构，禁止在板卡入口、catalog、manifest 或 UI 中复制协议版本、profile code、分块大小、容量上限等常量。
+- 自定义表情 profile 必须是契约中 `deployment=enabled` 的 profile；分辨率必须和设备真实屏幕交叉校验；容量必须有该板卡真实存储证据，不能从同族板卡、屏幕尺寸或理论 Flash 容量推断。
+- 自定义表情正式开启前必须完成 A/B 原子保留、安装会话、运行包验证、播放读取、状态查询、断电保持、回退和旧命令兼容回归。缺少安装、存储与播放闭环时，只能保留休眠 provider 或完全不支持。
+- 自定义表情传输使用 512 原始字节分块时，固件命令/回复行缓冲必须至少 1024 字节；小 SRAM 板卡不得为了声明能力被动扩容到不稳定状态，必须降级为不支持或继续休眠。
+- 安装、存储与播放闭环未完成前，发布固件必须省略 `device_info.custom_face`，`custom_face_status` 必须返回 `unsupported_command`；不得把共享层 provider 骨架、默认表情、屏幕能力或 host fixture 当成正式自定义表情能力。
+- 能力开启后必须验证 `device_info.custom_face`、`custom_face_status`、安装整组/局部表情、断电后状态保持、坏包回退、A/B 银行恢复、旧 `display_*` 命令和基础输出命令。
 - 设备通道是设备 I/O 通道，不是单纯输出通道。固定按钮、五向键和 GPIO 输入必须归入输入能力，配置保存在设备级输入绑定中，不得放入输出规则或 Profile。
 - 固定输入通道必须声明为不可切换输出；GPIO 双模式针脚必须声明输入/输出二选一，默认添加为输出。切换模式必须先进入待确认态，用户确认后才保存。
 - GPIO 双模式 UI 和执行链路必须基于 Board Catalog、通道元数据或明确的板卡族系 helper 判断能力，禁止只用精确 `boardId` 写死普通 Pico、Wio 或其它单板分支，避免同族能力变体无法显示输入/输出切换。
