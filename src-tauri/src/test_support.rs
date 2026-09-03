@@ -3,6 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::app_services::app_config_service::AppConfigService;
 use crate::app_services::custom_face_library::CustomFaceLibraryService;
+use crate::app_services::custom_face_pixelizer::CustomFacePixelizerSourceStore;
 use crate::app_services::custom_internal_event_service::CustomInternalEventService;
 use crate::app_services::desktop_notice_service::DesktopNoticeService;
 use crate::app_services::device_input_service::DeviceInputService;
@@ -77,6 +78,7 @@ pub(crate) fn hook_target_test_state(name: &str) -> (std::path::PathBuf, AppStat
         custom_face_library_service: Mutex::new(CustomFaceLibraryService::new(
             root.join(".cc-notice"),
         )),
+        custom_face_pixelizer_source_store: Arc::new(CustomFacePixelizerSourceStore::default()),
         local_hook_server_status: Arc::new(Mutex::new(LocalHookServerService::status_for_port(
             17321, false, None,
         ))),
@@ -109,6 +111,7 @@ pub(crate) fn minimal_app_state_for_root(root: &std::path::Path) -> AppState {
         custom_face_library_service: Mutex::new(CustomFaceLibraryService::new(
             root.join(".cc-notice"),
         )),
+        custom_face_pixelizer_source_store: Arc::new(CustomFacePixelizerSourceStore::default()),
         profile_service: Mutex::new(
             ProfileService::from_config_root(root.join(".cc-notice"))
                 .expect("profile service should initialize"),

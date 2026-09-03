@@ -6,6 +6,7 @@ use tauri_plugin_autostart::MacosLauncher;
 
 use crate::app_services::app_config_service::AppConfigService;
 use crate::app_services::custom_face_library::CustomFaceLibraryService;
+use crate::app_services::custom_face_pixelizer::CustomFacePixelizerSourceStore;
 use crate::app_services::custom_internal_event_service::CustomInternalEventService;
 use crate::app_services::desktop_notice_service::DesktopNoticeService;
 use crate::app_services::device_input_service::DeviceInputService;
@@ -245,6 +246,9 @@ pub fn run() {
                 custom_face_library_service: Mutex::new(CustomFaceLibraryService::new(
                     app_home.clone(),
                 )),
+                custom_face_pixelizer_source_store: Arc::new(
+                    CustomFacePixelizerSourceStore::default(),
+                ),
                 local_hook_server_status: hook_server_status,
                 hook_auth_token: auth_token,
                 output_executor,
@@ -365,6 +369,13 @@ pub fn run() {
             commands::custom_face_editor::open_custom_face_editor,
             commands::custom_face_editor::focus_custom_face_editor,
             commands::custom_face_editor::close_custom_face_editor,
+            commands::custom_face_pixelizer::open_custom_face_image_pixelizer,
+            commands::custom_face_pixelizer::close_custom_face_image_pixelizer,
+            commands::custom_face_pixelizer::pixelize_custom_face_image,
+            commands::custom_face_pixelizer::prepare_custom_face_image_pixelizer_source,
+            commands::custom_face_pixelizer::pixelize_custom_face_image_source,
+            commands::custom_face_pixelizer::release_custom_face_image_pixelizer_source,
+            commands::custom_face_pixelizer::apply_custom_face_image_import,
             commands::profile::profile_state,
             commands::profile::save_profile,
             commands::profile::create_profile,

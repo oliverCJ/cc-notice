@@ -1,5 +1,5 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, expect, test, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { createEditorState } from '@/domain/customFaces/editor/reducer';
 import { CustomFaceEditorWorkbench } from './CustomFaceEditorWorkbench';
 
@@ -13,8 +13,11 @@ const exportCustomFaceItemMock = vi.hoisted(() => vi.fn().mockResolvedValue(unde
 const exportCustomFaceGifMock = vi.hoisted(() => vi.fn().mockResolvedValue({ frameDelaysMs: [210], totalDurationMs: 210 }));
 const openDialogMock = vi.hoisted(() => vi.fn());
 const saveDialogMock = vi.hoisted(() => vi.fn());
+const openCustomFaceImagePixelizerMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const listenMock = vi.hoisted(() => vi.fn());
 const windowApiMock = vi.hoisted(() => ({
   closeRequestedHandler: null as null | ((event: { preventDefault: () => void }) => void | Promise<void>),
+  closeRequestedHandlers: [] as Array<(event: { preventDefault: () => void }) => void | Promise<void>>,
   unlisten: vi.fn(),
   onCloseRequested: vi.fn()
 }));
@@ -30,12 +33,17 @@ vi.mock('@/api/tauriApi', async () => {
     closeCustomFaceEditor: closeCustomFaceEditorMock,
     previewCustomFaceItemImport: previewCustomFaceItemImportMock,
     exportCustomFaceItem: exportCustomFaceItemMock,
-    exportCustomFaceGif: exportCustomFaceGifMock
+    exportCustomFaceGif: exportCustomFaceGifMock,
+    openCustomFaceImagePixelizer: openCustomFaceImagePixelizerMock
   };
 });
 
 vi.mock('@tauri-apps/api/window', () => ({
   getCurrentWindow: () => ({ onCloseRequested: windowApiMock.onCloseRequested })
+}));
+
+vi.mock('@tauri-apps/api/event', () => ({
+  listen: listenMock
 }));
 
 vi.mock('@tauri-apps/plugin-dialog', () => ({
@@ -54,13 +62,27 @@ beforeEach(() => {
   exportCustomFaceGifMock.mockClear();
   openDialogMock.mockReset();
   saveDialogMock.mockReset();
+  openCustomFaceImagePixelizerMock.mockClear();
+  listenMock.mockReset();
   windowApiMock.closeRequestedHandler = null;
+  windowApiMock.closeRequestedHandlers = [];
   windowApiMock.unlisten.mockClear();
   windowApiMock.onCloseRequested.mockImplementation(async (handler) => {
     windowApiMock.closeRequestedHandler = handler;
+    windowApiMock.closeRequestedHandlers.push(handler);
+    return windowApiMock.unlisten;
+  });
+  listenMock.mockImplementation(async (_event, handler) => {
+    windowApiMock.unlisten.mockImplementation(() => {
+      void handler;
+    });
     return windowApiMock.unlisten;
   });
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), stroke: vi.fn(), imageSmoothingEnabled: false, fillStyle: '', strokeStyle: '', lineWidth: 1 } as unknown as CanvasRenderingContext2D);
+});
+
+afterEach(() => {
+  cleanup();
 });
 
 test('opens the toolbar by default and clears selection when another tool is chosen', () => {
@@ -75,12 +97,105 @@ test('opens the toolbar by default and clears selection when another tool is cho
 test('adds and manages faces inside the current group', () => {
   const state = createEditorState({ schemaVersion: 1, groupId: 'g', name: 'G', displayProfileId: 'custom-mono-128x32-v1', revision: 1, defaultFaceId: 'f', faces: [{ faceId: 'f', name: 'Face', color: { red: 255, green: 255, blue: 255 }, frames: [{ durationMs: 200, packedPixels: Array(512).fill(0) }] }] }, { id: 'custom-mono-128x32-v1', width: 128, height: 32, maxFrames: 10, framebufferBytes: 512 });
   render(<CustomFaceEditorWorkbench initialState={state} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: '新增表情' }));
+  fireEvent.click(screen.getByRole('button', { name: '新表情' }));
   expect(screen.getByText('新表情')).toBeInTheDocument();
   expect(screen.getByRole('textbox', { name: '表情名称' })).toHaveValue('新表情');
   expect(screen.getByRole('button', { name: '复制表情' })).toBeEnabled();
   expect(screen.getByRole('button', { name: '设为默认表情' })).toBeEnabled();
   expect(screen.getByRole('button', { name: '删除表情' })).toBeEnabled();
+});
+
+test('opens the image import window from the workbench toolbar', () => {
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '导入图片' }));
+
+  expect(openCustomFaceImagePixelizerMock).toHaveBeenCalledOnce();
+  expect(openCustomFaceImagePixelizerMock).toHaveBeenCalledWith({ width: 128, height: 32 });
+});
+
+test('shows a prominent banner while the image import window is open', async () => {
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+
+  let imagePixelizerStateListener: ((event: { payload: boolean }) => void) | undefined;
+  await waitFor(() => {
+    imagePixelizerStateListener = listenMock.mock.calls.find((call) => call[0] === 'cc-notice://custom-face-image-pixelizer-state-changed')?.[1] as ((event: { payload: boolean }) => void) | undefined;
+    expect(imagePixelizerStateListener).toBeDefined();
+  });
+
+  await act(async () => {
+    imagePixelizerStateListener?.({ payload: true });
+  });
+
+  expect(screen.getByText('图片导入窗口已打开，请先关闭它再退出编辑器。')).toBeInTheDocument();
+});
+
+test('allows closing the editor after the image import window reports closed', async () => {
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+
+  let imagePixelizerStateListener: ((event: { payload: boolean }) => void) | undefined;
+  await waitFor(() => {
+    imagePixelizerStateListener = listenMock.mock.calls.find((call) => call[0] === 'cc-notice://custom-face-image-pixelizer-state-changed')?.[1] as ((event: { payload: boolean }) => void) | undefined;
+    expect(imagePixelizerStateListener).toBeDefined();
+  });
+
+  await act(async () => {
+    imagePixelizerStateListener?.({ payload: true });
+  });
+  await act(async () => {
+    imagePixelizerStateListener?.({ payload: false });
+  });
+  windowApiMock.closeRequestedHandler?.({ preventDefault: vi.fn() });
+
+  await waitFor(() => expect(closeCustomFaceEditorMock).toHaveBeenCalledOnce());
+  expect(screen.queryByText('图片导入窗口已打开，请先关闭它再退出编辑器。')).not.toBeInTheDocument();
+});
+
+test('does not let a stale image import close handler block editor close', async () => {
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+
+  let imagePixelizerStateListener: ((event: { payload: boolean }) => void) | undefined;
+  await waitFor(() => {
+    imagePixelizerStateListener = listenMock.mock.calls.find((call) => call[0] === 'cc-notice://custom-face-image-pixelizer-state-changed')?.[1] as ((event: { payload: boolean }) => void) | undefined;
+    expect(imagePixelizerStateListener).toBeDefined();
+  });
+
+  await act(async () => {
+    imagePixelizerStateListener?.({ payload: true });
+  });
+  const handlerRegisteredWhileOpen = windowApiMock.closeRequestedHandlers[windowApiMock.closeRequestedHandlers.length - 1];
+  await act(async () => {
+    imagePixelizerStateListener?.({ payload: false });
+  });
+
+  await act(async () => {
+    await handlerRegisteredWhileOpen?.({ preventDefault: vi.fn() });
+  });
+
+  await waitFor(() => expect(closeCustomFaceEditorMock).toHaveBeenCalledOnce());
+  expect(screen.queryByText('图片导入窗口已打开，请先关闭它再退出编辑器。')).not.toBeInTheDocument();
+});
+
+test('loads imported image pixels into the pending canvas workflow', async () => {
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+
+  let imageImportListener: ((event: { payload: { packedPixels: number[]; sourceWidth: number; sourceHeight: number } }) => void) | undefined;
+  await waitFor(() => {
+    imageImportListener = listenMock.mock.calls.find((call) => call[0] === 'cc-notice://custom-face-image-import-ready')?.[1] as ((event: { payload: { packedPixels: number[]; sourceWidth: number; sourceHeight: number } }) => void) | undefined;
+    expect(imageImportListener).toBeDefined();
+  });
+
+  await act(async () => {
+    imageImportListener?.({
+      payload: {
+        packedPixels: [1, 0, 0, 0],
+        sourceWidth: 8,
+        sourceHeight: 8
+      }
+    });
+  });
+
+  expect(screen.getByText('素材待确认应用')).toBeInTheDocument();
 });
 
 test('imports a compatible face into the reducer draft without saving the group', async () => {

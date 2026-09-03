@@ -509,6 +509,7 @@ mod tests {
 
     use crate::app_services::app_config_service::AppConfigService;
     use crate::app_services::custom_face_library::CustomFaceLibraryService;
+    use crate::app_services::custom_face_pixelizer::CustomFacePixelizerSourceStore;
     use crate::app_services::custom_internal_event_service::{
         CreateCustomInternalEventRequest, CustomInternalEventService,
     };
@@ -572,6 +573,7 @@ mod tests {
             custom_face_library_service: Mutex::new(CustomFaceLibraryService::new(
                 root.join(".cc-notice"),
             )),
+            custom_face_pixelizer_source_store: Arc::new(CustomFacePixelizerSourceStore::default()),
             local_hook_server_status: Arc::new(Mutex::new(
                 LocalHookServerService::status_for_port(17321, false, None),
             )),
@@ -612,6 +614,7 @@ mod tests {
             custom_face_library_service: Mutex::new(CustomFaceLibraryService::new(
                 root.join(".cc-notice"),
             )),
+            custom_face_pixelizer_source_store: Arc::new(CustomFacePixelizerSourceStore::default()),
             local_hook_server_status: Arc::new(Mutex::new(
                 LocalHookServerService::status_for_port(17321, false, None),
             )),
@@ -670,6 +673,7 @@ mod tests {
             custom_face_library_service: Mutex::new(CustomFaceLibraryService::new(
                 root.join(".cc-notice"),
             )),
+            custom_face_pixelizer_source_store: Arc::new(CustomFacePixelizerSourceStore::default()),
             local_hook_server_status: Arc::new(Mutex::new(
                 LocalHookServerService::status_for_port(17321, false, None),
             )),

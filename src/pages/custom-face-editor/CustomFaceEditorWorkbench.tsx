@@ -1,8 +1,9 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
+import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open, save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Copy, Download, FileArchive, Plus, Star, Trash2, Upload } from 'lucide-react';
-import { clearCustomFaceRecovery, closeCustomFaceEditor, deleteCustomFaceAsset, exportCustomFaceGif, exportCustomFaceItem, getCustomFaceAssets, getCustomFaceGroup, previewCustomFaceItemImport, saveCustomFaceAsset, saveCustomFaceGroup, saveCustomFaceRecovery } from '@/api/tauriApi';
+import { clearCustomFaceRecovery, closeCustomFaceEditor, deleteCustomFaceAsset, exportCustomFaceGif, exportCustomFaceItem, getCustomFaceAssets, getCustomFaceGroup, openCustomFaceImagePixelizer, previewCustomFaceItemImport, saveCustomFaceAsset, saveCustomFaceGroup, saveCustomFaceRecovery } from '@/api/tauriApi';
 import type { CustomFaceItemImportPreview, PersonalCustomFaceAsset, SaveCustomFaceGroupResult } from '@/api/tauriApi';
 import {
   AlertDialog,
@@ -31,6 +32,8 @@ import { useI18n } from '@/i18n';
 
 type Props = { initialState: EditorState; expectedLibraryHash?: string; onBack: () => void; onSaved: (result: SaveCustomFaceGroupResult) => void };
 const TOOL_LABELS: Record<ToolId, string> = { select: 'select', brush: 'brush', eraser: 'eraser', line: 'line', rectangle: 'rectangle', circle: 'circle', triangle: 'triangle', pen: 'pen' };
+const CUSTOM_FACE_IMAGE_IMPORT_READY_EVENT = 'cc-notice://custom-face-image-import-ready';
+const CUSTOM_FACE_IMAGE_PIXELIZER_STATE_EVENT = 'cc-notice://custom-face-image-pixelizer-state-changed';
 
 export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, onBack, onSaved }: Props) {
   const t = useI18n();
@@ -63,8 +66,11 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
   const [faceItemImportError, setFaceItemImportError] = useState<string | null>(null);
   const [faceItemBusy, setFaceItemBusy] = useState(false);
   const [gifExportDialogOpen, setGifExportDialogOpen] = useState(false);
+  const [imagePixelizerOpen, setImagePixelizerOpen] = useState(false);
   const dirtyRef = useRef(false);
   const closingRef = useRef(false);
+  const imagePixelizerOpenRef = useRef(false);
+  const translateRef = useRef(t);
   const face = state.presentGroup.faces.find((item) => item.faceId === state.selectedFaceId);
   const frame = face?.frames[state.selectedFrameIndex];
   const onionFrame = face && state.selectedFrameIndex > 0 ? face.frames[state.selectedFrameIndex - 1] : undefined;
@@ -76,12 +82,58 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
   useEffect(() => { setGroupNameDraft(state.presentGroup.name); }, [state.presentGroup.name]);
   useEffect(() => { setLibraryHash(expectedLibraryHash); }, [expectedLibraryHash]);
   useEffect(() => { if (!(window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__) return; void getCustomFaceAssets().then(setPersonalAssets).catch((error) => console.warn('failed to load personal custom face assets', error)); }, []);
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<{ packedPixels: number[]; sourceWidth: number; sourceHeight: number }>(
+      CUSTOM_FACE_IMAGE_IMPORT_READY_EVENT,
+      (event) => {
+        if (disposed) return;
+        setPendingImport({
+          pixels: event.payload.packedPixels,
+          basePixels: event.payload.packedPixels,
+          mode: 'replace',
+          scale: 1,
+          offsetX: 0,
+          offsetY: 0,
+          sourceWidth: event.payload.sourceWidth,
+          sourceHeight: event.payload.sourceHeight
+        });
+        setAssetLibraryOpen(false);
+        setSvgDialogOpen(false);
+        setStatusMessage(t('customFaceEditor.workbench.imageApplied'));
+      }
+    ).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize custom face image import listener', error));
+    return () => { disposed = true; unlisten?.(); };
+  }, [t]);
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<boolean>(CUSTOM_FACE_IMAGE_PIXELIZER_STATE_EVENT, (event) => {
+      if (disposed) return;
+      imagePixelizerOpenRef.current = event.payload;
+      setImagePixelizerOpen(event.payload);
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize custom face image pixelizer state listener', error));
+    return () => { disposed = true; unlisten?.(); };
+  }, []);
   dirtyRef.current = state.past.length > 0;
+  translateRef.current = t;
   useEffect(() => {
     let disposed = false;
     let unlisten: (() => void) | null = null;
     void getCurrentWindow().onCloseRequested((event) => {
       if (closingRef.current) return;
+      if (imagePixelizerOpenRef.current) {
+        event.preventDefault();
+        setStatusMessage(translateRef.current('customFaceEditor.workbench.imagePixelizerOpen'));
+        return;
+      }
       if (!dirtyRef.current) {
         event.preventDefault();
         closingRef.current = true;
@@ -268,7 +320,67 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
     }
   };
 
-  return <><main className="flex h-screen min-h-0 flex-col bg-background text-foreground"><header className="flex items-center gap-3 border-b border-border px-4 py-3"><button className="border border-border px-3 py-2 text-sm" onClick={() => { if (state.past.length) setLeaveIntent('back'); else onBack(); }}>{t('customFaceEditor.workbench.back')}</button><button className="border border-primary px-3 py-2 text-sm disabled:opacity-50" disabled={saving} onClick={() => void save()}>{saving ? t('customFaceEditor.workbench.saving') : t('customFaceEditor.workbench.save')}</button><button type="button" className="border border-border px-3 py-2 text-sm" disabled={saving || !face} onClick={() => setSvgDialogOpen(true)}>{t('customFaceEditor.workbench.importSvg')}</button><button type="button" className="border border-border px-3 py-2 text-sm" onClick={() => setAssetLibraryOpen(true)}>{t('customFaceEditor.workbench.assets')}</button><label className="flex items-center gap-2 text-xs text-muted-foreground">{t('customFaceEditor.workbench.groupName')}<input aria-label={t('customFaceEditor.workbench.groupName')} value={groupNameDraft} maxLength={64} className="w-48 border border-border bg-background px-2 py-1 text-sm text-foreground" onChange={(event) => setGroupNameDraft(event.target.value)} /><button type="button" aria-label={t('customFaceEditor.workbench.applyGroupName')} disabled={!groupNameDraft.trim() || groupNameDraft.trim() === state.presentGroup.name} className="border border-border px-2 py-1 text-xs text-foreground disabled:opacity-30" onClick={() => { const name = groupNameDraft.trim(); dispatch({ type: 'rename-group', name }); setStatusMessage(t('customFaceEditor.workbench.groupNameChanged', { name })); }}>{t('customFaceEditor.workbench.applyName')}</button></label><span className="border border-primary bg-primary/10 px-2 py-1 text-sm font-semibold text-primary">{state.profile.width} × {state.profile.height}</span><span className="ml-auto text-xs text-muted-foreground">{state.past.length ? t('customFaceEditor.workbench.modified') : t('customFaceEditor.workbench.saved')}</span></header>{saveError ? <div role="alert" className="border-b border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">{t('customFaceEditor.workbench.saveFailed', { error: saveError })}</div> : null}{faceItemImportError ? <div role="alert" className="border-b border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">{faceItemImportError}</div> : null}<div className="flex min-h-0 flex-1 gap-3 p-3"><CustomFaceToolbar collapsed={collapsed} selectedTool={selectedTool} canUndo={state.past.length > 0 && !playing} canRedo={state.future.length > 0 && !playing} onCollapsedChange={setCollapsed} onToolChange={(tool) => { setSelectedTool(tool); setStatusMessage(toolHint(tool, t)); }} onUndo={() => dispatch({ type: 'undo' })} onRedo={() => dispatch({ type: 'redo' })} /><section className="flex min-w-0 flex-1 flex-col gap-3"><CustomFaceCanvas width={state.profile.width} height={state.profile.height} pixels={pixels} selection={selection} selectionOrigin={state.selectionOrigin} pendingImportPixels={pendingImport?.pixels} pendingImportOffset={{ x: pendingImport?.offsetX ?? 0, y: pendingImport?.offsetY ?? 0 }} pendingImportSize={{ width: pendingImport?.sourceWidth ?? state.profile.width, height: pendingImport?.sourceHeight ?? state.profile.height }} onPendingImportMove={(dx, dy) => setPendingImport((current) => current ? { ...current, offsetX: current.offsetX + dx, offsetY: current.offsetY + dy } : current)} guides={guides} eraserSize={eraserSize} onionPixels={onionFrame ? new Uint8Array(onionFrame.packedPixels) : undefined} selectedTool={selectedTool} constraintEnabled={constraintEnabled} rectangleFilled={rectangleFilled} disabled={playing} penCommand={penCommand} onGuidesChange={setGuides} onToolStateChange={setToolState} onSelectionChange={(value) => { setSelection(value); dispatch({ type: 'set-selection', selection: value }); if (value) setStatusMessage(t('customFaceEditor.workbench.selectionCreated', { width: value.width, height: value.height })); }} onPixelTransaction={(changes) => dispatch({ type: 'apply-pixel-transaction', pixels: changes })} /><div role="status" className="min-h-8 border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">{statusMessage}</div><CustomFaceTimeline frames={face?.frames ?? []} width={state.profile.width} height={state.profile.height} selectedIndex={state.selectedFrameIndex} onSelect={(index) => { clearSelection(); dispatch({ type: 'select-frame', index }); }} onMove={(from, to) => { clearSelection(); dispatch({ type: 'move-frame', from, to }); }} onAdd={(mode: AddFrameMode) => { clearSelection(); dispatch({ type: mode === 'blank' ? 'add-blank-frame' : 'add-frame' }); setStatusMessage(t(mode === 'blank' ? 'customFaceEditor.workbench.blankFrameAdded' : 'customFaceEditor.workbench.frameAdded')); }} onDelete={(index) => { clearSelection(); dispatch({ type: 'delete-frame', index }); }} onPlayingChange={setPlaying} /></section><aside className="flex w-64 shrink-0 flex-col gap-4 overflow-hidden border-l border-border pl-4 text-sm"><FacePanel state={state} face={face} frameDuration={frame?.durationMs ?? 200} playing={playing} busy={faceItemBusy} onSelect={changeFace} onAdd={addFace} onDuplicate={duplicateFace} onRename={renameFace} onDefault={() => face && dispatch({ type: 'set-default-face', faceId: face.faceId })} onDelete={deleteFace} onImport={() => void importFaceItem()} onExportItem={() => void exportCurrentFace('item')} onExportGif={() => setGifExportDialogOpen(true)} onDuration={(durationMs) => dispatch({ type: 'set-frame-duration', index: state.selectedFrameIndex, durationMs })} /><CustomFaceAssetLibrary open={assetLibraryOpen} onClose={() => setAssetLibraryOpen(false)} groupId={state.presentGroup.groupId} activeTab={assetTab} onTabChange={setAssetTab} personalAssets={personalAssets} onApplyPersonal={(asset) => { setPendingImport({ pixels: Array.from(asset.packedPixels), basePixels: Array.from(asset.packedPixels), mode: "merge", scale: 1, offsetX: 0, offsetY: 0, sourceWidth: asset.width, sourceHeight: asset.height }); setAssetLibraryOpen(false); setStatusMessage(t('customFaceEditor.workbench.assetApplied')); }} onSaveCurrent={async (scope) => { if (!frame) return; const now = new Date().toISOString(); const saved = await saveCustomFaceAsset({ assetId: crypto.randomUUID(), scope, groupId: scope === "group" ? state.presentGroup.groupId : null, name: `${t('customFaceEditor.workbench.frameName')} ${state.selectedFrameIndex + 1}`, tags: [], profileId: state.profile.id, width: state.profile.width, height: state.profile.height, packedPixels: [...frame.packedPixels], source: "editor", createdAt: now, updatedAt: now }); setPersonalAssets((items) => [...items, saved]); setAssetTab(scope); setHighlightAssetId(saved.assetId); setStatusMessage(t('customFaceEditor.workbench.assetSaved')); }} onDeletePersonal={async (assetId) => { await deleteCustomFaceAsset(assetId); setPersonalAssets((items) => items.filter((asset) => asset.assetId !== assetId)); }} onRenamePersonal={async (asset, name) => { const saved = await saveCustomFaceAsset({ ...asset, name, updatedAt: new Date().toISOString() }); setPersonalAssets((items) => items.map((item) => item.assetId === saved.assetId ? saved : item)); }} onUpdateTags={async (asset, tags) => { const saved = await saveCustomFaceAsset({ ...asset, tags, updatedAt: new Date().toISOString() }); setPersonalAssets((items) => items.map((item) => item.assetId === saved.assetId ? saved : item)); }} /><ToolPanel tool={selectedTool} state={toolState} selection={selection} selectionOrigin={state.selectionOrigin} clipboardReady={Boolean(state.clipboard)} constraintEnabled={constraintEnabled} rectangleFilled={rectangleFilled} eraserSize={eraserSize} onConstraint={setConstraintEnabled} onRectangleFilled={setRectangleFilled} onEraserSize={setEraserSize} onPenCommand={(type) => setPenCommand({ id: Date.now(), type })} onCopy={() => { if (!selection) return; dispatch({ type: 'copy-selection' }); setStatusMessage(t('customFaceEditor.workbench.copiedSelection')); }} onPaste={() => { if (!selection) { setStatusMessage(t('customFaceEditor.workbench.pasteTarget')); return; } if (!state.clipboard) { setStatusMessage(t('customFaceEditor.workbench.clipboardEmpty')); return; } dispatch({ type: 'paste-selection' }); clearSelection(); }} onClear={() => { if (selection) { dispatch({ type: 'clear-selection' }); clearSelection(); } }} onSetActive={(active) => { if (selection) { dispatch({ type: 'set-selection-active', active }); clearSelection(); } }} onCancelSelection={clearSelection} onCancelMove={() => { dispatch({ type: "cancel-selection-move" }); setSelection(null); }} selectionMoveStep={selectionMoveStep} onSelectionMoveStep={setSelectionMoveStep} onMoveSelection={(dx, dy) => dispatch({ type: "move-selection", dx: dx * selectionMoveStep, dy: dy * selectionMoveStep })} /><PendingImportActions pending={pendingImport} onCancel={() => setPendingImport(null)} onScale={(scale) => setPendingImport((current) => current ? { ...current, scale, pixels: scalePackedPixels(current.basePixels, state.profile.width, state.profile.height, scale) } : current)} onConfirm={() => { if (!pendingImport) return; const changes = pendingImport.mode === "replace" ? packedPixelsToChanges(movePackedPixels(pendingImport.pixels, state.profile.width, state.profile.height, pendingImport.offsetX, pendingImport.offsetY), state.profile.width, state.profile.height) : packedPixelsToChanges(movePackedPixels(pendingImport.pixels, state.profile.width, state.profile.height, pendingImport.offsetX, pendingImport.offsetY), state.profile.width, state.profile.height).filter((change) => change.active); dispatch({ type: "apply-pixel-transaction", pixels: changes }); setPendingImport(null); setStatusMessage(t('customFaceEditor.workbench.frameApplied')); }} /></aside></div></main><SaveConflictDialog open={Boolean(conflictHash)} busy={saving} onCancel={() => setConflictHash(null)} onReload={() => void reloadDiskGroup()} onOverwrite={() => { if (conflictHash) void save(conflictHash); }} /><LeaveConfirmDialog open={Boolean(leaveIntent)} busy={saving} onCancel={() => setLeaveIntent(null)} onDiscard={() => void discardAndLeave()} onSave={() => void saveAndLeave()} /><CustomFaceSvgImportDialog open={svgDialogOpen} width={state.profile.width} height={state.profile.height} onCancel={() => setSvgDialogOpen(false)} onApply={(packedPixels, mode) => { setPendingImport({ pixels: packedPixels, basePixels: packedPixels, mode, scale: 1, offsetX: 0, offsetY: 0, sourceWidth: state.profile.width, sourceHeight: state.profile.height }); setAssetLibraryOpen(false); setSvgDialogOpen(false); setStatusMessage(t('customFaceEditor.workbench.svgApplied')); }} /><CustomFaceItemImportDialog open={Boolean(faceItemPreview)} preview={faceItemPreview} maxFacesReached={state.presentGroup.faces.length >= 15} duplicate={Boolean(faceItemPreview && state.presentGroup.faces.some((item) => sameFaceContent(item, faceItemPreview.face)))} onCancel={() => setFaceItemPreview(null)} onConfirm={importFaceItemIntoDraft} /><CustomFaceGifExportDialog open={gifExportDialogOpen} width={state.profile.width} height={state.profile.height} onCancel={() => setGifExportDialogOpen(false)} onConfirm={(scale) => { setGifExportDialogOpen(false); void exportCurrentFace('gif', scale); }} /></>;
+  return (
+    <>
+      <main className="flex h-screen min-h-0 flex-col bg-background text-foreground">
+        <header className="flex items-center gap-3 border-b border-border px-4 py-3">
+          <button className="border border-border px-3 py-2 text-sm" onClick={() => {
+            if (imagePixelizerOpen) {
+              setStatusMessage(t('customFaceEditor.workbench.imagePixelizerOpen'));
+              return;
+            }
+            if (state.past.length) setLeaveIntent('back');
+            else onBack();
+          }}>
+            {t('customFaceEditor.workbench.back')}
+          </button>
+          <button className="border border-primary px-3 py-2 text-sm disabled:opacity-50" disabled={saving} onClick={() => void save()}>
+            {saving ? t('customFaceEditor.workbench.saving') : t('customFaceEditor.workbench.save')}
+          </button>
+          <button type="button" className="border border-border px-3 py-2 text-sm" disabled={saving || !face} onClick={() => setSvgDialogOpen(true)}>
+            {t('customFaceEditor.workbench.importSvg')}
+          </button>
+          <button type="button" className="border border-border px-3 py-2 text-sm" disabled={saving || !face} onClick={() => void openCustomFaceImagePixelizer({ width: state.profile.width, height: state.profile.height }).catch((error) => console.warn('failed to open custom face image pixelizer', error))}>
+            {t('customFaceEditor.workbench.importImage')}
+          </button>
+          <button type="button" className="border border-border px-3 py-2 text-sm" onClick={() => setAssetLibraryOpen(true)}>
+            {t('customFaceEditor.workbench.assets')}
+          </button>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            {t('customFaceEditor.workbench.groupName')}
+            <input aria-label={t('customFaceEditor.workbench.groupName')} value={groupNameDraft} maxLength={64} className="w-48 border border-border bg-background px-2 py-1 text-sm text-foreground" onChange={(event) => setGroupNameDraft(event.target.value)} />
+            <button type="button" aria-label={t('customFaceEditor.workbench.applyGroupName')} disabled={!groupNameDraft.trim() || groupNameDraft.trim() === state.presentGroup.name} className="border border-border px-2 py-1 text-xs text-foreground disabled:opacity-30" onClick={() => { const name = groupNameDraft.trim(); dispatch({ type: 'rename-group', name }); setStatusMessage(t('customFaceEditor.workbench.groupNameChanged', { name })); }}>
+              {t('customFaceEditor.workbench.applyName')}
+            </button>
+          </label>
+          <span className="border border-primary bg-primary/10 px-2 py-1 text-sm font-semibold text-primary">{state.profile.width} × {state.profile.height}</span>
+          <span className="ml-auto text-xs text-muted-foreground">{state.past.length ? t('customFaceEditor.workbench.modified') : t('customFaceEditor.workbench.saved')}</span>
+        </header>
+        {imagePixelizerOpen ? <div role="status" className="border-b border-amber-400/60 bg-amber-400/10 px-4 py-2 text-sm text-amber-800">{t('customFaceEditor.workbench.imagePixelizerOpen')}</div> : null}
+        {saveError ? <div role="alert" className="border-b border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">{t('customFaceEditor.workbench.saveFailed', { error: saveError })}</div> : null}
+        {faceItemImportError ? <div role="alert" className="border-b border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">{faceItemImportError}</div> : null}
+        <div className="flex min-h-0 flex-1 gap-3 p-3">
+          <CustomFaceToolbar collapsed={collapsed} selectedTool={selectedTool} canUndo={state.past.length > 0 && !playing} canRedo={state.future.length > 0 && !playing} onCollapsedChange={setCollapsed} onToolChange={(tool) => { setSelectedTool(tool); setStatusMessage(toolHint(tool, t)); }} onUndo={() => dispatch({ type: 'undo' })} onRedo={() => dispatch({ type: 'redo' })} />
+          <section className="flex min-w-0 flex-1 flex-col gap-3">
+            <CustomFaceCanvas width={state.profile.width} height={state.profile.height} pixels={pixels} selection={selection} selectionOrigin={state.selectionOrigin} pendingImportPixels={pendingImport?.pixels} pendingImportOffset={{ x: pendingImport?.offsetX ?? 0, y: pendingImport?.offsetY ?? 0 }} pendingImportSize={{ width: pendingImport?.sourceWidth ?? state.profile.width, height: pendingImport?.sourceHeight ?? state.profile.height }} onPendingImportMove={(dx, dy) => setPendingImport((current) => current ? { ...current, offsetX: current.offsetX + dx, offsetY: current.offsetY + dy } : current)} guides={guides} eraserSize={eraserSize} onionPixels={onionFrame ? new Uint8Array(onionFrame.packedPixels) : undefined} selectedTool={selectedTool} constraintEnabled={constraintEnabled} rectangleFilled={rectangleFilled} disabled={playing} penCommand={penCommand} onGuidesChange={setGuides} onToolStateChange={setToolState} onSelectionChange={(value) => { setSelection(value); dispatch({ type: 'set-selection', selection: value }); if (value) setStatusMessage(t('customFaceEditor.workbench.selectionCreated', { width: value.width, height: value.height })); }} onPixelTransaction={(changes) => dispatch({ type: 'apply-pixel-transaction', pixels: changes })} />
+            <div role="status" className="min-h-8 border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">{statusMessage}</div>
+            <CustomFaceTimeline frames={face?.frames ?? []} width={state.profile.width} height={state.profile.height} selectedIndex={state.selectedFrameIndex} onSelect={(index) => { clearSelection(); dispatch({ type: 'select-frame', index }); }} onMove={(from, to) => { clearSelection(); dispatch({ type: 'move-frame', from, to }); }} onAdd={(mode: AddFrameMode) => { clearSelection(); dispatch({ type: mode === 'blank' ? 'add-blank-frame' : 'add-frame' }); setStatusMessage(t(mode === 'blank' ? 'customFaceEditor.workbench.blankFrameAdded' : 'customFaceEditor.workbench.frameAdded')); }} onDelete={(index) => { clearSelection(); dispatch({ type: 'delete-frame', index }); }} onPlayingChange={setPlaying} />
+          </section>
+          <aside className="flex w-64 shrink-0 flex-col gap-4 overflow-hidden border-l border-border pl-4 text-sm">
+            <FacePanel state={state} face={face} frameDuration={frame?.durationMs ?? 200} playing={playing} busy={faceItemBusy} onSelect={changeFace} onAdd={addFace} onDuplicate={duplicateFace} onRename={renameFace} onDefault={() => face && dispatch({ type: 'set-default-face', faceId: face.faceId })} onDelete={deleteFace} onImport={() => void importFaceItem()} onExportItem={() => void exportCurrentFace('item')} onExportGif={() => setGifExportDialogOpen(true)} onDuration={(durationMs) => dispatch({ type: 'set-frame-duration', index: state.selectedFrameIndex, durationMs })} />
+            <CustomFaceAssetLibrary open={assetLibraryOpen} onClose={() => setAssetLibraryOpen(false)} groupId={state.presentGroup.groupId} activeTab={assetTab} onTabChange={setAssetTab} personalAssets={personalAssets} onApplyPersonal={(asset) => { setPendingImport({ pixels: Array.from(asset.packedPixels), basePixels: Array.from(asset.packedPixels), mode: "merge", scale: 1, offsetX: 0, offsetY: 0, sourceWidth: asset.width, sourceHeight: asset.height }); setAssetLibraryOpen(false); setStatusMessage(t('customFaceEditor.workbench.assetApplied')); }} onSaveCurrent={async (scope) => { if (!frame) return; const now = new Date().toISOString(); const saved = await saveCustomFaceAsset({ assetId: crypto.randomUUID(), scope, groupId: scope === "group" ? state.presentGroup.groupId : null, name: `${t('customFaceEditor.workbench.frameName')} ${state.selectedFrameIndex + 1}`, tags: [], profileId: state.profile.id, width: state.profile.width, height: state.profile.height, packedPixels: [...frame.packedPixels], source: "editor", createdAt: now, updatedAt: now }); setPersonalAssets((items) => [...items, saved]); setAssetTab(scope); setHighlightAssetId(saved.assetId); setStatusMessage(t('customFaceEditor.workbench.assetSaved')); }} onDeletePersonal={async (assetId) => { await deleteCustomFaceAsset(assetId); setPersonalAssets((items) => items.filter((asset) => asset.assetId !== assetId)); }} onRenamePersonal={async (asset, name) => { const saved = await saveCustomFaceAsset({ ...asset, name, updatedAt: new Date().toISOString() }); setPersonalAssets((items) => items.map((item) => item.assetId === saved.assetId ? saved : item)); }} onUpdateTags={async (asset, tags) => { const saved = await saveCustomFaceAsset({ ...asset, tags, updatedAt: new Date().toISOString() }); setPersonalAssets((items) => items.map((item) => item.assetId === saved.assetId ? saved : item)); }} />
+            <ToolPanel tool={selectedTool} state={toolState} selection={selection} selectionOrigin={state.selectionOrigin} clipboardReady={Boolean(state.clipboard)} constraintEnabled={constraintEnabled} rectangleFilled={rectangleFilled} eraserSize={eraserSize} onConstraint={setConstraintEnabled} onRectangleFilled={setRectangleFilled} onEraserSize={setEraserSize} onPenCommand={(type) => setPenCommand({ id: Date.now(), type })} onCopy={() => { if (!selection) return; dispatch({ type: 'copy-selection' }); setStatusMessage(t('customFaceEditor.workbench.copiedSelection')); }} onPaste={() => { if (!selection) { setStatusMessage(t('customFaceEditor.workbench.pasteTarget')); return; } if (!state.clipboard) { setStatusMessage(t('customFaceEditor.workbench.clipboardEmpty')); return; } dispatch({ type: 'paste-selection' }); clearSelection(); }} onClear={() => { if (selection) { dispatch({ type: 'clear-selection' }); clearSelection(); } }} onSetActive={(active) => { if (selection) { dispatch({ type: 'set-selection-active', active }); clearSelection(); } }} onCancelSelection={clearSelection} onCancelMove={() => { dispatch({ type: "cancel-selection-move" }); setSelection(null); }} selectionMoveStep={selectionMoveStep} onSelectionMoveStep={setSelectionMoveStep} onMoveSelection={(dx, dy) => dispatch({ type: "move-selection", dx: dx * selectionMoveStep, dy: dy * selectionMoveStep })} />
+            <PendingImportActions pending={pendingImport} onCancel={() => setPendingImport(null)} onScale={(scale) => setPendingImport((current) => current ? { ...current, scale, pixels: scalePackedPixels(current.basePixels, state.profile.width, state.profile.height, scale) } : current)} onConfirm={() => { if (!pendingImport) return; const changes = pendingImport.mode === "replace" ? packedPixelsToChanges(movePackedPixels(pendingImport.pixels, state.profile.width, state.profile.height, pendingImport.offsetX, pendingImport.offsetY), state.profile.width, state.profile.height) : packedPixelsToChanges(movePackedPixels(pendingImport.pixels, state.profile.width, state.profile.height, pendingImport.offsetX, pendingImport.offsetY), state.profile.width, state.profile.height).filter((change) => change.active); dispatch({ type: "apply-pixel-transaction", pixels: changes }); setPendingImport(null); setStatusMessage(t('customFaceEditor.workbench.frameApplied')); }} />
+          </aside>
+        </div>
+      </main>
+      <SaveConflictDialog open={Boolean(conflictHash)} busy={saving} onCancel={() => setConflictHash(null)} onReload={() => void reloadDiskGroup()} onOverwrite={() => { if (conflictHash) void save(conflictHash); }} />
+      <LeaveConfirmDialog open={Boolean(leaveIntent)} busy={saving} onCancel={() => setLeaveIntent(null)} onDiscard={() => void discardAndLeave()} onSave={() => void saveAndLeave()} />
+      <CustomFaceSvgImportDialog open={svgDialogOpen} width={state.profile.width} height={state.profile.height} onCancel={() => setSvgDialogOpen(false)} onApply={(packedPixels, mode) => { setPendingImport({ pixels: packedPixels, basePixels: packedPixels, mode, scale: 1, offsetX: 0, offsetY: 0, sourceWidth: state.profile.width, sourceHeight: state.profile.height }); setAssetLibraryOpen(false); setSvgDialogOpen(false); setStatusMessage(t('customFaceEditor.workbench.svgApplied')); }} />
+      <CustomFaceItemImportDialog open={Boolean(faceItemPreview)} preview={faceItemPreview} maxFacesReached={state.presentGroup.faces.length >= 15} duplicate={Boolean(faceItemPreview && state.presentGroup.faces.some((item) => sameFaceContent(item, faceItemPreview.face)))} onCancel={() => setFaceItemPreview(null)} onConfirm={importFaceItemIntoDraft} />
+      <CustomFaceGifExportDialog open={gifExportDialogOpen} width={state.profile.width} height={state.profile.height} onCancel={() => setGifExportDialogOpen(false)} onConfirm={(scale) => { setGifExportDialogOpen(false); void exportCurrentFace('gif', scale); }} />
+    </>
+  );
 }
 
 function SaveConflictDialog({ open, busy, onCancel, onReload, onOverwrite }: { open: boolean; busy: boolean; onCancel: () => void; onReload: () => void; onOverwrite: () => void }) {

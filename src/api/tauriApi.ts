@@ -1143,6 +1143,62 @@ export type CustomFaceItemImportPreview = {
   sourceFaceId: string;
 };
 
+export type CustomFacePixelizeOptions = {
+  mode: 'mono' | 'color';
+  colorCount: number;
+  dither: boolean;
+  invert: boolean;
+  threshold: number;
+  contrast: number;
+  brightness: number;
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+};
+
+export type CustomFacePixelizeRequest = {
+  profileWidth: number;
+  profileHeight: number;
+  imageBytes: number[];
+  options: CustomFacePixelizeOptions;
+};
+
+export type PrepareCustomFacePixelizerSourceRequest = {
+  profileWidth: number;
+  profileHeight: number;
+  imageBytes: number[];
+};
+
+export type PrepareCustomFacePixelizerSourceResult = {
+  sourceId: string;
+  sourceWidth: number;
+  sourceHeight: number;
+  workingWidth: number;
+  workingHeight: number;
+};
+
+export type CustomFacePixelizeSourceRequest = {
+  sourceId: string;
+  profileWidth: number;
+  profileHeight: number;
+  options: CustomFacePixelizeOptions;
+};
+
+export type CustomFacePixelizeResult = {
+  width: number;
+  height: number;
+  packedPixels: number[];
+  previewPixels: number[];
+  sourceWidth: number;
+  sourceHeight: number;
+};
+
+export type CustomFaceImageImportReadyPayload = {
+  packedPixels: number[];
+  sourceWidth: number;
+  sourceHeight: number;
+};
+
 export type ExportCustomFaceRequest = {
   face: CustomFace;
   displayProfileId: string;
@@ -1418,6 +1474,39 @@ export function focusCustomFaceEditor() {
 
 export function closeCustomFaceEditor() {
   return invoke<void>('close_custom_face_editor');
+}
+
+export type OpenCustomFaceImagePixelizerRequest = {
+  width: number;
+  height: number;
+};
+
+export function openCustomFaceImagePixelizer(request: OpenCustomFaceImagePixelizerRequest) {
+  return invoke<void>('open_custom_face_image_pixelizer', { request });
+}
+
+export function closeCustomFaceImagePixelizer() {
+  return invoke<void>('close_custom_face_image_pixelizer');
+}
+
+export function pixelizeCustomFaceImage(request: CustomFacePixelizeRequest) {
+  return invoke<CustomFacePixelizeResult>('pixelize_custom_face_image', { request });
+}
+
+export function prepareCustomFaceImagePixelizerSource(request: PrepareCustomFacePixelizerSourceRequest) {
+  return invoke<PrepareCustomFacePixelizerSourceResult>('prepare_custom_face_image_pixelizer_source', { request });
+}
+
+export function pixelizeCustomFaceImageSource(request: CustomFacePixelizeSourceRequest) {
+  return invoke<CustomFacePixelizeResult>('pixelize_custom_face_image_source', { request });
+}
+
+export function releaseCustomFaceImagePixelizerSource(sourceId: string) {
+  return invoke<boolean>('release_custom_face_image_pixelizer_source', { sourceId });
+}
+
+export function applyCustomFaceImageImport(payload: CustomFaceImageImportReadyPayload) {
+  return invoke<void>('apply_custom_face_image_import', { payload });
 }
 
 export function getInternalEventCatalog() {

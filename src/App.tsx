@@ -55,6 +55,7 @@ import { useRuntimeMonitorState } from '@/hooks/useRuntimeMonitorState';
 import { useThemeMode } from '@/hooks/useThemeMode';
 import { ProfileRepairAlert } from '@/components/app/ProfileRepairAlert';
 import { CustomFaceEditorWindow } from './pages/custom-face-editor/CustomFaceEditorWindow';
+import { CustomFaceImagePixelizerWindow } from './pages/custom-face-editor/CustomFaceImagePixelizerWindow';
 
 const DEBUG_REFRESH_INTERVAL_MS = 2_000;
 const DESKTOP_NOTICE_WINDOW_BOUNDS_CHANGED_EVENT =
@@ -82,6 +83,9 @@ declare global {
 export default function App() {
   if (window.location.pathname === '/custom-face-editor') {
     return <CustomFaceEditorWindowApp />;
+  }
+  if (window.location.pathname === '/custom-face-image-pixelizer') {
+    return <CustomFaceImagePixelizerWindowApp />;
   }
   const desktopNoticeInstanceId = getDesktopNoticeWindowInstanceId();
   if (desktopNoticeInstanceId) {
@@ -714,6 +718,43 @@ function CustomFaceEditorWindowApp() {
   return (
     <I18nProvider language={language}>
       <CustomFaceEditorWindow />
+    </I18nProvider>
+  );
+}
+
+function CustomFaceImagePixelizerWindowApp() {
+  const [language, setLanguage] = useState<Language>('zh-CN');
+  const [themeMode, setThemeMode] = useState<AppConfigView['ui']['themeMode']>('system');
+  useThemeMode(themeMode);
+
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<AppConfigView>(APP_CONFIG_UPDATED_EVENT, (event) => {
+      if (disposed) return;
+      setLanguage(event.payload.ui.language as Language);
+      setThemeMode(event.payload.ui.themeMode ?? 'system');
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize custom face image pixelizer config listener', error));
+    void getAppConfig()
+      .then((config) => {
+        if (!disposed) {
+          setLanguage(config.ui.language as Language);
+          setThemeMode(config.ui.themeMode ?? 'system');
+        }
+      })
+      .catch((error) => console.warn('failed to load app config for custom face image pixelizer window', error));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
+  return (
+    <I18nProvider language={language}>
+      <CustomFaceImagePixelizerWindow />
     </I18nProvider>
   );
 }

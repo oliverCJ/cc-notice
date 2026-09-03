@@ -5,16 +5,19 @@ type Props = {
   width: number;
   height: number;
   packedPixels: ArrayLike<number>;
+  rgbaPixels?: ArrayLike<number>;
   ariaLabel: string;
   className?: string;
   displayScale?: number;
 };
 
-export function CustomFacePixelPreview({ width, height, packedPixels, ariaLabel, className, displayScale = 1 }: Props) {
+export function CustomFacePixelPreview({ width, height, packedPixels, rgbaPixels, ariaLabel, className, displayScale = 1 }: Props) {
   const t = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const hasPixels = packedPixels.length >= Math.ceil(width * height / 8);
-  const hasActivePixel = hasPixels && Array.from(packedPixels).some((value) => value !== 0);
+  const hasPixels = rgbaPixels
+    ? rgbaPixels.length >= width * height * 4
+    : packedPixels.length >= Math.ceil(width * height / 8);
+  const hasActivePixel = hasPixels && Array.from(rgbaPixels ?? packedPixels).some((value) => value !== 0);
 
   useEffect(() => {
     if (!hasActivePixel || !canvasRef.current) return;
@@ -24,6 +27,12 @@ export function CustomFacePixelPreview({ width, height, packedPixels, ariaLabel,
       return;
     }
     context.imageSmoothingEnabled = false;
+    if (rgbaPixels) {
+      const imageData = context.createImageData(width, height);
+      imageData.data.set(new Uint8ClampedArray(rgbaPixels as ArrayLike<number>));
+      context.putImageData(imageData, 0, 0);
+      return;
+    }
     context.clearRect(0, 0, width, height);
     context.fillStyle = '#ffffff';
     for (let y = 0; y < height; y += 1) {
@@ -32,7 +41,7 @@ export function CustomFacePixelPreview({ width, height, packedPixels, ariaLabel,
         if ((byte & (1 << (y & 7))) !== 0) context.fillRect(x, y, 1, 1);
       }
     }
-  }, [hasActivePixel, height, packedPixels, width]);
+  }, [hasActivePixel, height, packedPixels, rgbaPixels, width]);
 
   if (!hasActivePixel) return <div className={className ?? 'flex h-full items-center justify-center text-xs text-muted-foreground'}>{t('customFaceEditor.canvas.emptyFrame')}</div>;
   const scale = Math.max(1, Math.floor(displayScale));

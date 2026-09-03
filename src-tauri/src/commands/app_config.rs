@@ -334,6 +334,7 @@ mod tests {
 
     use crate::app_services::app_config_service::AppConfigService;
     use crate::app_services::custom_face_library::CustomFaceLibraryService;
+    use crate::app_services::custom_face_pixelizer::CustomFacePixelizerSourceStore;
     use crate::app_services::custom_internal_event_service::CustomInternalEventService;
     use crate::app_services::desktop_notice_service::DesktopNoticeService;
     use crate::app_services::device_input_service::DeviceInputService;
@@ -563,6 +564,7 @@ mod tests {
             custom_face_library_service: std::sync::Mutex::new(CustomFaceLibraryService::new(
                 root.join(".cc-notice"),
             )),
+            custom_face_pixelizer_source_store: Arc::new(CustomFacePixelizerSourceStore::default()),
             local_hook_server_status: Arc::new(std::sync::Mutex::new(
                 LocalHookServerService::status_for_port(initial_port, false, None),
             )),

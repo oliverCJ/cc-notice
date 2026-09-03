@@ -1,5 +1,7 @@
 pub mod app_config;
 pub mod custom_face_editor;
+pub mod custom_face_pixelizer;
+pub mod custom_face_vectorizer;
 pub mod custom_faces;
 pub mod debug;
 pub mod desktop_notice;

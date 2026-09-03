@@ -17,6 +17,7 @@ anyhow = "1"
 fs2 = "0.4"
 gif = "0.13"
 hex = "0.4"
+image = "0.23"
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
 serde = { version = "1", features = ["derive"] }
@@ -38,6 +39,8 @@ tracing-subscriber = "0.3"
 unicode-normalization = "0.1"
 tiny_http = "0.12"
 uuid = { version = "1", features = ["v4"] }
+visioncortex = "0.8.0"
+vtracer = "0.6.5"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [target.'cfg(windows)'.dependencies]
