@@ -38,9 +38,11 @@ export function CustomFaceImagePixelizerWindow() {
   const requestVersionRef = useRef(0);
   const sourceUrlRef = useRef<string | null>(null);
   const sourceIdRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
   const closingRef = useRef(false);
   const latestOptionsRef = useRef<ImagePixelizerOptions>(defaultPixelizerOptions());
   const objectDragRef = useRef<{ clientX: number; clientY: number; offsetX: number; offsetY: number } | null>(null);
+  const sourcePreviewDragRef = useRef<{ clientX: number; clientY: number; x: number; y: number } | null>(null);
   const [canvasSize, setCanvasSize] = useState<CanvasSize>(() => canvasSizeFromLocation());
   const [displayScale, setDisplayScale] = useState(() =>
     displayScaleFor(canvasSize.width, canvasSize.height, 720, 540)
@@ -51,6 +53,7 @@ export function CustomFaceImagePixelizerWindow() {
   const [sourceId, setSourceId] = useState<string | null>(null);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
   const [sourcePreviewHovered, setSourcePreviewHovered] = useState(false);
+  const [sourcePreviewPosition, setSourcePreviewPosition] = useState({ x: 8, y: 8 });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PixelizeResult | null>(null);
@@ -68,7 +71,7 @@ export function CustomFaceImagePixelizerWindow() {
     const currentSourceId = sourceIdRef.current;
     if (!currentSourceId) return;
     sourceIdRef.current = null;
-    setSourceId(null);
+    if (mountedRef.current) setSourceId(null);
     try {
       await releaseCustomFaceImagePixelizerSource(currentSourceId);
     } catch (caught) {
@@ -84,6 +87,7 @@ export function CustomFaceImagePixelizerWindow() {
     sourceIdRef.current = null;
     setSourceId(null);
     setSourcePreviewHovered(false);
+    setSourcePreviewPosition({ x: 8, y: 8 });
     setSourceUrl((current) => {
       if (current) URL.revokeObjectURL(current);
       sourceUrlRef.current = null;
@@ -128,30 +132,36 @@ export function CustomFaceImagePixelizerWindow() {
         profileHeight: canvasSize.height,
         imageBytes
       });
-      if (requestVersionRef.current !== version) {
+      if (!mountedRef.current || requestVersionRef.current !== version) {
         await releaseCustomFaceImagePixelizerSource(preparedSource.sourceId);
         return;
       }
       sourceIdRef.current = preparedSource.sourceId;
       setSourceId(preparedSource.sourceId);
     } catch (caught) {
-      if (requestVersionRef.current === version) {
+      if (mountedRef.current && requestVersionRef.current === version) {
         setError(caught instanceof Error ? caught.message : String(caught));
         setResult(null);
         setSourceId(null);
         sourceIdRef.current = null;
       }
     } finally {
-      if (requestVersionRef.current === version) setBusy(false);
+      if (mountedRef.current && requestVersionRef.current === version) setBusy(false);
     }
   }, [canvasSize.height, canvasSize.width, releaseCurrentSource, t]);
 
-  useEffect(() => () => {
-    void releaseCurrentSource();
-    if (sourceUrlRef.current) {
-      URL.revokeObjectURL(sourceUrlRef.current);
-      sourceUrlRef.current = null;
-    }
+  useEffect(() => {
+    // React StrictMode 会在开发环境模拟重新挂载，必须在 effect body 恢复挂载状态。
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      requestVersionRef.current += 1;
+      void releaseCurrentSource();
+      if (sourceUrlRef.current) {
+        URL.revokeObjectURL(sourceUrlRef.current);
+        sourceUrlRef.current = null;
+      }
+    };
   }, [releaseCurrentSource]);
 
   useEffect(() => {
@@ -370,6 +380,38 @@ export function CustomFaceImagePixelizerWindow() {
     }
   };
 
+  const beginSourcePreviewDrag = (event: PointerEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+    sourcePreviewDragRef.current = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      x: sourcePreviewPosition.x,
+      y: sourcePreviewPosition.y
+    };
+    if (typeof event.currentTarget.setPointerCapture === 'function') {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+  };
+
+  const moveSourcePreviewDrag = (event: PointerEvent<HTMLDivElement>) => {
+    const drag = sourcePreviewDragRef.current;
+    if (!drag) return;
+    event.stopPropagation();
+    setSourcePreviewPosition({
+      x: Math.max(0, Math.round(drag.x + event.clientX - drag.clientX)),
+      y: Math.max(0, Math.round(drag.y + event.clientY - drag.clientY))
+    });
+  };
+
+  const endSourcePreviewDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (!sourcePreviewDragRef.current) return;
+    event.stopPropagation();
+    sourcePreviewDragRef.current = null;
+    if (typeof event.currentTarget.hasPointerCapture === 'function' && event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
   const currentMode = normalizedOptions.mode;
 
   return (
@@ -476,28 +518,35 @@ export function CustomFaceImagePixelizerWindow() {
             {result ? (
               <div
                 data-testid="image-pixelizer-source-thumb"
-                className="absolute left-2 top-2 z-30 overflow-hidden border border-primary/70 bg-background/85 shadow-lg"
+                className="absolute left-0 top-0 z-30 cursor-move border border-primary/70 bg-background/85 shadow-lg"
                 style={{
                   width: `${SOURCE_PREVIEW_THUMB_SIZE}px`,
-                  height: `${SOURCE_PREVIEW_THUMB_SIZE}px`
+                  height: `${SOURCE_PREVIEW_THUMB_SIZE}px`,
+                  transform: `translate(${sourcePreviewPosition.x}px, ${sourcePreviewPosition.y}px)`
                 }}
+                onPointerDown={beginSourcePreviewDrag}
+                onPointerMove={moveSourcePreviewDrag}
+                onPointerUp={endSourcePreviewDrag}
+                onPointerCancel={endSourcePreviewDrag}
                 onPointerEnter={() => setSourcePreviewHovered(true)}
                 onPointerLeave={() => setSourcePreviewHovered(false)}
                 onMouseEnter={() => setSourcePreviewHovered(true)}
                 onMouseLeave={() => setSourcePreviewHovered(false)}
               >
-                {sourceUrl ? (
-                  <img
-                    alt={t('customFaceEditor.imagePixelizer.originalImage')}
-                    className="block h-full w-full object-contain"
-                    draggable={false}
-                    src={sourceUrl}
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
-                    {t('customFaceEditor.imagePixelizer.originalImage')}
-                  </div>
-                )}
+                <div className="h-full w-full overflow-hidden">
+                  {sourceUrl ? (
+                    <img
+                      alt={t('customFaceEditor.imagePixelizer.originalImage')}
+                      className="block h-full w-full object-contain"
+                      draggable={false}
+                      src={sourceUrl}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                      {t('customFaceEditor.imagePixelizer.originalImage')}
+                    </div>
+                  )}
+                </div>
                 {sourcePreviewHovered ? (
                   <div
                     data-testid="image-pixelizer-object-hover"

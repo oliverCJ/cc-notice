@@ -38,6 +38,13 @@ test('shows an explicit empty state instead of a black placeholder for empty pix
   expect(screen.queryByTestId('custom-face-pixel-preview-canvas')).not.toBeInTheDocument();
 });
 
+test('rejects page-packed pixels shorter than width times page rows', () => {
+  render(<CustomFacePixelPreview width={3} height={9} packedPixels={[1, 0, 0, 1]} ariaLabel="非整页预览" />);
+
+  expect(screen.getByText('空白帧')).toBeInTheDocument();
+  expect(screen.queryByTestId('custom-face-pixel-preview-canvas')).not.toBeInTheDocument();
+});
+
 test('supports integer display scaling without changing logical canvas dimensions', () => {
   render(<CustomFacePixelPreview width={128} height={32} displayScale={5} packedPixels={[1, ...Array(511).fill(0)]} ariaLabel="放大预览" />);
 

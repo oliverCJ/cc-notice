@@ -188,6 +188,28 @@ test('loads imported image pixels into the pending canvas workflow', async () =>
   await act(async () => {
     imageImportListener?.({
       payload: {
+        packedPixels: [1, ...Array(511).fill(0)],
+        sourceWidth: 128,
+        sourceHeight: 32
+      }
+    });
+  });
+
+  expect(screen.getByText('素材待确认应用')).toBeInTheDocument();
+});
+
+test('rejects imported image pixels when payload size does not match the current profile', async () => {
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+
+  let imageImportListener: ((event: { payload: { packedPixels: number[]; sourceWidth: number; sourceHeight: number } }) => void) | undefined;
+  await waitFor(() => {
+    imageImportListener = listenMock.mock.calls.find((call) => call[0] === 'cc-notice://custom-face-image-import-ready')?.[1] as ((event: { payload: { packedPixels: number[]; sourceWidth: number; sourceHeight: number } }) => void) | undefined;
+    expect(imageImportListener).toBeDefined();
+  });
+
+  await act(async () => {
+    imageImportListener?.({
+      payload: {
         packedPixels: [1, 0, 0, 0],
         sourceWidth: 8,
         sourceHeight: 8
@@ -195,7 +217,8 @@ test('loads imported image pixels into the pending canvas workflow', async () =>
     });
   });
 
-  expect(screen.getByText('素材待确认应用')).toBeInTheDocument();
+  expect(screen.queryByText('素材待确认应用')).not.toBeInTheDocument();
+  expect(screen.getByText('图片导入结果尺寸与当前画布不一致，请重新导入。')).toBeInTheDocument();
 });
 
 test('imports a compatible face into the reducer draft without saving the group', async () => {

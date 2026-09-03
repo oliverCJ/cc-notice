@@ -1,9 +1,10 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { CustomFaceImagePixelizerWindow } from './CustomFaceImagePixelizerWindow';
 
 const createPackedPixels = (width: number, height: number, activeByteIndex = 0) =>
-  Array.from({ length: Math.ceil((width * height) / 8) }, (_, index) => (index === activeByteIndex ? 1 : 0));
+  Array.from({ length: width * Math.ceil(height / 8) }, (_, index) => (index === activeByteIndex ? 1 : 0));
 
 const waitForDebouncedPixelize = () => act(async () => {
   await new Promise((resolve) => {
@@ -147,6 +148,38 @@ test('loads an image, supports monochrome and color preview modes, and applies p
   });
 });
 
+test('loads an image under react strict mode without leaving the workspace busy', async () => {
+  prepareSourceMock.mockResolvedValue({
+    sourceId: 'source-1',
+    sourceWidth: 8,
+    sourceHeight: 8,
+    workingWidth: 8,
+    workingHeight: 8
+  });
+  pixelizeSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    packedPixels: createPackedPixels(128, 32),
+    previewPixels: new Array(128 * 32 * 4).fill(255),
+    sourceWidth: 8,
+    sourceHeight: 8
+  });
+
+  render(
+    <StrictMode>
+      <CustomFaceImagePixelizerWindow />
+    </StrictMode>
+  );
+  const input = screen.getByTestId('custom-face-image-input') as HTMLInputElement;
+  const file = new File([new Uint8Array([1, 2, 3])], 'sample.png', { type: 'image/png' });
+  fireEvent.change(input, { target: { files: [file] } });
+
+  await waitFor(() => expect(prepareSourceMock).toHaveBeenCalledOnce());
+  await waitFor(() => expect(pixelizeSourceMock).toHaveBeenCalledOnce());
+  expect(screen.queryByText('加载中')).not.toBeInTheDocument();
+  expect(screen.getByTestId('custom-face-pixel-preview-canvas')).toBeInTheDocument();
+});
+
 test('passes transform adjustments to the pixelizer and can reset them', async () => {
   prepareSourceMock.mockResolvedValue({
     sourceId: 'source-1',
@@ -285,6 +318,7 @@ test('drags the converted pixel result on the target canvas without rendering a 
   await waitFor(() => expect(screen.getByTestId('custom-face-pixel-preview-canvas')).toBeInTheDocument());
 
   expect(screen.getByTestId('image-pixelizer-source-thumb')).toHaveStyle({ width: '96px', height: '96px' });
+  expect(screen.getByTestId('image-pixelizer-source-thumb')).not.toHaveClass('overflow-hidden');
   expect(screen.queryByTestId('image-pixelizer-object')).not.toBeInTheDocument();
   expect(screen.getByTestId('custom-face-pixel-preview-canvas').parentElement).not.toHaveClass('opacity-20');
   const initialOptions = pixelizeSourceMock.mock.calls.at(-1)?.[0].options;
@@ -303,6 +337,40 @@ test('drags the converted pixel result on the target canvas without rendering a 
   expect(screen.getByTestId('image-pixelizer-object-hover')).toHaveStyle({ width: '192px', height: '192px' });
   fireEvent.mouseLeave(screen.getByTestId('image-pixelizer-source-thumb'));
   await waitFor(() => expect(screen.queryByTestId('image-pixelizer-object-hover')).not.toBeInTheDocument());
+});
+
+test('allows moving the source image thumbnail without changing pixelizer options', async () => {
+  prepareSourceMock.mockResolvedValue({
+    sourceId: 'source-1',
+    sourceWidth: 1024,
+    sourceHeight: 768,
+    workingWidth: 128,
+    workingHeight: 96
+  });
+  pixelizeSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    packedPixels: createPackedPixels(128, 32),
+    previewPixels: new Array(128 * 32 * 4).fill(255),
+    sourceWidth: 1024,
+    sourceHeight: 768
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  const input = screen.getByTestId('custom-face-image-input') as HTMLInputElement;
+  const file = new File([new Uint8Array([1, 2, 3])], 'sample.png', { type: 'image/png' });
+  fireEvent.change(input, { target: { files: [file] } });
+  await waitFor(() => expect(pixelizeSourceMock).toHaveBeenCalledOnce());
+  const initialOptions = pixelizeSourceMock.mock.calls.at(-1)?.[0].options;
+
+  const thumb = screen.getByTestId('image-pixelizer-source-thumb');
+  fireEvent.pointerDown(thumb, { pointerId: 1, buttons: 1, clientX: 10, clientY: 10 });
+  fireEvent.pointerMove(thumb, { pointerId: 1, buttons: 1, clientX: 36, clientY: 28 });
+  fireEvent.pointerUp(thumb, { pointerId: 1, clientX: 36, clientY: 28 });
+
+  expect(thumb).toHaveStyle({ transform: 'translate(34px, 26px)' });
+  expect(pixelizeSourceMock).toHaveBeenCalledOnce();
+  expect(pixelizeSourceMock.mock.calls.at(-1)?.[0].options).toEqual(initialOptions);
 });
 
 test('stretches the converted pixel preview across the full target canvas viewport', async () => {
@@ -433,4 +501,37 @@ test('accepts pasted image files as input', async () => {
 
   await waitFor(() => expect(prepareSourceMock).toHaveBeenCalledOnce());
   await waitFor(() => expect(pixelizeSourceMock).toHaveBeenCalledOnce());
+});
+
+test('releases a prepared source that resolves after the window unmounts', async () => {
+  let resolvePrepare: ((value: {
+    sourceId: string;
+    sourceWidth: number;
+    sourceHeight: number;
+    workingWidth: number;
+    workingHeight: number;
+  }) => void) | undefined;
+  prepareSourceMock.mockReturnValue(new Promise((resolve) => {
+    resolvePrepare = resolve;
+  }));
+
+  const { unmount } = render(<CustomFaceImagePixelizerWindow />);
+  const input = screen.getByTestId('custom-face-image-input') as HTMLInputElement;
+  const file = new File([new Uint8Array([1, 2, 3])], 'sample.png', { type: 'image/png' });
+  fireEvent.change(input, { target: { files: [file] } });
+  await waitFor(() => expect(prepareSourceMock).toHaveBeenCalledOnce());
+
+  unmount();
+  await act(async () => {
+    resolvePrepare?.({
+      sourceId: 'source-after-unmount',
+      sourceWidth: 8,
+      sourceHeight: 8,
+      workingWidth: 8,
+      workingHeight: 8
+    });
+  });
+
+  await waitFor(() => expect(releaseSourceMock).toHaveBeenCalledWith('source-after-unmount'));
+  expect(pixelizeSourceMock).not.toHaveBeenCalled();
 });

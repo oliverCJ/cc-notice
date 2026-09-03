@@ -409,3 +409,23 @@ fn release_prepared_source_prevents_further_pixelizing() {
 
     assert!(error.contains("图片源已失效"));
 }
+
+#[test]
+fn clear_cancels_prepare_that_started_before_clear() {
+    let store = std::sync::Arc::new(CustomFacePixelizerSourceStore::default());
+    let clearing_store = store.clone();
+    store.set_before_insert_hook_for_test(move || {
+        clearing_store.clear();
+    });
+
+    let result = store.prepare_source(PrepareCustomFacePixelizerSourceRequest {
+        profile_width: 128,
+        profile_height: 128,
+        image_bytes: png_8x8_checker(),
+    });
+
+    assert!(
+        result.is_err(),
+        "prepare started before clear must not insert a stale source after clear"
+    );
+}

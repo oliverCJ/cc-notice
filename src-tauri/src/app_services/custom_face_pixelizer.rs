@@ -96,7 +96,10 @@ struct PreparedPixelizerSource {
 #[derive(Default)]
 pub struct CustomFacePixelizerSourceStore {
     next_id: AtomicU64,
+    generation: AtomicU64,
     sources: Mutex<HashMap<String, PreparedPixelizerSource>>,
+    #[cfg(test)]
+    before_insert_hook: Mutex<Option<Box<dyn FnOnce() + Send>>>,
 }
 
 impl CustomFacePixelizerSourceStore {
@@ -104,6 +107,7 @@ impl CustomFacePixelizerSourceStore {
         &self,
         request: PrepareCustomFacePixelizerSourceRequest,
     ) -> Result<PrepareCustomFacePixelizerSourceResult, String> {
+        let generation = self.generation.load(Ordering::Acquire);
         validate_image_bytes(&request.image_bytes)?;
         let image = image::load_from_memory(&request.image_bytes)
             .map_err(|error| format!("图片格式不支持或无法解码图片：{error}"))?;
@@ -115,17 +119,23 @@ impl CustomFacePixelizerSourceStore {
         let source_id = self.next_source_id();
         let working_width = working_image.width();
         let working_height = working_image.height();
-        self.sources
+        #[cfg(test)]
+        self.run_before_insert_hook();
+        let mut sources = self
+            .sources
             .lock()
-            .map_err(|error| format!("图片源缓存不可用：{error}"))?
-            .insert(
-                source_id.clone(),
-                PreparedPixelizerSource {
-                    image: working_image,
-                    source_width,
-                    source_height,
-                },
-            );
+            .map_err(|error| format!("图片源缓存不可用：{error}"))?;
+        if self.generation.load(Ordering::Acquire) != generation {
+            return Err("图片导入工作台已重置，请重新导入图片".to_string());
+        }
+        sources.insert(
+            source_id.clone(),
+            PreparedPixelizerSource {
+                image: working_image,
+                source_width,
+                source_height,
+            },
+        );
         tracing::info!(
             source_width,
             source_height,
@@ -174,6 +184,7 @@ impl CustomFacePixelizerSourceStore {
     }
 
     pub fn clear(&self) {
+        self.generation.fetch_add(1, Ordering::AcqRel);
         match self.sources.lock() {
             Ok(mut sources) => sources.clear(),
             Err(error) => tracing::warn!(%error, "failed to clear custom face pixelizer sources"),
@@ -183,6 +194,25 @@ impl CustomFacePixelizerSourceStore {
     fn next_source_id(&self) -> String {
         let id = self.next_id.fetch_add(1, Ordering::Relaxed) + 1;
         format!("custom-face-image-source-{id}")
+    }
+
+    #[cfg(test)]
+    pub fn set_before_insert_hook_for_test(&self, hook: impl FnOnce() + Send + 'static) {
+        if let Ok(mut before_insert_hook) = self.before_insert_hook.lock() {
+            *before_insert_hook = Some(Box::new(hook));
+        }
+    }
+
+    #[cfg(test)]
+    fn run_before_insert_hook(&self) {
+        let hook = self
+            .before_insert_hook
+            .lock()
+            .ok()
+            .and_then(|mut before_insert_hook| before_insert_hook.take());
+        if let Some(hook) = hook {
+            hook();
+        }
     }
 }
 
@@ -252,11 +282,9 @@ fn pixelize_decoded_image(
             options.threshold,
             options.invert,
         ),
-        CustomFacePixelizeMode::Color => build_color_preview_pixels(
-            &resized,
-            options.color_count,
-            options.dither,
-        )?,
+        CustomFacePixelizeMode::Color => {
+            build_color_preview_pixels(&resized, options.color_count, options.dither)?
+        }
     };
 
     tracing::info!(
@@ -327,8 +355,7 @@ fn resize_to_working_image(
     if source_width <= max_edge && source_height <= max_edge {
         return image.clone();
     }
-    let scale = (max_edge as f32 / source_width as f32)
-        .min(max_edge as f32 / source_height as f32);
+    let scale = (max_edge as f32 / source_width as f32).min(max_edge as f32 / source_height as f32);
     let working_width = ((source_width as f32) * scale).round().max(1.0) as u32;
     let working_height = ((source_height as f32) * scale).round().max(1.0) as u32;
     image.resize_exact(working_width, working_height, FilterType::Lanczos3)

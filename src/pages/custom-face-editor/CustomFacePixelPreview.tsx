@@ -16,7 +16,7 @@ export function CustomFacePixelPreview({ width, height, packedPixels, rgbaPixels
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hasPixels = rgbaPixels
     ? rgbaPixels.length >= width * height * 4
-    : packedPixels.length >= Math.ceil(width * height / 8);
+    : packedPixels.length >= width * Math.ceil(height / 8);
   const hasActivePixel = hasPixels && Array.from(rgbaPixels ?? packedPixels).some((value) => value !== 0);
 
   useEffect(() => {

@@ -89,6 +89,11 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
       CUSTOM_FACE_IMAGE_IMPORT_READY_EVENT,
       (event) => {
         if (disposed) return;
+        if (!isValidImageImportPayload(event.payload, state.profile.width, state.profile.height)) {
+          setPendingImport(null);
+          setStatusMessage(t('customFaceEditor.workbench.imageImportSizeMismatch'));
+          return;
+        }
         setPendingImport({
           pixels: event.payload.packedPixels,
           basePixels: event.payload.packedPixels,
@@ -108,7 +113,7 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
       else unlisten = dispose;
     }).catch((error) => console.warn('failed to initialize custom face image import listener', error));
     return () => { disposed = true; unlisten?.(); };
-  }, [t]);
+  }, [state.profile.height, state.profile.width, t]);
   useEffect(() => {
     let disposed = false;
     let unlisten: (() => void) | null = null;
@@ -423,6 +428,7 @@ function sameFaceContent(left: { color: { red: number; green: number; blue: numb
 function packedPixelsToChanges(pixels: number[], width: number, height: number) { const changes: Array<{ x: number; y: number; active: boolean }> = []; for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) changes.push({ x, y, active: (pixels[x + Math.floor(y / 8) * width] & (1 << (y & 7))) !== 0 }); return changes; }
 function movePackedPixels(pixels: number[], width: number, height: number, dx: number, dy: number) { const next = new Array(pixels.length).fill(0); for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) { const source = x + Math.floor(y / 8) * width; if ((pixels[source] & (1 << (y & 7))) === 0) continue; const targetX = x + dx; const targetY = y + dy; if (targetX < 0 || targetY < 0 || targetX >= width || targetY >= height) continue; const target = targetX + Math.floor(targetY / 8) * width; next[target] |= 1 << (targetY & 7); } return next; }
 function scalePackedPixels(pixels: number[], width: number, height: number, scale: number) { const next = new Array(pixels.length).fill(0); const centerX = (width - 1) / 2; const centerY = (height - 1) / 2; for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) { const sourceX = Math.round((x - centerX) / scale + centerX); const sourceY = Math.round((y - centerY) / scale + centerY); if (sourceX < 0 || sourceY < 0 || sourceX >= width || sourceY >= height) continue; const source = sourceX + Math.floor(sourceY / 8) * width; if ((pixels[source] & (1 << (sourceY & 7))) === 0) continue; const target = x + Math.floor(y / 8) * width; next[target] |= 1 << (y & 7); } return next; }
+function isValidImageImportPayload(payload: { packedPixels: number[]; sourceWidth: number; sourceHeight: number }, width: number, height: number) { return payload.sourceWidth === width && payload.sourceHeight === height && payload.packedPixels.length === width * Math.ceil(height / 8); }
 function conflictLibraryHash(message: string) { return message.match(/custom face group conflicts with current hash (\S+)/)?.[1] ?? null; }
 function supportsConstraint(tool: ToolId) { return ['line', 'rectangle', 'circle', 'triangle'].includes(tool); }
 function constraintText(tool: ToolId, t: ReturnType<typeof useI18n>) { return t(`customFaceEditor.workbench.constraints.${tool}`); }
