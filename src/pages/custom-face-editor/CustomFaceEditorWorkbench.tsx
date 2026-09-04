@@ -2,8 +2,8 @@ import { useEffect, useReducer, useRef, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open, save as saveDialog } from '@tauri-apps/plugin-dialog';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Copy, Download, FileArchive, Plus, Star, Trash2, Upload } from 'lucide-react';
-import { clearCustomFaceRecovery, closeCustomFaceEditor, deleteCustomFaceAsset, exportCustomFaceGif, exportCustomFaceItem, getCustomFaceAssets, getCustomFaceGroup, openCustomFaceImagePixelizer, previewCustomFaceItemImport, saveCustomFaceAsset, saveCustomFaceGroup, saveCustomFaceRecovery } from '@/api/tauriApi';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Copy, Download, FileArchive, Image, Minus, Plus, Star, Trash2, Upload } from 'lucide-react';
+import { clearCustomFaceRecovery, closeCustomFaceEditor, deleteCustomFaceAsset, exportCustomFaceGif, exportCustomFaceItem, exportCustomFacePng, getCustomFaceAssets, getCustomFaceGroup, openCustomFaceImagePixelizer, previewCustomFaceItemImport, saveCustomFaceAsset, saveCustomFaceGroup, saveCustomFaceRecovery, takeLatestVectorizedSvgTempFilePath } from '@/api/tauriApi';
 import type { CustomFaceItemImportPreview, PersonalCustomFaceAsset, SaveCustomFaceGroupResult } from '@/api/tauriApi';
 import {
   AlertDialog,
@@ -28,23 +28,44 @@ import { CustomFaceSvgImportDialog } from './CustomFaceSvgImportDialog';
 import { CustomFaceAssetLibrary } from './CustomFaceAssetLibrary';
 import { CustomFaceItemImportDialog } from './CustomFaceItemImportDialog';
 import { CustomFaceGifExportDialog } from './CustomFaceGifExportDialog';
+import { CustomFacePngExportDialog } from './CustomFacePngExportDialog';
 import { useI18n } from '@/i18n';
+import { CUSTOM_FACE_IMAGE_VECTORIZER_STATE_EVENT, CUSTOM_FACE_OPEN_SVG_PATH_EVENT } from './customFaceVectorizerEvents';
 
 type Props = { initialState: EditorState; expectedLibraryHash?: string; onBack: () => void; onSaved: (result: SaveCustomFaceGroupResult) => void };
 const TOOL_LABELS: Record<ToolId, string> = { select: 'select', brush: 'brush', eraser: 'eraser', line: 'line', rectangle: 'rectangle', circle: 'circle', triangle: 'triangle', pen: 'pen' };
 const CUSTOM_FACE_IMAGE_IMPORT_READY_EVENT = 'cc-notice://custom-face-image-import-ready';
 const CUSTOM_FACE_IMAGE_PIXELIZER_STATE_EVENT = 'cc-notice://custom-face-image-pixelizer-state-changed';
+type PendingImportState = {
+  pixels: number[];
+  basePixels: number[];
+  previewPixels: number[];
+  mode: 'merge' | 'replace';
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  sourceWidth: number;
+  sourceHeight: number;
+  previewWidth: number;
+  previewHeight: number;
+  previewOffsetX: number;
+  previewOffsetY: number;
+  previewCrop: boolean;
+};
 
 export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, onBack, onSaved }: Props) {
   const t = useI18n();
   const [state, dispatch] = useReducer(editorReducer, initialState);
   const [collapsed, setCollapsed] = useState(false);
   const [selectedTool, setSelectedTool] = useState<ToolId>('brush');
+  const [selectionShape, setSelectionShape] = useState<'rectangle' | 'circle'>('rectangle');
   const [constraintEnabled, setConstraintEnabled] = useState(false);
   const [rectangleFilled, setRectangleFilled] = useState(false);
   const [eraserSize, setEraserSize] = useState(3);
   const [selection, setSelection] = useState<EditorState['selection']>(null);
   const [selectionMoveStep, setSelectionMoveStep] = useState(1);
+  const [pickingSelectionPivot, setPickingSelectionPivot] = useState(false);
+  const [selectionRotationDraft, setSelectionRotationDraft] = useState('0');
   const [guides, setGuides] = useState<CanvasGuide[]>([]);
   const [toolState, setToolState] = useState<CanvasToolState>({ pointer: null, start: null, end: null, bounds: null, penPointCount: 0 });
   const [penCommand, setPenCommand] = useState<{ id: number; type: 'finish' | 'cancel' } | null>(null);
@@ -53,7 +74,9 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
   const [playing, setPlaying] = useState(false);
   const [groupNameDraft, setGroupNameDraft] = useState(initialState.presentGroup.name);
   const [svgDialogOpen, setSvgDialogOpen] = useState(false);
-  const [pendingImport, setPendingImport] = useState<{ pixels: number[]; basePixels: number[]; mode: 'merge' | 'replace'; scale: number; offsetX: number; offsetY: number; sourceWidth: number; sourceHeight: number } | null>(null);
+  const [svgInitialSourcePath, setSvgInitialSourcePath] = useState<string | null>(null);
+  const [svgInitialSourceRevision, setSvgInitialSourceRevision] = useState(0);
+  const [pendingImport, setPendingImport] = useState<PendingImportState | null>(null);
   const [personalAssets, setPersonalAssets] = useState<PersonalCustomFaceAsset[]>([]);
   const [assetTab, setAssetTab] = useState<"group" | "public">("group");
   const [assetLibraryOpen, setAssetLibraryOpen] = useState(false);
@@ -66,10 +89,13 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
   const [faceItemImportError, setFaceItemImportError] = useState<string | null>(null);
   const [faceItemBusy, setFaceItemBusy] = useState(false);
   const [gifExportDialogOpen, setGifExportDialogOpen] = useState(false);
+  const [pngExportDialogOpen, setPngExportDialogOpen] = useState(false);
   const [imagePixelizerOpen, setImagePixelizerOpen] = useState(false);
+  const [imageVectorizerOpen, setImageVectorizerOpen] = useState(false);
   const dirtyRef = useRef(false);
   const closingRef = useRef(false);
   const imagePixelizerOpenRef = useRef(false);
+  const imageVectorizerOpenRef = useRef(false);
   const translateRef = useRef(t);
   const face = state.presentGroup.faces.find((item) => item.faceId === state.selectedFaceId);
   const frame = face?.frames[state.selectedFrameIndex];
@@ -77,8 +103,9 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
   const pixels = frame ? new Uint8Array(frame.packedPixels) : new Uint8Array(state.profile.framebufferBytes);
 
   useEffect(() => { if (!state.past.length) return; const timer = window.setTimeout(() => { void saveCustomFaceRecovery(state.presentGroup).catch((error) => console.warn('failed to autosave custom face recovery', error)); }, 600); return () => window.clearTimeout(timer); }, [state.past.length, state.presentGroup]);
-  useEffect(() => { setSelection(null); dispatch({ type: 'set-selection', selection: null }); }, [selectedTool]);
   useEffect(() => { setSelection(state.selection); }, [state.selection]);
+  useEffect(() => { setSelectionRotationDraft(String(state.selectionRotationDegrees)); }, [state.selectionRotationDegrees]);
+  useEffect(() => { if (!state.selection) setPickingSelectionPivot(false); }, [state.selection]);
   useEffect(() => { setGroupNameDraft(state.presentGroup.name); }, [state.presentGroup.name]);
   useEffect(() => { setLibraryHash(expectedLibraryHash); }, [expectedLibraryHash]);
   useEffect(() => { if (!(window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__) return; void getCustomFaceAssets().then(setPersonalAssets).catch((error) => console.warn('failed to load personal custom face assets', error)); }, []);
@@ -94,16 +121,7 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
           setStatusMessage(t('customFaceEditor.workbench.imageImportSizeMismatch'));
           return;
         }
-        setPendingImport({
-          pixels: event.payload.packedPixels,
-          basePixels: event.payload.packedPixels,
-          mode: 'replace',
-          scale: 1,
-          offsetX: 0,
-          offsetY: 0,
-          sourceWidth: event.payload.sourceWidth,
-          sourceHeight: event.payload.sourceHeight
-        });
+        setPendingImport(createPendingImportState(event.payload.packedPixels, 'replace', event.payload.sourceWidth, event.payload.sourceHeight));
         setAssetLibraryOpen(false);
         setSvgDialogOpen(false);
         setStatusMessage(t('customFaceEditor.workbench.imageApplied'));
@@ -127,6 +145,56 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
     }).catch((error) => console.warn('failed to initialize custom face image pixelizer state listener', error));
     return () => { disposed = true; unlisten?.(); };
   }, []);
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<boolean>(CUSTOM_FACE_IMAGE_VECTORIZER_STATE_EVENT, (event) => {
+      if (disposed) return;
+      imageVectorizerOpenRef.current = event.payload;
+      setImageVectorizerOpen(event.payload);
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize custom face image vectorizer state listener', error));
+    return () => { disposed = true; unlisten?.(); };
+  }, []);
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<string>(CUSTOM_FACE_OPEN_SVG_PATH_EVENT, (event) => {
+      if (disposed || typeof event.payload !== 'string' || !event.payload) return;
+      setSvgInitialSourcePath(event.payload);
+      setSvgInitialSourceRevision((current) => current + 1);
+      setSvgDialogOpen(true);
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize custom face vectorized svg listener', error));
+    return () => { disposed = true; unlisten?.(); };
+  }, []);
+  useEffect(() => {
+    let disposed = false;
+    const consumePendingVectorizedSvgPath = async () => {
+      try {
+        const path = await takeLatestVectorizedSvgTempFilePath();
+        if (disposed || !path) return;
+        setSvgInitialSourcePath(path);
+        setSvgInitialSourceRevision((current) => current + 1);
+        setSvgDialogOpen(true);
+      } catch (error) {
+        console.warn('failed to fetch pending vectorized svg path', error);
+      }
+    };
+    const handleFocus = () => {
+      void consumePendingVectorizedSvgPath();
+    };
+    window.addEventListener('focus', handleFocus);
+    void consumePendingVectorizedSvgPath();
+    return () => {
+      disposed = true;
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
   dirtyRef.current = state.past.length > 0;
   translateRef.current = t;
   useEffect(() => {
@@ -137,6 +205,11 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
       if (imagePixelizerOpenRef.current) {
         event.preventDefault();
         setStatusMessage(translateRef.current('customFaceEditor.workbench.imagePixelizerOpen'));
+        return;
+      }
+      if (imageVectorizerOpenRef.current) {
+        event.preventDefault();
+        setStatusMessage(translateRef.current('customFaceEditor.workbench.imageVectorizerOpen'));
         return;
       }
       if (!dirtyRef.current) {
@@ -293,12 +366,12 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
     setFaceItemPreview(null);
     setStatusMessage(t('customFaceEditor.faceImport.imported', { name: resolvedName }));
   };
-  const exportCurrentFace = async (format: 'item' | 'gif', scale = 1) => {
+  const exportCurrentFace = async (format: 'item' | 'gif' | 'png', options: { scale: number; invert: boolean; transparentBackground: boolean; frameIndices: number[] } = { scale: 1, invert: false, transparentBackground: false, frameIndices: [] }) => {
     if (!face || faceItemBusy) return;
-    const extension = format === 'item' ? 'ccfaceitem' : 'gif';
+    const extension = format === 'item' ? 'ccfaceitem' : format === 'gif' ? 'gif' : 'png';
     const path = await saveDialog({
       defaultPath: `${safeFaceFileName(face.name, t('customFaceEditor.defaults.fileName'))}.${extension}`,
-      filters: [{ name: format === 'item' ? 'CC Face Item' : 'GIF', extensions: [extension] }]
+      filters: [{ name: format === 'item' ? 'CC Face Item' : format === 'gif' ? 'GIF' : 'PNG', extensions: [extension] }]
     });
     if (typeof path !== 'string') return;
     const snapshot = structuredClone(face);
@@ -308,13 +381,40 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
       if (format === 'item') {
         await exportCustomFaceItem({ face: snapshot, displayProfileId: state.profile.id, path });
         setStatusMessage(t('customFaceEditor.faceExport.itemSuccess'));
+      } else if (format === 'png') {
+        const currentFrame = snapshot.frames[state.selectedFrameIndex];
+        if (!currentFrame) {
+          setStatusMessage(t('customFaceEditor.faceExport.failed', { error: 'No active frame' }));
+          return;
+        }
+        await exportCustomFacePng({
+          packedPixels: currentFrame.packedPixels,
+          displayProfileId: state.profile.id,
+          path,
+          scale: options.scale,
+          invert: options.invert,
+          transparentBackground: options.transparentBackground
+        });
+        setStatusMessage(t('customFaceEditor.faceExport.pngSuccess'));
       } else {
-        const result = await exportCustomFaceGif({ face: snapshot, displayProfileId: state.profile.id, path, scale });
-        const originalDuration = snapshot.frames.reduce((total, frame) => total + frame.durationMs, 0);
+        const result = await exportCustomFaceGif({
+          face: snapshot,
+          displayProfileId: state.profile.id,
+          path,
+          scale: options.scale,
+          invert: options.invert,
+          transparentBackground: options.transparentBackground,
+          frameIndices: options.frameIndices
+        });
+        const exportedFrameCount = options.frameIndices.length > 0 ? options.frameIndices.length : snapshot.frames.length;
+        const originalDuration = (options.frameIndices.length > 0
+          ? options.frameIndices.map(i => snapshot.frames[i]?.durationMs ?? 0)
+          : snapshot.frames.map(f => f.durationMs)
+        ).reduce((total, ms) => total + ms, 0);
         const key = originalDuration === result.totalDurationMs
           ? 'customFaceEditor.faceExport.gifSuccess'
           : 'customFaceEditor.faceExport.quantized';
-        setStatusMessage(t(key, { frames: snapshot.frames.length, duration: result.totalDurationMs }));
+        setStatusMessage(t(key, { frames: exportedFrameCount, duration: result.totalDurationMs }));
       }
     } catch (error) {
       setStatusMessage(t('customFaceEditor.faceExport.failed', {
@@ -332,6 +432,10 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
           <button className="border border-border px-3 py-2 text-sm" onClick={() => {
             if (imagePixelizerOpen) {
               setStatusMessage(t('customFaceEditor.workbench.imagePixelizerOpen'));
+              return;
+            }
+            if (imageVectorizerOpen) {
+              setStatusMessage(t('customFaceEditor.workbench.imageVectorizerOpen'));
               return;
             }
             if (state.past.length) setLeaveIntent('back');
@@ -362,28 +466,30 @@ export function CustomFaceEditorWorkbench({ initialState, expectedLibraryHash, o
           <span className="ml-auto text-xs text-muted-foreground">{state.past.length ? t('customFaceEditor.workbench.modified') : t('customFaceEditor.workbench.saved')}</span>
         </header>
         {imagePixelizerOpen ? <div role="status" className="border-b border-amber-400/60 bg-amber-400/10 px-4 py-2 text-sm text-amber-800">{t('customFaceEditor.workbench.imagePixelizerOpen')}</div> : null}
+        {imageVectorizerOpen ? <div role="status" className="border-b border-amber-400/60 bg-amber-400/10 px-4 py-2 text-sm text-amber-800">{t('customFaceEditor.workbench.imageVectorizerOpen')}</div> : null}
         {saveError ? <div role="alert" className="border-b border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">{t('customFaceEditor.workbench.saveFailed', { error: saveError })}</div> : null}
         {faceItemImportError ? <div role="alert" className="border-b border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">{faceItemImportError}</div> : null}
         <div className="flex min-h-0 flex-1 gap-3 p-3">
           <CustomFaceToolbar collapsed={collapsed} selectedTool={selectedTool} canUndo={state.past.length > 0 && !playing} canRedo={state.future.length > 0 && !playing} onCollapsedChange={setCollapsed} onToolChange={(tool) => { setSelectedTool(tool); setStatusMessage(toolHint(tool, t)); }} onUndo={() => dispatch({ type: 'undo' })} onRedo={() => dispatch({ type: 'redo' })} />
           <section className="flex min-w-0 flex-1 flex-col gap-3">
-            <CustomFaceCanvas width={state.profile.width} height={state.profile.height} pixels={pixels} selection={selection} selectionOrigin={state.selectionOrigin} pendingImportPixels={pendingImport?.pixels} pendingImportOffset={{ x: pendingImport?.offsetX ?? 0, y: pendingImport?.offsetY ?? 0 }} pendingImportSize={{ width: pendingImport?.sourceWidth ?? state.profile.width, height: pendingImport?.sourceHeight ?? state.profile.height }} onPendingImportMove={(dx, dy) => setPendingImport((current) => current ? { ...current, offsetX: current.offsetX + dx, offsetY: current.offsetY + dy } : current)} guides={guides} eraserSize={eraserSize} onionPixels={onionFrame ? new Uint8Array(onionFrame.packedPixels) : undefined} selectedTool={selectedTool} constraintEnabled={constraintEnabled} rectangleFilled={rectangleFilled} disabled={playing} penCommand={penCommand} onGuidesChange={setGuides} onToolStateChange={setToolState} onSelectionChange={(value) => { setSelection(value); dispatch({ type: 'set-selection', selection: value }); if (value) setStatusMessage(t('customFaceEditor.workbench.selectionCreated', { width: value.width, height: value.height })); }} onPixelTransaction={(changes) => dispatch({ type: 'apply-pixel-transaction', pixels: changes })} />
+            <CustomFaceCanvas width={state.profile.width} height={state.profile.height} pixels={pixels} selection={selection} selectionOrigin={state.selectionOrigin} selectionPivot={state.selectionPivot} pickingSelectionPivot={pickingSelectionPivot} onSelectionPivotChange={(pivot) => { dispatch({ type: 'set-selection-pivot', pivot }); setPickingSelectionPivot(false); }} pendingImportPixels={pendingImport?.previewPixels ?? pendingImport?.pixels} pendingImportOffset={{ x: (pendingImport?.previewOffsetX ?? 0) + (pendingImport?.offsetX ?? 0), y: (pendingImport?.previewOffsetY ?? 0) + (pendingImport?.offsetY ?? 0) }} pendingImportSize={{ width: pendingImport?.previewWidth ?? pendingImport?.sourceWidth ?? state.profile.width, height: pendingImport?.previewHeight ?? pendingImport?.sourceHeight ?? state.profile.height }} onPendingImportMove={(dx, dy) => setPendingImport((current) => current ? { ...current, offsetX: current.offsetX + dx, offsetY: current.offsetY + dy } : current)} guides={guides} eraserSize={eraserSize} onionPixels={onionFrame ? new Uint8Array(onionFrame.packedPixels) : undefined} selectedTool={selectedTool} selectionShape={selectionShape} constraintEnabled={constraintEnabled} rectangleFilled={rectangleFilled} disabled={playing} penCommand={penCommand} onGuidesChange={setGuides} onToolStateChange={setToolState} onSelectionChange={(value) => { setSelection(value); dispatch({ type: 'set-selection', selection: value }); if (value) setStatusMessage(t('customFaceEditor.workbench.selectionCreated', { width: value.width, height: value.height })); }} onPixelTransaction={(changes) => dispatch({ type: 'apply-pixel-transaction', pixels: changes })} />
             <div role="status" className="min-h-8 border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">{statusMessage}</div>
             <CustomFaceTimeline frames={face?.frames ?? []} width={state.profile.width} height={state.profile.height} selectedIndex={state.selectedFrameIndex} onSelect={(index) => { clearSelection(); dispatch({ type: 'select-frame', index }); }} onMove={(from, to) => { clearSelection(); dispatch({ type: 'move-frame', from, to }); }} onAdd={(mode: AddFrameMode) => { clearSelection(); dispatch({ type: mode === 'blank' ? 'add-blank-frame' : 'add-frame' }); setStatusMessage(t(mode === 'blank' ? 'customFaceEditor.workbench.blankFrameAdded' : 'customFaceEditor.workbench.frameAdded')); }} onDelete={(index) => { clearSelection(); dispatch({ type: 'delete-frame', index }); }} onPlayingChange={setPlaying} />
           </section>
           <aside className="flex w-64 shrink-0 flex-col gap-4 overflow-hidden border-l border-border pl-4 text-sm">
-            <FacePanel state={state} face={face} frameDuration={frame?.durationMs ?? 200} playing={playing} busy={faceItemBusy} onSelect={changeFace} onAdd={addFace} onDuplicate={duplicateFace} onRename={renameFace} onDefault={() => face && dispatch({ type: 'set-default-face', faceId: face.faceId })} onDelete={deleteFace} onImport={() => void importFaceItem()} onExportItem={() => void exportCurrentFace('item')} onExportGif={() => setGifExportDialogOpen(true)} onDuration={(durationMs) => dispatch({ type: 'set-frame-duration', index: state.selectedFrameIndex, durationMs })} />
-            <CustomFaceAssetLibrary open={assetLibraryOpen} onClose={() => setAssetLibraryOpen(false)} groupId={state.presentGroup.groupId} activeTab={assetTab} onTabChange={setAssetTab} personalAssets={personalAssets} onApplyPersonal={(asset) => { setPendingImport({ pixels: Array.from(asset.packedPixels), basePixels: Array.from(asset.packedPixels), mode: "merge", scale: 1, offsetX: 0, offsetY: 0, sourceWidth: asset.width, sourceHeight: asset.height }); setAssetLibraryOpen(false); setStatusMessage(t('customFaceEditor.workbench.assetApplied')); }} onSaveCurrent={async (scope) => { if (!frame) return; const now = new Date().toISOString(); const saved = await saveCustomFaceAsset({ assetId: crypto.randomUUID(), scope, groupId: scope === "group" ? state.presentGroup.groupId : null, name: `${t('customFaceEditor.workbench.frameName')} ${state.selectedFrameIndex + 1}`, tags: [], profileId: state.profile.id, width: state.profile.width, height: state.profile.height, packedPixels: [...frame.packedPixels], source: "editor", createdAt: now, updatedAt: now }); setPersonalAssets((items) => [...items, saved]); setAssetTab(scope); setHighlightAssetId(saved.assetId); setStatusMessage(t('customFaceEditor.workbench.assetSaved')); }} onDeletePersonal={async (assetId) => { await deleteCustomFaceAsset(assetId); setPersonalAssets((items) => items.filter((asset) => asset.assetId !== assetId)); }} onRenamePersonal={async (asset, name) => { const saved = await saveCustomFaceAsset({ ...asset, name, updatedAt: new Date().toISOString() }); setPersonalAssets((items) => items.map((item) => item.assetId === saved.assetId ? saved : item)); }} onUpdateTags={async (asset, tags) => { const saved = await saveCustomFaceAsset({ ...asset, tags, updatedAt: new Date().toISOString() }); setPersonalAssets((items) => items.map((item) => item.assetId === saved.assetId ? saved : item)); }} />
-            <ToolPanel tool={selectedTool} state={toolState} selection={selection} selectionOrigin={state.selectionOrigin} clipboardReady={Boolean(state.clipboard)} constraintEnabled={constraintEnabled} rectangleFilled={rectangleFilled} eraserSize={eraserSize} onConstraint={setConstraintEnabled} onRectangleFilled={setRectangleFilled} onEraserSize={setEraserSize} onPenCommand={(type) => setPenCommand({ id: Date.now(), type })} onCopy={() => { if (!selection) return; dispatch({ type: 'copy-selection' }); setStatusMessage(t('customFaceEditor.workbench.copiedSelection')); }} onPaste={() => { if (!selection) { setStatusMessage(t('customFaceEditor.workbench.pasteTarget')); return; } if (!state.clipboard) { setStatusMessage(t('customFaceEditor.workbench.clipboardEmpty')); return; } dispatch({ type: 'paste-selection' }); clearSelection(); }} onClear={() => { if (selection) { dispatch({ type: 'clear-selection' }); clearSelection(); } }} onSetActive={(active) => { if (selection) { dispatch({ type: 'set-selection-active', active }); clearSelection(); } }} onCancelSelection={clearSelection} onCancelMove={() => { dispatch({ type: "cancel-selection-move" }); setSelection(null); }} selectionMoveStep={selectionMoveStep} onSelectionMoveStep={setSelectionMoveStep} onMoveSelection={(dx, dy) => dispatch({ type: "move-selection", dx: dx * selectionMoveStep, dy: dy * selectionMoveStep })} />
-            <PendingImportActions pending={pendingImport} onCancel={() => setPendingImport(null)} onScale={(scale) => setPendingImport((current) => current ? { ...current, scale, pixels: scalePackedPixels(current.basePixels, state.profile.width, state.profile.height, scale) } : current)} onConfirm={() => { if (!pendingImport) return; const changes = pendingImport.mode === "replace" ? packedPixelsToChanges(movePackedPixels(pendingImport.pixels, state.profile.width, state.profile.height, pendingImport.offsetX, pendingImport.offsetY), state.profile.width, state.profile.height) : packedPixelsToChanges(movePackedPixels(pendingImport.pixels, state.profile.width, state.profile.height, pendingImport.offsetX, pendingImport.offsetY), state.profile.width, state.profile.height).filter((change) => change.active); dispatch({ type: "apply-pixel-transaction", pixels: changes }); setPendingImport(null); setStatusMessage(t('customFaceEditor.workbench.frameApplied')); }} />
+            <FacePanel state={state} face={face} frameDuration={frame?.durationMs ?? 200} playing={playing} busy={faceItemBusy} onSelect={changeFace} onAdd={addFace} onDuplicate={duplicateFace} onRename={renameFace} onDefault={() => face && dispatch({ type: 'set-default-face', faceId: face.faceId })} onDelete={deleteFace} onImport={() => void importFaceItem()} onExportItem={() => void exportCurrentFace('item')} onExportGif={() => setGifExportDialogOpen(true)} onExportPng={() => setPngExportDialogOpen(true)} onDuration={(durationMs) => dispatch({ type: 'set-frame-duration', index: state.selectedFrameIndex, durationMs })} />
+            <CustomFaceAssetLibrary open={assetLibraryOpen} onClose={() => setAssetLibraryOpen(false)} groupId={state.presentGroup.groupId} activeTab={assetTab} onTabChange={setAssetTab} personalAssets={personalAssets} onApplyPersonal={(asset) => { setPendingImport(createPendingImportState(Array.from(asset.packedPixels), "merge", asset.width, asset.height)); setAssetLibraryOpen(false); setStatusMessage(t('customFaceEditor.workbench.assetApplied')); }} onSaveCurrent={async (scope) => { if (!frame) return; const now = new Date().toISOString(); const saved = await saveCustomFaceAsset({ assetId: crypto.randomUUID(), scope, groupId: scope === "group" ? state.presentGroup.groupId : null, name: `${t('customFaceEditor.workbench.frameName')} ${state.selectedFrameIndex + 1}`, tags: [], profileId: state.profile.id, width: state.profile.width, height: state.profile.height, packedPixels: [...frame.packedPixels], source: "editor", createdAt: now, updatedAt: now }); setPersonalAssets((items) => [...items, saved]); setAssetTab(scope); setHighlightAssetId(saved.assetId); setStatusMessage(t('customFaceEditor.workbench.assetSaved')); }} onDeletePersonal={async (assetId) => { await deleteCustomFaceAsset(assetId); setPersonalAssets((items) => items.filter((asset) => asset.assetId !== assetId)); }} onRenamePersonal={async (asset, name) => { const saved = await saveCustomFaceAsset({ ...asset, name, updatedAt: new Date().toISOString() }); setPersonalAssets((items) => items.map((item) => item.assetId === saved.assetId ? saved : item)); }} onUpdateTags={async (asset, tags) => { const saved = await saveCustomFaceAsset({ ...asset, tags, updatedAt: new Date().toISOString() }); setPersonalAssets((items) => items.map((item) => item.assetId === saved.assetId ? saved : item)); }} />
+            <ToolPanel tool={selectedTool} state={toolState} selection={selection} selectionOrigin={state.selectionOrigin} selectionPivot={state.selectionPivot} selectionRotationDegrees={state.selectionRotationDegrees} selectionTransformKind={state.selectionTransformKind} pickingSelectionPivot={pickingSelectionPivot} clipboardReady={Boolean(state.clipboard)} constraintEnabled={constraintEnabled} rectangleFilled={rectangleFilled} eraserSize={eraserSize} selectionShape={selectionShape} onSelectionShapeChange={setSelectionShape} onConstraint={setConstraintEnabled} onRectangleFilled={setRectangleFilled} onEraserSize={setEraserSize} onPenCommand={(type) => setPenCommand({ id: Date.now(), type })} onCopy={() => { if (!selection) return; dispatch({ type: 'copy-selection' }); setStatusMessage(t('customFaceEditor.workbench.copiedSelection')); }} onPaste={() => { if (!selection) { setStatusMessage(t('customFaceEditor.workbench.pasteTarget')); return; } if (!state.clipboard) { setStatusMessage(t('customFaceEditor.workbench.clipboardEmpty')); return; } dispatch({ type: 'paste-selection' }); clearSelection(); }} onClear={() => { if (selection) { dispatch({ type: 'clear-selection' }); clearSelection(); } }} onSetActive={(active) => { if (selection) { dispatch({ type: 'set-selection-active', active }); clearSelection(); } }} onCancelSelection={clearSelection} onConfirmMove={() => { dispatch({ type: 'confirm-selection-move' }); setSelection(null); }} onCancelMove={() => { dispatch({ type: 'cancel-selection-move' }); }} onStartPickingSelectionPivot={() => setPickingSelectionPivot(true)} onRotationDraftChange={setSelectionRotationDraft} onRotateSelection={(degrees) => dispatch({ type: 'rotate-selection', degrees })} onConfirmSelectionRotation={() => { dispatch({ type: 'confirm-selection-rotation' }); setSelection(null); }} onCancelSelectionRotation={() => { dispatch({ type: 'cancel-selection-rotation' }); }} selectionRotationDraft={selectionRotationDraft} selectionMoveStep={selectionMoveStep} onSelectionMoveStep={setSelectionMoveStep} onMoveSelection={(dx, dy) => dispatch({ type: "move-selection", dx: dx * selectionMoveStep, dy: dy * selectionMoveStep })} />
+            <PendingImportActions pending={pendingImport} onCancel={() => setPendingImport(null)} onScale={(scale) => setPendingImport((current) => current ? scalePendingImport(current, state.profile.width, state.profile.height, scale) : current)} onConfirm={() => { if (!pendingImport) return; const changes = pendingImport.mode === "replace" ? packedPixelsToChanges(movePackedPixels(pendingImport.pixels, state.profile.width, state.profile.height, pendingImport.offsetX, pendingImport.offsetY), state.profile.width, state.profile.height) : packedPixelsToChanges(movePackedPixels(pendingImport.pixels, state.profile.width, state.profile.height, pendingImport.offsetX, pendingImport.offsetY), state.profile.width, state.profile.height).filter((change) => change.active); dispatch({ type: "apply-pixel-transaction", pixels: changes }); setPendingImport(null); setStatusMessage(t('customFaceEditor.workbench.frameApplied')); }} />
           </aside>
         </div>
       </main>
       <SaveConflictDialog open={Boolean(conflictHash)} busy={saving} onCancel={() => setConflictHash(null)} onReload={() => void reloadDiskGroup()} onOverwrite={() => { if (conflictHash) void save(conflictHash); }} />
       <LeaveConfirmDialog open={Boolean(leaveIntent)} busy={saving} onCancel={() => setLeaveIntent(null)} onDiscard={() => void discardAndLeave()} onSave={() => void saveAndLeave()} />
-      <CustomFaceSvgImportDialog open={svgDialogOpen} width={state.profile.width} height={state.profile.height} onCancel={() => setSvgDialogOpen(false)} onApply={(packedPixels, mode) => { setPendingImport({ pixels: packedPixels, basePixels: packedPixels, mode, scale: 1, offsetX: 0, offsetY: 0, sourceWidth: state.profile.width, sourceHeight: state.profile.height }); setAssetLibraryOpen(false); setSvgDialogOpen(false); setStatusMessage(t('customFaceEditor.workbench.svgApplied')); }} />
+      <CustomFaceSvgImportDialog open={svgDialogOpen} width={state.profile.width} height={state.profile.height} initialSourcePath={svgInitialSourcePath} initialSourceRevision={svgInitialSourceRevision} onCancel={() => setSvgDialogOpen(false)} onApply={(packedPixels, mode) => { setPendingImport(createPendingImportState(packedPixels, mode, state.profile.width, state.profile.height, true)); setAssetLibraryOpen(false); setSvgDialogOpen(false); setStatusMessage(t('customFaceEditor.workbench.svgApplied')); }} />
       <CustomFaceItemImportDialog open={Boolean(faceItemPreview)} preview={faceItemPreview} maxFacesReached={state.presentGroup.faces.length >= 15} duplicate={Boolean(faceItemPreview && state.presentGroup.faces.some((item) => sameFaceContent(item, faceItemPreview.face)))} onCancel={() => setFaceItemPreview(null)} onConfirm={importFaceItemIntoDraft} />
-      <CustomFaceGifExportDialog open={gifExportDialogOpen} width={state.profile.width} height={state.profile.height} onCancel={() => setGifExportDialogOpen(false)} onConfirm={(scale) => { setGifExportDialogOpen(false); void exportCurrentFace('gif', scale); }} />
+      <CustomFaceGifExportDialog open={gifExportDialogOpen} width={state.profile.width} height={state.profile.height} frameCount={face?.frames.length ?? 1} onCancel={() => setGifExportDialogOpen(false)} onConfirm={(options) => { setGifExportDialogOpen(false); void exportCurrentFace('gif', options); }} />
+      <CustomFacePngExportDialog open={pngExportDialogOpen} width={state.profile.width} height={state.profile.height} onCancel={() => setPngExportDialogOpen(false)} onConfirm={(options) => { setPngExportDialogOpen(false); void exportCurrentFace('png', { ...options, frameIndices: [] }); }} />
     </>
   );
 }
@@ -398,7 +504,7 @@ function LeaveConfirmDialog({ open, busy, onCancel, onDiscard, onSave }: { open:
   return <AlertDialog open={open} onOpenChange={(nextOpen) => !nextOpen && !busy && onCancel()}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t('customFaceEditor.workbench.leaveTitle')}</AlertDialogTitle><AlertDialogDescription>{t('customFaceEditor.workbench.leaveDescription')}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={busy}>{t('customFaceEditor.workbench.cancel')}</AlertDialogCancel><AlertDialogAction disabled={busy} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={onDiscard}>{t('customFaceEditor.workbench.discard')}</AlertDialogAction><AlertDialogAction disabled={busy} onClick={onSave}>{t('customFaceEditor.workbench.saveAndClose')}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>;
 }
 
-function FacePanel({ state, face, frameDuration, playing, busy, onSelect, onAdd, onDuplicate, onRename, onDefault, onDelete, onImport, onExportItem, onExportGif, onDuration }: { state: EditorState; face: EditorState['presentGroup']['faces'][number] | undefined; frameDuration: number; playing: boolean; busy: boolean; onSelect: (id: string) => void; onAdd: () => void; onDuplicate: () => void; onRename: (name: string) => void; onDefault: () => void; onDelete: () => void; onImport: () => void; onExportItem: () => void; onExportGif: () => void; onDuration: (value: number) => void }) {
+function FacePanel({ state, face, frameDuration, playing, busy, onSelect, onAdd, onDuplicate, onRename, onDefault, onDelete, onImport, onExportItem, onExportGif, onExportPng, onDuration }: { state: EditorState; face: EditorState['presentGroup']['faces'][number] | undefined; frameDuration: number; playing: boolean; busy: boolean; onSelect: (id: string) => void; onAdd: () => void; onDuplicate: () => void; onRename: (name: string) => void; onDefault: () => void; onDelete: () => void; onImport: () => void; onExportItem: () => void; onExportGif: () => void; onExportPng: () => void; onDuration: (value: number) => void }) {
   const t = useI18n();
   const [nameDraft, setNameDraft] = useState(face?.name ?? '');
   const [durationDraft, setDurationDraft] = useState(String(frameDuration));
@@ -406,7 +512,7 @@ function FacePanel({ state, face, frameDuration, playing, busy, onSelect, onAdd,
   useEffect(() => setDurationDraft(String(frameDuration)), [frameDuration, face?.faceId]);
   const commitDuration = () => { const value = Number(durationDraft); if (Number.isFinite(value)) { onDuration(value); setDurationDraft(String(Math.max(CUSTOM_FACE_CONTRACT.frameDurationMs.min, Math.min(CUSTOM_FACE_CONTRACT.frameDurationMs.max, Math.trunc(value))))); } };
   const canApplyName = Boolean(face && nameDraft.trim() && nameDraft.trim() !== face.name);
-  return <section className="shrink-0 border-b border-border pb-4"><h2 className="font-medium">{t('customFaceEditor.workbench.currentFace')}</h2><Select value={face?.faceId} onValueChange={onSelect}><SelectTrigger aria-label={t('customFaceEditor.workbench.currentFace')} className="mt-2"><SelectValue placeholder={t('customFaceEditor.workbench.selectFace')} /></SelectTrigger><SelectContent>{state.presentGroup.faces.map((item) => <SelectItem key={item.faceId} value={item.faceId}>{item.name}{item.faceId === state.presentGroup.defaultFaceId ? ` · ${t('customFaceEditor.workbench.defaultFace')}` : ''}</SelectItem>)}</SelectContent></Select><label className="mt-2 block text-xs text-muted-foreground">{t('customFaceEditor.workbench.faceName')}<div className="mt-1 flex gap-1"><input aria-label={t('customFaceEditor.workbench.faceName')} value={nameDraft} disabled={!face || playing} maxLength={64} className="min-w-0 flex-1 border border-border bg-background px-2 py-1 text-sm text-foreground" onChange={(event) => setNameDraft(event.target.value)} /><button type="button" aria-label={t('customFaceEditor.workbench.applyName')} disabled={!canApplyName || playing} className="border border-border px-2 py-1 text-xs disabled:opacity-30" onClick={() => onRename(nameDraft)}>{t('customFaceEditor.workbench.applyName')}</button></div></label><div className="mt-2 grid grid-cols-3 gap-1"><IconAction label={t('customFaceEditor.workbench.newFace')} icon={Plus} onClick={onAdd} /><IconAction label={t('customFaceEditor.workbench.copyFace')} icon={Copy} onClick={onDuplicate} disabled={!face || busy} /><IconAction label={t('customFaceEditor.faceImport.action')} icon={Upload} onClick={onImport} disabled={busy} /><IconAction label={t('customFaceEditor.faceExport.item')} icon={FileArchive} onClick={onExportItem} disabled={!face || busy} /><IconAction label={t('customFaceEditor.faceExport.gif')} icon={Download} onClick={onExportGif} disabled={!face || busy} /><IconAction label={t('customFaceEditor.workbench.setDefault')} icon={Star} onClick={onDefault} disabled={!face || busy || face.faceId === state.presentGroup.defaultFaceId} /><IconAction label={t('customFaceEditor.workbench.deleteFace')} icon={Trash2} onClick={onDelete} disabled={!face || busy || state.presentGroup.faces.length <= 1} /></div><p className="mt-2 text-xs text-muted-foreground">{t('customFaceEditor.workbench.currentFrame', { current: face ? state.selectedFrameIndex + 1 : 0, total: face?.frames.length ?? 0 })}</p><label className="mt-2 block text-xs text-muted-foreground">{t('customFaceEditor.workbench.frameDuration')}<input aria-label={t('customFaceEditor.workbench.frameDuration')} type="number" min={CUSTOM_FACE_CONTRACT.frameDurationMs.min} max={CUSTOM_FACE_CONTRACT.frameDurationMs.max} value={durationDraft} disabled={!face || playing} className="mt-1 w-full border border-border bg-background px-2 py-1" onChange={(event) => setDurationDraft(event.target.value)} onBlur={commitDuration} onKeyDown={(event) => { if (event.key === "Enter") commitDuration(); }} /></label><p className="mt-2 text-xs text-muted-foreground">{t('customFaceEditor.workbench.resolutionFaces', { width: state.profile.width, height: state.profile.height, count: state.presentGroup.faces.length })}</p></section>;
+  return <section className="shrink-0 border-b border-border pb-4"><h2 className="font-medium">{t('customFaceEditor.workbench.currentFace')}</h2><Select value={face?.faceId} onValueChange={onSelect}><SelectTrigger aria-label={t('customFaceEditor.workbench.currentFace')} className="mt-2"><SelectValue placeholder={t('customFaceEditor.workbench.selectFace')} /></SelectTrigger><SelectContent>{state.presentGroup.faces.map((item) => <SelectItem key={item.faceId} value={item.faceId}>{item.name}{item.faceId === state.presentGroup.defaultFaceId ? ` · ${t('customFaceEditor.workbench.defaultFace')}` : ''}</SelectItem>)}</SelectContent></Select><label className="mt-2 block text-xs text-muted-foreground">{t('customFaceEditor.workbench.faceName')}<div className="mt-1 flex gap-1"><input aria-label={t('customFaceEditor.workbench.faceName')} value={nameDraft} disabled={!face || playing} maxLength={64} className="min-w-0 flex-1 border border-border bg-background px-2 py-1 text-sm text-foreground" onChange={(event) => setNameDraft(event.target.value)} /><button type="button" aria-label={t('customFaceEditor.workbench.applyName')} disabled={!canApplyName || playing} className="border border-border px-2 py-1 text-xs disabled:opacity-30" onClick={() => onRename(nameDraft)}>{t('customFaceEditor.workbench.applyName')}</button></div></label><div className="mt-2 grid grid-cols-3 gap-1"><IconAction label={t('customFaceEditor.workbench.newFace')} icon={Plus} onClick={onAdd} /><IconAction label={t('customFaceEditor.workbench.copyFace')} icon={Copy} onClick={onDuplicate} disabled={!face || busy} /><IconAction label={t('customFaceEditor.faceImport.action')} icon={Upload} onClick={onImport} disabled={busy} /><IconAction label={t('customFaceEditor.faceExport.item')} icon={FileArchive} onClick={onExportItem} disabled={!face || busy} /><IconAction label={t('customFaceEditor.faceExport.gif')} icon={Download} onClick={onExportGif} disabled={!face || busy} /><IconAction label={t('customFaceEditor.faceExport.png')} icon={Image} onClick={onExportPng} disabled={!face || busy} /><IconAction label={t('customFaceEditor.workbench.setDefault')} icon={Star} onClick={onDefault} disabled={!face || busy || face.faceId === state.presentGroup.defaultFaceId} /><IconAction label={t('customFaceEditor.workbench.deleteFace')} icon={Trash2} onClick={onDelete} disabled={!face || busy || state.presentGroup.faces.length <= 1} /></div><p className="mt-2 text-xs text-muted-foreground">{t('customFaceEditor.workbench.currentFrame', { current: face ? state.selectedFrameIndex + 1 : 0, total: face?.frames.length ?? 0 })}</p><label className="mt-2 block text-xs text-muted-foreground">{t('customFaceEditor.workbench.frameDuration')}<input aria-label={t('customFaceEditor.workbench.frameDuration')} type="number" min={CUSTOM_FACE_CONTRACT.frameDurationMs.min} max={CUSTOM_FACE_CONTRACT.frameDurationMs.max} value={durationDraft} disabled={!face || playing} className="mt-1 w-full border border-border bg-background px-2 py-1" onChange={(event) => setDurationDraft(event.target.value)} onBlur={commitDuration} onKeyDown={(event) => { if (event.key === "Enter") commitDuration(); }} /></label><p className="mt-2 text-xs text-muted-foreground">{t('customFaceEditor.workbench.resolutionFaces', { width: state.profile.width, height: state.profile.height, count: state.presentGroup.faces.length })}</p></section>;
 }
 
 function IconAction({ label, icon: Icon, onClick, disabled = false }: { label: string; icon: typeof Plus; onClick: () => void; disabled?: boolean }) { return <button type="button" aria-label={label} title={label} disabled={disabled} className="flex items-center justify-center border border-border p-1 disabled:opacity-30" onClick={onClick}><Icon className="h-4 w-4" /></button>; }
@@ -417,12 +523,119 @@ function PendingImportActions({ pending, onCancel, onConfirm, onScale }: { pendi
   return <section className="border border-fuchsia-400/60 bg-fuchsia-400/10 p-3 text-xs"><p className="font-medium text-fuchsia-200">{t('customFaceEditor.workbench.pendingTitle')}</p><p className="mt-1 text-muted-foreground">{t('customFaceEditor.workbench.pendingDescription')}</p><label className="mt-2 block">{t('customFaceEditor.workbench.pendingScale', { scale: pending.scale.toFixed(2) })}<input aria-label={t('customFaceEditor.workbench.pendingScaleLabel')} className="mt-1 w-full" type="range" min="0.25" max="4" step="0.05" value={pending.scale} onChange={(event) => onScale(Number(event.target.value))} /></label><div className="mt-2 flex gap-2"><button type="button" className="border border-border px-2 py-1" onClick={onCancel}>{t('customFaceEditor.workbench.cancelApply')}</button><button type="button" className="border border-primary bg-primary px-2 py-1 text-primary-foreground" onClick={onConfirm}>{t('customFaceEditor.workbench.confirmApply')}</button></div></section>;
 }
 
-function ToolPanel({ tool, state, selection, selectionOrigin, clipboardReady, constraintEnabled, rectangleFilled, eraserSize, onConstraint, onRectangleFilled, onEraserSize, onPenCommand, onCopy, onPaste, onClear, onSetActive, onCancelSelection, onCancelMove, onMoveSelection, selectionMoveStep, onSelectionMoveStep }: { tool: ToolId; state: CanvasToolState; selection: EditorState['selection']; selectionOrigin: EditorState['selectionOrigin']; clipboardReady: boolean; constraintEnabled: boolean; rectangleFilled: boolean; eraserSize: number; onConstraint: (value: boolean) => void; onRectangleFilled: (value: boolean) => void; onEraserSize: (value: number) => void; onPenCommand: (type: 'finish' | 'cancel') => void; onCopy: () => void; onPaste: () => void; onClear: () => void; onSetActive: (active: boolean) => void; onCancelSelection: () => void; onCancelMove: () => void; onMoveSelection: (dx: number, dy: number) => void; selectionMoveStep: number; onSelectionMoveStep: (value: number) => void }) {
+function ToolPanel({ tool, state, selection, selectionOrigin, selectionPivot, selectionRotationDegrees, selectionTransformKind, pickingSelectionPivot, clipboardReady, constraintEnabled, rectangleFilled, eraserSize, selectionShape, onConstraint, onRectangleFilled, onEraserSize, onPenCommand, onCopy, onPaste, onClear, onSetActive, onCancelSelection, onConfirmMove, onCancelMove, onMoveSelection, onStartPickingSelectionPivot, onRotationDraftChange, onRotateSelection, onConfirmSelectionRotation, onCancelSelectionRotation, selectionRotationDraft, selectionMoveStep, onSelectionMoveStep, onSelectionShapeChange }: { tool: ToolId; state: CanvasToolState; selection: EditorState['selection']; selectionOrigin: EditorState['selectionOrigin']; selectionPivot: EditorState['selectionPivot']; selectionRotationDegrees: number; selectionTransformKind: EditorState['selectionTransformKind']; pickingSelectionPivot: boolean; clipboardReady: boolean; constraintEnabled: boolean; rectangleFilled: boolean; eraserSize: number; selectionShape: 'rectangle' | 'circle'; onConstraint: (value: boolean) => void; onRectangleFilled: (value: boolean) => void; onEraserSize: (value: number) => void; onPenCommand: (type: 'finish' | 'cancel') => void; onCopy: () => void; onPaste: () => void; onClear: () => void; onSetActive: (active: boolean) => void; onCancelSelection: () => void; onConfirmMove: () => void; onCancelMove: () => void; onMoveSelection: (dx: number, dy: number) => void; onStartPickingSelectionPivot: () => void; onRotationDraftChange: (value: string) => void; onRotateSelection: (degrees: number) => void; onConfirmSelectionRotation: () => void; onCancelSelectionRotation: () => void; selectionRotationDraft: string; selectionMoveStep: number; onSelectionMoveStep: (value: number) => void; onSelectionShapeChange: (shape: 'rectangle' | 'circle') => void }) {
   const t = useI18n();
-  return <section className="min-h-0 flex-1 overflow-y-auto border-t border-border pt-3 pb-4"><h2 className="font-medium">{t('customFaceEditor.workbench.toolProperties')}</h2><p className="mt-3 text-muted-foreground">{t('customFaceEditor.workbench.currentTool', { tool: t(`customFaceEditor.toolbar.tools.${TOOL_LABELS[tool]}.label`) })}</p>{supportsConstraint(tool) ? <label className="mt-3 flex items-center gap-2"><input type="checkbox" checked={constraintEnabled} onChange={(event) => onConstraint(event.target.checked)} />{constraintText(tool, t)}</label> : null}{tool === 'rectangle' ? <div className="mt-3 flex gap-2"><button className={!rectangleFilled ? 'border border-primary bg-primary/10 px-2 py-1 text-xs' : 'border border-border px-2 py-1 text-xs'} onClick={() => onRectangleFilled(false)}>{t('customFaceEditor.workbench.outline')}</button><button className={rectangleFilled ? 'border border-primary bg-primary/10 px-2 py-1 text-xs' : 'border border-border px-2 py-1 text-xs'} onClick={() => onRectangleFilled(true)}>{t('customFaceEditor.workbench.filled')}</button></div> : null}{tool === 'eraser' ? <label className="mt-3 block text-xs text-muted-foreground">{t('customFaceEditor.workbench.eraseArea', { size: eraserSize })}<input className="mt-2 w-full" type="range" min="1" max="8" value={eraserSize} onChange={(event) => onEraserSize(Number(event.target.value))} /></label> : null}{state.start ? <p className="mt-3 text-xs text-muted-foreground">{t('customFaceEditor.workbench.start', { point: state.start.join(', ') })}</p> : null}{state.end ? <p className="mt-1 text-xs text-muted-foreground">{t('customFaceEditor.workbench.end', { point: state.end.join(', ') })}</p> : null}{state.bounds ? <p className="mt-1 text-xs text-muted-foreground">{t('customFaceEditor.workbench.bounds', { width: state.bounds.width, height: state.bounds.height })}</p> : null}{selection ? <div className="mt-3 border-t border-border pt-3"><p className="text-xs text-muted-foreground">{t('customFaceEditor.workbench.selectionInfo', { x: selection.x, y: selection.y, width: selection.width, height: selection.height })}</p><label className="mt-2 block text-xs text-muted-foreground">{t('customFaceEditor.workbench.moveStep')}<input aria-label={t('customFaceEditor.workbench.moveStep')} className="mt-1 w-full border border-border px-2 py-1" type="number" min="1" max="8" step="1" value={selectionMoveStep} onChange={(event) => onSelectionMoveStep(Math.max(1, Math.min(8, Number(event.target.value) || 1)))} /></label><div className="mx-auto mt-2 grid w-24 grid-cols-3 gap-1"><span /><button aria-label={t('customFaceEditor.workbench.up')} title={t('customFaceEditor.workbench.up')} className="border border-border p-1" onClick={() => onMoveSelection(0, -1)}><ArrowUp className="mx-auto h-4 w-4" /></button><span /><button aria-label={t('customFaceEditor.workbench.left')} title={t('customFaceEditor.workbench.left')} className="border border-border p-1" onClick={() => onMoveSelection(-1, 0)}><ArrowLeft className="mx-auto h-4 w-4" /></button><button aria-label={t('customFaceEditor.workbench.down')} title={t('customFaceEditor.workbench.down')} className="border border-border p-1" onClick={() => onMoveSelection(0, 1)}><ArrowDown className="mx-auto h-4 w-4" /></button><button aria-label={t('customFaceEditor.workbench.right')} title={t('customFaceEditor.workbench.right')} className="border border-border p-1" onClick={() => onMoveSelection(1, 0)}><ArrowRight className="mx-auto h-4 w-4" /></button></div><div className="mt-2 grid grid-cols-2 gap-2">{selectionOrigin ? <button className="col-span-2 border border-primary bg-primary/10 px-2 py-1 text-xs" onClick={onCancelSelection}>{t('customFaceEditor.workbench.confirmMove')}</button> : null}<button className="border border-border px-2 py-1 text-xs" onClick={onCopy}>{t('customFaceEditor.workbench.copy')}</button><button className="border border-border px-2 py-1 text-xs" title={clipboardReady ? t('customFaceEditor.workbench.pasteHint') : t('customFaceEditor.workbench.copyFirst')} onClick={onPaste}>{t('customFaceEditor.workbench.paste')}</button><button className="border border-border px-2 py-1 text-xs" onClick={onClear}>{t('customFaceEditor.workbench.clear')}</button><button className="border border-border px-2 py-1 text-xs" onClick={() => onSetActive(true)}>{t('customFaceEditor.workbench.highlight')}</button><button className="border border-border px-2 py-1 text-xs" onClick={() => onSetActive(false)}>{t('customFaceEditor.workbench.dim')}</button><button className="border border-border px-2 py-1 text-xs" onClick={selectionOrigin ? onCancelMove : onCancelSelection}>{selectionOrigin ? t('customFaceEditor.workbench.cancelMove') : t('customFaceEditor.workbench.cancel')}</button></div></div> : tool === 'select' ? <p className="mt-3 text-xs text-muted-foreground">{t('customFaceEditor.workbench.selectHint')}</p> : null}{tool === 'pen' ? <div className="mt-3"><p className="text-xs text-muted-foreground">{t('customFaceEditor.workbench.points', { count: state.penPointCount })}</p><div className="mt-2 flex gap-2"><button className="border border-primary px-2 py-1 text-xs" onClick={() => onPenCommand('finish')}>{t('customFaceEditor.workbench.finishPath')}</button><button className="border border-border px-2 py-1 text-xs" onClick={() => onPenCommand('cancel')}>{t('customFaceEditor.workbench.cancelPath')}</button></div></div> : null}<p className="mt-4 text-xs text-muted-foreground">{toolHint(tool, t)}</p></section>;
+  return <section className="min-h-0 flex-1 overflow-y-auto border-t border-border pt-3 pb-4"><h2 className="font-medium">{t('customFaceEditor.workbench.toolProperties')}</h2><p className="mt-3 text-muted-foreground">{t('customFaceEditor.workbench.currentTool', { tool: t(`customFaceEditor.toolbar.tools.${TOOL_LABELS[tool]}.label`) })}</p>{supportsConstraint(tool) ? <label className="mt-3 flex items-center gap-2"><input type="checkbox" checked={constraintEnabled} onChange={(event) => onConstraint(event.target.checked)} />{constraintText(tool, t)}</label> : null}{tool === 'rectangle' ? <div className="mt-3 flex gap-2"><button className={!rectangleFilled ? 'border border-primary bg-primary/10 px-2 py-1 text-xs' : 'border border-border px-2 py-1 text-xs'} onClick={() => onRectangleFilled(false)}>{t('customFaceEditor.workbench.outline')}</button><button className={rectangleFilled ? 'border border-primary bg-primary/10 px-2 py-1 text-xs' : 'border border-border px-2 py-1 text-xs'} onClick={() => onRectangleFilled(true)}>{t('customFaceEditor.workbench.filled')}</button></div> : null}{tool === 'select' ? <div className="mt-3"><label className="block text-xs text-muted-foreground">{t('customFaceEditor.workbench.selectionShape')}</label><div className="mt-2 flex gap-2"><button className={selectionShape === 'rectangle' ? 'border border-primary bg-primary/10 px-2 py-1 text-xs' : 'border border-border px-2 py-1 text-xs'} onClick={() => onSelectionShapeChange('rectangle')}>{t('customFaceEditor.workbench.selectionShapeRectangle')}</button><button className={selectionShape === 'circle' ? 'border border-primary bg-primary/10 px-2 py-1 text-xs' : 'border border-border px-2 py-1 text-xs'} onClick={() => onSelectionShapeChange('circle')}>{t('customFaceEditor.workbench.selectionShapeCircle')}</button></div></div> : null}{tool === 'eraser' ? <label className="mt-3 block text-xs text-muted-foreground">{t('customFaceEditor.workbench.eraseArea', { size: eraserSize })}<input className="mt-2 w-full" type="range" min="1" max="8" value={eraserSize} onChange={(event) => onEraserSize(Number(event.target.value))} /></label> : null}{state.start ? <p className="mt-3 text-xs text-muted-foreground">{t('customFaceEditor.workbench.start', { point: state.start.join(', ') })}</p> : null}{state.end ? <p className="mt-1 text-xs text-muted-foreground">{t('customFaceEditor.workbench.end', { point: state.end.join(', ') })}</p> : null}{state.bounds ? <p className="mt-1 text-xs text-muted-foreground">{t('customFaceEditor.workbench.bounds', { width: state.bounds.width, height: state.bounds.height })}</p> : null}{selection ? <div className="mt-3 border-t border-border pt-3"><p className="text-xs text-muted-foreground">{t('customFaceEditor.workbench.selectionInfo', { x: selection.x, y: selection.y, width: selection.width, height: selection.height })}</p><section aria-label={t('customFaceEditor.workbench.moveSection')} className="mt-3 rounded border border-border p-3"><h3 className="text-xs font-medium">{t('customFaceEditor.workbench.moveSection')}</h3><label className="mt-2 block text-xs text-muted-foreground">{t('customFaceEditor.workbench.moveStep')}<input aria-label={t('customFaceEditor.workbench.moveStep')} disabled={selectionTransformKind === 'rotate'} className="mt-1 w-full border border-border px-2 py-1 disabled:opacity-40" type="number" min="1" max="8" step="1" value={selectionMoveStep} onChange={(event) => onSelectionMoveStep(Math.max(1, Math.min(8, Number(event.target.value) || 1)))} /></label><div className="mx-auto mt-2 grid w-24 grid-cols-3 gap-1"><span /><button aria-label={t('customFaceEditor.workbench.up')} title={t('customFaceEditor.workbench.up')} className="border border-border p-1 disabled:opacity-40" disabled={selectionTransformKind === 'rotate'} onClick={() => onMoveSelection(0, -1)}><ArrowUp className="mx-auto h-4 w-4" /></button><span /><button aria-label={t('customFaceEditor.workbench.left')} title={t('customFaceEditor.workbench.left')} className="border border-border p-1 disabled:opacity-40" disabled={selectionTransformKind === 'rotate'} onClick={() => onMoveSelection(-1, 0)}><ArrowLeft className="mx-auto h-4 w-4" /></button><button aria-label={t('customFaceEditor.workbench.down')} title={t('customFaceEditor.workbench.down')} className="border border-border p-1 disabled:opacity-40" disabled={selectionTransformKind === 'rotate'} onClick={() => onMoveSelection(0, 1)}><ArrowDown className="mx-auto h-4 w-4" /></button><button aria-label={t('customFaceEditor.workbench.right')} title={t('customFaceEditor.workbench.right')} className="border border-border p-1 disabled:opacity-40" disabled={selectionTransformKind === 'rotate'} onClick={() => onMoveSelection(1, 0)}><ArrowRight className="mx-auto h-4 w-4" /></button></div>{selectionTransformKind === 'move' ? <div className="mt-3 grid grid-cols-2 gap-2"><button className="border border-primary bg-primary/10 px-2 py-1 text-xs" onClick={onConfirmMove}>{t('customFaceEditor.workbench.confirmMove')}</button><button className="border border-border px-2 py-1 text-xs" onClick={onCancelMove}>{t('customFaceEditor.workbench.cancelMove')}</button></div> : null}</section><section aria-label={t('customFaceEditor.workbench.rotationSection')} className="mt-3 rounded border border-border p-3"><h3 className="text-xs font-medium">{t('customFaceEditor.workbench.rotationSection')}</h3><p className="mt-2 text-xs text-muted-foreground">{selectionPivot ? t('customFaceEditor.workbench.rotationPivot', selectionPivot) : ''}</p><button type="button" disabled={selectionTransformKind === 'move'} className="mt-2 border border-border px-2 py-1 text-xs disabled:opacity-40" onClick={onStartPickingSelectionPivot}>{pickingSelectionPivot ? t('customFaceEditor.workbench.pickRotationPivot') : t('customFaceEditor.workbench.setRotationPivot')}</button><label className="mt-2 block text-xs text-muted-foreground">{t('customFaceEditor.workbench.rotationDegrees')}<div className="mt-1 flex items-center gap-1"><button type="button" disabled={selectionTransformKind === 'move'} aria-label={t('customFaceEditor.workbench.decreaseRotation')} title={t('customFaceEditor.workbench.decreaseRotation')} className="inline-flex h-8 w-8 shrink-0 items-center justify-center border border-border" onClick={() => onRotateSelection(selectionRotationDegrees - 1)}><Minus aria-hidden="true" className="h-3.5 w-3.5" /></button><input disabled={selectionTransformKind === 'move'} aria-label={t('customFaceEditor.workbench.rotationDegrees')} className="min-w-0 flex-1 border border-border px-2 py-1 disabled:opacity-40" type="text" inputMode="numeric" value={selectionRotationDraft} onChange={(event) => { const value = event.target.value; onRotationDraftChange(value); const degrees = Number(value); if (Number.isFinite(degrees)) onRotateSelection(degrees); }} onBlur={() => { const degrees = Number(selectionRotationDraft); if (Number.isFinite(degrees)) onRotateSelection(degrees); else onRotationDraftChange(String(selectionRotationDegrees)); }} /><button type="button" disabled={selectionTransformKind === 'move'} aria-label={t('customFaceEditor.workbench.increaseRotation')} title={t('customFaceEditor.workbench.increaseRotation')} className="inline-flex h-8 w-8 shrink-0 items-center justify-center border border-border" onClick={() => onRotateSelection(selectionRotationDegrees + 1)}><Plus aria-hidden="true" className="h-3.5 w-3.5" /></button></div></label><div className="mt-2 grid grid-cols-2 gap-2"><button type="button" disabled={selectionTransformKind === 'move'} aria-label={t('customFaceEditor.workbench.rotateCounterclockwise')} title={t('customFaceEditor.workbench.rotateCounterclockwise')} className="border border-border px-2 py-1 text-xs" onClick={() => onRotateSelection(selectionRotationDegrees - 90)}>↺</button><button type="button" disabled={selectionTransformKind === 'move'} aria-label={t('customFaceEditor.workbench.rotateClockwise')} title={t('customFaceEditor.workbench.rotateClockwise')} className="border border-border px-2 py-1 text-xs" onClick={() => onRotateSelection(selectionRotationDegrees + 90)}>↻</button></div>{selectionTransformKind === 'rotate' ? <div className="mt-3 grid grid-cols-2 gap-2"><button className="border border-primary bg-primary/10 px-2 py-1 text-xs" onClick={onConfirmSelectionRotation}>{t('customFaceEditor.workbench.confirmRotation')}</button><button className="border border-border px-2 py-1 text-xs" onClick={onCancelSelectionRotation}>{t('customFaceEditor.workbench.cancelRotation')}</button></div> : null}</section><section aria-label={t('customFaceEditor.workbench.selectionActions')} className="mt-3 rounded border border-border p-3"><h3 className="text-xs font-medium">{t('customFaceEditor.workbench.selectionActions')}</h3><div className="mt-3 grid grid-cols-2 gap-2"><button className="border border-border px-2 py-1 text-xs" onClick={onCopy}>{t('customFaceEditor.workbench.copy')}</button><button className="border border-border px-2 py-1 text-xs" title={clipboardReady ? t('customFaceEditor.workbench.pasteHint') : t('customFaceEditor.workbench.copyFirst')} onClick={onPaste}>{t('customFaceEditor.workbench.paste')}</button><button className="border border-border px-2 py-1 text-xs" onClick={onClear}>{t('customFaceEditor.workbench.clear')}</button><button className="border border-border px-2 py-1 text-xs" onClick={() => onSetActive(true)}>{t('customFaceEditor.workbench.highlight')}</button><button className="border border-border px-2 py-1 text-xs" onClick={() => onSetActive(false)}>{t('customFaceEditor.workbench.dim')}</button><button disabled={Boolean(selectionTransformKind)} className="border border-border px-2 py-1 text-xs disabled:opacity-40" onClick={onCancelSelection}>{t('customFaceEditor.workbench.cancelSelection')}</button></div></section></div> : tool === 'select' ? <p className="mt-3 text-xs text-muted-foreground">{t('customFaceEditor.workbench.selectHint')}</p> : null}{tool === 'pen' ? <div className="mt-3"><p className="text-xs text-muted-foreground">{t('customFaceEditor.workbench.points', { count: state.penPointCount })}</p><div className="mt-2 flex gap-2"><button className="border border-primary px-2 py-1 text-xs" onClick={() => onPenCommand('finish')}>{t('customFaceEditor.workbench.finishPath')}</button><button className="border border-border px-2 py-1 text-xs" onClick={() => onPenCommand('cancel')}>{t('customFaceEditor.workbench.cancelPath')}</button></div></div> : null}<p className="mt-4 text-xs text-muted-foreground">{toolHint(tool, t)}</p></section>;
 }
 
 function uniqueFaceName(state: EditorState, base: string) { const names = new Set(state.presentGroup.faces.map((face) => face.name.trim().toLocaleLowerCase())); if (!names.has(base.toLocaleLowerCase())) return base; for (let index = 2; index <= 99; index += 1) { const candidate = `${base} ${index}`; if (!names.has(candidate.toLocaleLowerCase())) return candidate; } return `${base} ${Date.now()}`; }
+
+function createPendingImportState(
+  packedPixels: number[],
+  mode: 'merge' | 'replace',
+  sourceWidth: number,
+  sourceHeight: number,
+  cropPreview = false,
+): PendingImportState {
+  const fallbackPreview = {
+    pixels: [...packedPixels],
+    width: sourceWidth,
+    height: sourceHeight,
+    offsetX: 0,
+    offsetY: 0,
+  };
+  const preview = cropPreview
+    ? cropPackedPixels(packedPixels, sourceWidth, sourceHeight) ?? fallbackPreview
+    : fallbackPreview;
+  return {
+    pixels: [...packedPixels],
+    basePixels: [...packedPixels],
+    previewPixels: preview.pixels,
+    mode,
+    scale: 1,
+    offsetX: 0,
+    offsetY: 0,
+    sourceWidth,
+    sourceHeight,
+    previewWidth: preview.width,
+    previewHeight: preview.height,
+    previewOffsetX: preview.offsetX,
+    previewOffsetY: preview.offsetY,
+    previewCrop: cropPreview,
+  };
+}
+
+function scalePendingImport(
+  current: PendingImportState,
+  width: number,
+  height: number,
+  scale: number,
+): PendingImportState {
+  const pixels = scalePackedPixels(current.basePixels, width, height, scale);
+  const fallbackPreview = {
+    pixels,
+    width: current.sourceWidth,
+    height: current.sourceHeight,
+    offsetX: 0,
+    offsetY: 0,
+  };
+  const preview = current.previewCrop
+    ? cropPackedPixels(pixels, width, height) ?? fallbackPreview
+    : fallbackPreview;
+  return {
+    ...current,
+    scale,
+    pixels,
+    previewPixels: preview.pixels,
+    previewWidth: preview.width,
+    previewHeight: preview.height,
+    previewOffsetX: preview.offsetX,
+    previewOffsetY: preview.offsetY,
+  };
+}
+
+function cropPackedPixels(
+  pixels: number[],
+  width: number,
+  height: number,
+): { pixels: number[]; width: number; height: number; offsetX: number; offsetY: number } | null {
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const byte = pixels[x + Math.floor(y / 8) * width];
+      if ((byte & (1 << (y & 7))) === 0) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+  if (maxX < 0 || maxY < 0) return null;
+  const nextWidth = maxX - minX + 1;
+  const nextHeight = maxY - minY + 1;
+  const next = new Array(nextWidth * Math.ceil(nextHeight / 8)).fill(0);
+  for (let y = minY; y <= maxY; y += 1) {
+    for (let x = minX; x <= maxX; x += 1) {
+      const source = x + Math.floor(y / 8) * width;
+      if ((pixels[source] & (1 << (y & 7))) === 0) continue;
+      const targetX = x - minX;
+      const targetY = y - minY;
+      const target = targetX + Math.floor(targetY / 8) * nextWidth;
+      next[target] |= 1 << (targetY & 7);
+    }
+  }
+  return {
+    pixels: next,
+    width: nextWidth,
+    height: nextHeight,
+    offsetX: minX,
+    offsetY: minY,
+  };
+}
+
 function safeFaceFileName(name: string, fallback = 'custom-face') { return name.trim().replace(/[\\/:*?"<>|]+/g, '-').slice(0, 80) || fallback; }
 function sameFaceContent(left: { color: { red: number; green: number; blue: number }; frames: Array<{ durationMs: number; packedPixels: number[] }> }, right: { color: { red: number; green: number; blue: number }; frames: Array<{ durationMs: number; packedPixels: number[] }> }) { return left.color.red === right.color.red && left.color.green === right.color.green && left.color.blue === right.color.blue && left.frames.length === right.frames.length && left.frames.every((frame, index) => frame.durationMs === right.frames[index].durationMs && frame.packedPixels.length === right.frames[index].packedPixels.length && frame.packedPixels.every((pixel, pixelIndex) => pixel === right.frames[index].packedPixels[pixelIndex])); }
 function packedPixelsToChanges(pixels: number[], width: number, height: number) { const changes: Array<{ x: number; y: number; active: boolean }> = []; for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) changes.push({ x, y, active: (pixels[x + Math.floor(y / 8) * width] & (1 << (y & 7))) !== 0 }); return changes; }

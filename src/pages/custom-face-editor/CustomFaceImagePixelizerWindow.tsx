@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, t
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Info, RotateCcw } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   applyCustomFaceImageImport,
   closeCustomFaceImagePixelizer,
@@ -11,7 +12,20 @@ import {
 } from '@/api/tauriApi';
 import { CustomFacePixelPreview } from './CustomFacePixelPreview';
 import { defaultPixelizerOptions, normalizePixelizerOptions, type ImagePixelizerOptions } from './imagePixelizerOptions';
-import { CustomFaceViewport, type CanvasGuide } from './CustomFaceViewport';
+import {
+  TEXT_PIXELIZER_FONT_PRESETS,
+  defaultTextPixelizerOptions,
+  estimateTextPixelizerLimits,
+  normalizeTextPixelizerOptions,
+  truncateTextToPixelizerHardLimit,
+  type TextPixelizerAlign,
+  type TextPixelizerFontFamily,
+  type TextPixelizerFontWeight,
+  type TextPixelizerOptions
+} from './textPixelizerOptions';
+import { renderTextPixelizerSource } from './textSourceRenderer';
+import { CustomFaceViewport } from './CustomFaceViewport';
+import type { CanvasGuide } from './CustomFaceRulers';
 import { useI18n } from '@/i18n';
 
 type PixelizeResult = {
@@ -25,6 +39,8 @@ type CanvasSize = {
   width: number;
   height: number;
 };
+
+type SourceType = 'image' | 'text';
 
 const CUSTOM_FACE_IMAGE_PIXELIZER_OPEN_REQUEST_EVENT = 'cc-notice://custom-face-image-pixelizer-open-request';
 const SOURCE_PREVIEW_THUMB_SIZE = 96;
@@ -43,12 +59,16 @@ export function CustomFaceImagePixelizerWindow() {
   const latestOptionsRef = useRef<ImagePixelizerOptions>(defaultPixelizerOptions());
   const objectDragRef = useRef<{ clientX: number; clientY: number; offsetX: number; offsetY: number } | null>(null);
   const sourcePreviewDragRef = useRef<{ clientX: number; clientY: number; x: number; y: number } | null>(null);
+  const textPreviewUrlRef = useRef<string | null>(null);
   const [canvasSize, setCanvasSize] = useState<CanvasSize>(() => canvasSizeFromLocation());
   const [displayScale, setDisplayScale] = useState(() =>
     displayScaleFor(canvasSize.width, canvasSize.height, 720, 540)
   );
+  const [sourceType, setSourceType] = useState<SourceType>('image');
   const [options, setOptions] = useState<ImagePixelizerOptions>(() => defaultPixelizerOptions());
   const [pixelizeOptions, setPixelizeOptions] = useState<ImagePixelizerOptions>(() => defaultPixelizerOptions());
+  const [textOptions, setTextOptions] = useState<TextPixelizerOptions>(() => defaultTextPixelizerOptions());
+  const [textWarning, setTextWarning] = useState<string | null>(null);
   const [selectedName, setSelectedName] = useState<string | null>(null);
   const [sourceId, setSourceId] = useState<string | null>(null);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
@@ -60,6 +80,7 @@ export function CustomFaceImagePixelizerWindow() {
 
   const normalizedOptions = useMemo(() => normalizePixelizerOptions(options), [options]);
   const normalizedPixelizeOptions = useMemo(() => normalizePixelizerOptions(pixelizeOptions), [pixelizeOptions]);
+  const normalizedTextOptions = useMemo(() => normalizeTextPixelizerOptions(textOptions), [textOptions]);
   const defaultOptions = useMemo(() => defaultPixelizerOptions(), []);
   const guides: CanvasGuide[] = [];
 
@@ -93,7 +114,28 @@ export function CustomFaceImagePixelizerWindow() {
       sourceUrlRef.current = null;
       return null;
     });
+    if (textPreviewUrlRef.current) {
+      URL.revokeObjectURL(textPreviewUrlRef.current);
+      textPreviewUrlRef.current = null;
+    }
   }, []);
+
+  const syncTextWarning = useCallback((nextTextOptions: TextPixelizerOptions) => {
+    const nextLimits = estimateTextPixelizerLimits(canvasSize, nextTextOptions);
+    const truncated = truncateTextToPixelizerHardLimit(nextTextOptions.text, nextLimits);
+    setTextWarning(
+      truncated.length < nextTextOptions.text.length
+        ? t('customFaceEditor.imagePixelizer.textTruncatedWarning')
+        : nextTextOptions.text.length > nextLimits.softLimit
+          ? t('customFaceEditor.imagePixelizer.textTooLongWarning')
+          : null
+    );
+    return { ...nextTextOptions, text: truncated };
+  }, [canvasSize, t]);
+
+  const updateTextOptions = useCallback((updater: (current: TextPixelizerOptions) => TextPixelizerOptions) => {
+    setTextOptions((current) => syncTextWarning(updater(current)));
+  }, [syncTextWarning]);
 
   const updateCanvasSize = useCallback((nextCanvasSize: CanvasSize) => {
     setCanvasSize((current) =>
@@ -118,6 +160,7 @@ export function CustomFaceImagePixelizerWindow() {
       setResult(null);
       setSelectedName(file.name || t('customFaceEditor.imagePixelizer.pastedImage'));
       setSourceId(null);
+      setSourceType('image');
       setBusy(true);
       const nextUrl = createImagePreviewUrl(file);
       if (nextUrl) {
@@ -206,14 +249,23 @@ export function CustomFaceImagePixelizerWindow() {
   useEffect(() => {
     const handlePaste = (event: ClipboardEvent) => {
       const file = event.clipboardData?.files?.[0];
-      if (!file || !file.type.startsWith('image/')) return;
+      if (file?.type.startsWith('image/')) {
+        event.preventDefault();
+        void loadImageFile(file);
+        return;
+      }
+      const text = event.clipboardData?.getData('text/plain');
+      if (!text) return;
       event.preventDefault();
-      void loadImageFile(file);
+      void releaseCurrentSource();
+      resetWorkspace();
+      setSourceType('text');
+      setTextOptions((current) => syncTextWarning({ ...current, text }));
     };
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [loadImageFile]);
+  }, [loadImageFile, releaseCurrentSource, resetWorkspace, syncTextWarning]);
 
   useEffect(() => {
     const updateScale = () => {
@@ -285,13 +337,98 @@ export function CustomFaceImagePixelizerWindow() {
     };
   }, [canvasSize.height, canvasSize.width, normalizedPixelizeOptions, sourceId]);
 
+  useEffect(() => {
+    if (sourceType !== 'text') return;
+    const trimmedText = normalizedTextOptions.text.trim();
+    if (!trimmedText) {
+      void releaseCurrentSource();
+      setResult(null);
+      setSelectedName(null);
+      setSourceId(null);
+      setSourceUrl((current) => {
+        if (current) URL.revokeObjectURL(current);
+        sourceUrlRef.current = null;
+        return null;
+      });
+      return;
+    }
+    let cancelled = false;
+    const version = requestVersionRef.current + 1;
+    requestVersionRef.current = version;
+    setBusy(true);
+    setError(null);
+    const timeout = window.setTimeout(() => {
+      void renderTextPixelizerSource(canvasSize, normalizedTextOptions)
+        .then(async (rendered) => {
+          if (!rendered) return null;
+          if (textPreviewUrlRef.current && textPreviewUrlRef.current !== rendered.previewUrl) {
+            URL.revokeObjectURL(textPreviewUrlRef.current);
+          }
+          textPreviewUrlRef.current = rendered.previewUrl;
+          const preparedSource = await prepareCustomFaceImagePixelizerSource({
+            profileWidth: canvasSize.width,
+            profileHeight: canvasSize.height,
+            imageBytes: rendered.bytes
+          });
+          return { rendered, preparedSource };
+        })
+        .then(async (prepared) => {
+          if (!prepared) return;
+          if (cancelled || !mountedRef.current || requestVersionRef.current !== version) {
+            await releaseCustomFaceImagePixelizerSource(prepared.preparedSource.sourceId);
+            if (textPreviewUrlRef.current === prepared.rendered.previewUrl) {
+              URL.revokeObjectURL(prepared.rendered.previewUrl);
+              textPreviewUrlRef.current = null;
+            }
+            return;
+          }
+          const previousSourceId = sourceIdRef.current;
+          sourceIdRef.current = prepared.preparedSource.sourceId;
+          setSourceId(prepared.preparedSource.sourceId);
+          setSelectedName(t('customFaceEditor.imagePixelizer.sourceText'));
+          setSourceUrl((current) => {
+            if (current) URL.revokeObjectURL(current);
+            sourceUrlRef.current = prepared.rendered.previewUrl;
+            return prepared.rendered.previewUrl;
+          });
+          if (previousSourceId) await releaseCustomFaceImagePixelizerSource(previousSourceId);
+        })
+        .catch((caught) => {
+          if (cancelled || requestVersionRef.current !== version) return;
+          setError(caught instanceof Error ? caught.message : String(caught));
+          setResult(null);
+          setSourceId(null);
+        })
+        .finally(() => {
+          if (!cancelled && requestVersionRef.current === version) setBusy(false);
+        });
+    }, PIXELIZE_OPTIONS_DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+      if (requestVersionRef.current === version) requestVersionRef.current += 1;
+    };
+  }, [canvasSize.height, canvasSize.width, normalizedTextOptions, releaseCurrentSource, sourceType, t]);
+
   const handleChooseImage = () => {
     fileInputRef.current?.click();
   };
 
   const clearWorkspace = async () => {
-    await releaseCurrentSource();
+    const currentSourceId = sourceIdRef.current;
+    if (sourceType === 'text') {
+      setTextOptions(defaultTextPixelizerOptions());
+      setTextWarning(null);
+    }
     resetWorkspace();
+    if (currentSourceId) {
+      try {
+        await releaseCustomFaceImagePixelizerSource(currentSourceId);
+      } catch (caught) {
+        console.warn('failed to release custom face image pixelizer source', caught);
+      }
+    }
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -320,10 +457,15 @@ export function CustomFaceImagePixelizerWindow() {
     await closeCustomFaceImagePixelizer();
   };
 
-  const resetAllOptions = () => setOptions(defaultPixelizerOptions());
+  const resetAllOptions = () => {
+    setOptions(defaultPixelizerOptions());
+    setTextOptions((current) => ({ ...defaultTextPixelizerOptions(), text: current.text }));
+    setTextWarning(null);
+  };
   const resetTransformOptions = () => setOptions((current) => ({
     ...current,
     scale: defaultOptions.scale,
+    rotationDeg: defaultOptions.rotationDeg,
     offsetX: defaultOptions.offsetX,
     offsetY: defaultOptions.offsetY
   }));
@@ -342,9 +484,24 @@ export function CustomFaceImagePixelizerWindow() {
   }));
   const resetPaletteOptions = () => setOptions((current) => ({
     ...current,
-    mode: defaultOptions.mode,
+    mode: sourceType === 'text' ? 'mono' : defaultOptions.mode,
     colorCount: defaultOptions.colorCount
   }));
+  const resetTextLayoutOptions = () => setTextOptions((current) => ({
+    ...defaultTextPixelizerOptions(),
+    text: current.text
+  }));
+
+  const switchSourceType = (nextSourceType: SourceType) => {
+    if (nextSourceType === sourceType) return;
+    void releaseCurrentSource();
+    resetWorkspace();
+    setSourceType(nextSourceType);
+    if (nextSourceType === 'text') {
+      setOptions((current) => ({ ...current, mode: 'mono' }));
+    }
+    setTextWarning(null);
+  };
 
   const beginObjectDrag = (event: PointerEvent<HTMLDivElement>) => {
     objectDragRef.current = {
@@ -412,7 +569,7 @@ export function CustomFaceImagePixelizerWindow() {
     }
   };
 
-  const currentMode = normalizedOptions.mode;
+  const currentMode = sourceType === 'text' ? 'mono' : normalizedOptions.mode;
 
   return (
     <main className="flex h-screen min-h-0 flex-col bg-background text-foreground">
@@ -428,6 +585,11 @@ export function CustomFaceImagePixelizerWindow() {
         ) : null}
         <span className="border border-border px-2 py-1 text-xs text-muted-foreground">
           {currentMode === 'color' ? t('customFaceEditor.imagePixelizer.modeColor') : t('customFaceEditor.imagePixelizer.modeMono')}
+        </span>
+        <span className="border border-border px-2 py-1 text-xs text-muted-foreground">
+          {sourceType === 'text'
+            ? t('customFaceEditor.imagePixelizer.sourceText')
+            : t('customFaceEditor.imagePixelizer.sourceImage')}
         </span>
         <div className="ml-auto flex gap-2">
           <button type="button" className="border border-border px-3 py-2 text-sm" onClick={handleChooseImage}>
@@ -520,8 +682,8 @@ export function CustomFaceImagePixelizerWindow() {
                 data-testid="image-pixelizer-source-thumb"
                 className="absolute left-0 top-0 z-30 cursor-move border border-primary/70 bg-background/85 shadow-lg"
                 style={{
-                  width: `${SOURCE_PREVIEW_THUMB_SIZE}px`,
-                  height: `${SOURCE_PREVIEW_THUMB_SIZE}px`,
+                  width: `${sourcePreviewHovered ? SOURCE_PREVIEW_HOVER_SIZE : SOURCE_PREVIEW_THUMB_SIZE}px`,
+                  height: `${sourcePreviewHovered ? SOURCE_PREVIEW_HOVER_SIZE : SOURCE_PREVIEW_THUMB_SIZE}px`,
                   transform: `translate(${sourcePreviewPosition.x}px, ${sourcePreviewPosition.y}px)`
                 }}
                 onPointerDown={beginSourcePreviewDrag}
@@ -547,31 +709,6 @@ export function CustomFaceImagePixelizerWindow() {
                     </div>
                   )}
                 </div>
-                {sourcePreviewHovered ? (
-                  <div
-                    data-testid="image-pixelizer-object-hover"
-                    className="pointer-events-none absolute left-0 top-0 overflow-hidden border border-primary bg-background shadow-2xl"
-                    style={{
-                      width: `${SOURCE_PREVIEW_HOVER_SIZE}px`,
-                      height: `${SOURCE_PREVIEW_HOVER_SIZE}px`,
-                      transform: 'translateY(calc(-100% - 8px))',
-                      transformOrigin: 'top left'
-                    }}
-                  >
-                    {sourceUrl ? (
-                      <img
-                        alt={t('customFaceEditor.imagePixelizer.originalImage')}
-                        className="block h-full w-full object-contain"
-                        draggable={false}
-                        src={sourceUrl}
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                        {t('customFaceEditor.imagePixelizer.originalImage')}
-                      </div>
-                    )}
-                  </div>
-                ) : null}
               </div>
             ) : null}
           </div>
@@ -585,11 +722,25 @@ export function CustomFaceImagePixelizerWindow() {
             </div>
 
             <ParameterGroup title={t('customFaceEditor.imagePixelizer.paletteGroup')} onReset={resetPaletteOptions}>
+              <ChoiceSwitch
+                hint={t('customFaceEditor.imagePixelizer.sourceHint')}
+                label={t('customFaceEditor.imagePixelizer.sourceGroup')}
+                value={sourceType}
+                onChange={(value) => switchSourceType(value as SourceType)}
+                options={[
+                  { value: 'image', label: t('customFaceEditor.imagePixelizer.sourceImage') },
+                  { value: 'text', label: t('customFaceEditor.imagePixelizer.sourceText') }
+                ]}
+              />
               <ModeSwitch
                 hint={t('customFaceEditor.imagePixelizer.modeHint')}
                 label={t('customFaceEditor.imagePixelizer.mode')}
-                value={normalizedOptions.mode}
-                onChange={(mode) => setOptions((current) => ({ ...current, mode }))}
+                value={currentMode}
+                onChange={(mode) => setOptions((current) => ({
+                  ...current,
+                  mode: sourceType === 'text' ? 'mono' : mode as ImagePixelizerOptions['mode']
+                }))}
+                disabledValues={sourceType === 'text' ? ['color'] : []}
               />
 
               <RangeField
@@ -605,6 +756,129 @@ export function CustomFaceImagePixelizerWindow() {
               />
             </ParameterGroup>
 
+            {sourceType === 'text' ? (
+              <>
+                <ParameterGroup title={t('customFaceEditor.imagePixelizer.textGroup')} onReset={() => {
+                  setTextOptions((current) => {
+                    const next = { ...current, text: '' };
+                    setTextWarning(null);
+                    return syncTextWarning(next);
+                  });
+                }}>
+                  <label className="grid gap-1 text-xs">
+                    <span className="flex items-center gap-1">
+                      {t('customFaceEditor.imagePixelizer.textContent')}
+                      <HintTip text={t('customFaceEditor.imagePixelizer.textContentHint')} />
+                    </span>
+                    <textarea
+                      aria-label={t('customFaceEditor.imagePixelizer.textContent')}
+                      className="min-h-28 resize-y border border-border bg-background px-2 py-2 text-sm"
+                      value={textOptions.text}
+                      onChange={(event) => updateTextOptions((current) => ({ ...current, text: event.target.value }))}
+                    />
+                  </label>
+                  {textWarning ? <p className="text-xs text-warning">{textWarning}</p> : null}
+                </ParameterGroup>
+                <ParameterGroup title={t('customFaceEditor.imagePixelizer.textLayoutGroup')} onReset={resetTextLayoutOptions}>
+                  <label className="grid gap-1 text-xs">
+                    <span className="flex items-center gap-1">
+                      {t('customFaceEditor.imagePixelizer.fontFamily')}
+                      <HintTip text={t('customFaceEditor.imagePixelizer.fontFamilyHint')} />
+                    </span>
+                    <Select
+                      value={textOptions.fontFamily}
+                      onValueChange={(value) => updateTextOptions((current) => ({
+                        ...current,
+                        fontFamily: value as TextPixelizerFontFamily
+                      }))}
+                    >
+                      <SelectTrigger aria-label={t('customFaceEditor.imagePixelizer.fontFamily')}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TEXT_PIXELIZER_FONT_PRESETS.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>{t(item.labelKey)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </label>
+                  <ChoiceSwitch
+                    label={t('customFaceEditor.imagePixelizer.fontWeight')}
+                    hint={t('customFaceEditor.imagePixelizer.fontWeightHint')}
+                    value={textOptions.fontWeight}
+                    options={[
+                      { value: 'normal', label: t('customFaceEditor.imagePixelizer.fontWeightNormal') },
+                      { value: 'bold', label: t('customFaceEditor.imagePixelizer.fontWeightBold') }
+                    ]}
+                    onChange={(value) => updateTextOptions((current) => ({ ...current, fontWeight: value as TextPixelizerFontWeight }))}
+                  />
+                  <ChoiceSwitch
+                    label={t('customFaceEditor.imagePixelizer.textAlign')}
+                    hint={t('customFaceEditor.imagePixelizer.textAlignHint')}
+                    value={textOptions.align}
+                    options={[
+                      { value: 'left', label: t('customFaceEditor.imagePixelizer.alignLeft') },
+                      { value: 'center', label: t('customFaceEditor.imagePixelizer.alignCenter') },
+                      { value: 'right', label: t('customFaceEditor.imagePixelizer.alignRight') }
+                    ]}
+                    onChange={(value) => updateTextOptions((current) => ({ ...current, align: value as TextPixelizerAlign }))}
+                  />
+                  <RangeField
+                    id="text-pixelizer-font-size"
+                    label={t('customFaceEditor.imagePixelizer.fontSize')}
+                    hint={t('customFaceEditor.imagePixelizer.fontSizeHint')}
+                    min={8}
+                    max={128}
+                    step={1}
+                    value={textOptions.fontSize}
+                    onChange={(value) => updateTextOptions((current) => ({ ...current, fontSize: value }))}
+                  />
+                  <RangeField
+                    id="text-pixelizer-letter-spacing"
+                    label={t('customFaceEditor.imagePixelizer.letterSpacing')}
+                    hint={t('customFaceEditor.imagePixelizer.letterSpacingHint')}
+                    min={-0.25}
+                    max={1}
+                    step={0.05}
+                    value={textOptions.letterSpacingEm}
+                    onChange={(value) => updateTextOptions((current) => ({ ...current, letterSpacingEm: value }))}
+                  />
+                  <RangeField
+                    id="text-pixelizer-line-height"
+                    label={t('customFaceEditor.imagePixelizer.lineHeight')}
+                    hint={t('customFaceEditor.imagePixelizer.lineHeightHint')}
+                    min={0.8}
+                    max={2}
+                    step={0.05}
+                    value={textOptions.lineHeight}
+                    onChange={(value) => updateTextOptions((current) => ({ ...current, lineHeight: value }))}
+                  />
+                  <RangeField
+                    id="text-pixelizer-padding"
+                    label={t('customFaceEditor.imagePixelizer.textPadding')}
+                    hint={t('customFaceEditor.imagePixelizer.textPaddingHint')}
+                    min={0}
+                    max={64}
+                    step={1}
+                    value={textOptions.padding}
+                    onChange={(value) => updateTextOptions((current) => ({ ...current, padding: value }))}
+                  />
+                  <label className="flex items-center justify-between border border-border px-2 py-2 text-xs">
+                    <span className="flex items-center gap-1">
+                      <span>{t('customFaceEditor.imagePixelizer.textWrap')}</span>
+                      <HintTip text={t('customFaceEditor.imagePixelizer.textWrapHint')} />
+                    </span>
+                    <input
+                      aria-label={t('customFaceEditor.imagePixelizer.textWrap')}
+                      checked={textOptions.wrap}
+                      type="checkbox"
+                      onChange={(event) => updateTextOptions((current) => ({ ...current, wrap: event.target.checked }))}
+                    />
+                  </label>
+                </ParameterGroup>
+              </>
+            ) : null}
+
             <ParameterGroup title={t('customFaceEditor.imagePixelizer.transformGroup')} onReset={resetTransformOptions}>
               <RangeField
                 id="image-pixelizer-scale"
@@ -615,6 +889,16 @@ export function CustomFaceImagePixelizerWindow() {
                 step={0.05}
                 value={options.scale}
                 onChange={(value) => setOptions((current) => ({ ...current, scale: value }))}
+              />
+              <RangeField
+                id="image-pixelizer-rotation"
+                label={t('customFaceEditor.imagePixelizer.rotation')}
+                hint={t('customFaceEditor.imagePixelizer.rotationHint')}
+                min={-180}
+                max={180}
+                step={1}
+                value={options.rotationDeg}
+                onChange={(value) => setOptions((current) => ({ ...current, rotationDeg: value }))}
               />
               <RangeField
                 id="image-pixelizer-offset-x"
@@ -745,36 +1029,56 @@ function ModeSwitch({
   label,
   value,
   onChange,
+  options,
+  disabledValues = [],
 }: {
   hint: string;
   label: string;
-  value: ImagePixelizerOptions['mode'];
-  onChange: (mode: ImagePixelizerOptions['mode']) => void;
+  value: string;
+  onChange: (mode: string) => void;
+  options?: Array<{ value: string; label: string }>;
+  disabledValues?: string[];
 }) {
+  const items = options ?? [
+    { value: 'mono', label: '黑白' },
+    { value: 'color', label: '多色' }
+  ];
   return (
     <div className="grid gap-1 text-xs">
       <span className="flex items-center gap-1">
         <span>{label}</span>
         <HintTip text={hint} />
       </span>
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          className={`border px-3 py-2 text-sm ${value === 'mono' ? 'border-primary bg-primary/10 text-primary' : 'border-border'}`}
-          onClick={() => onChange('mono')}
-        >
-          黑白
-        </button>
-        <button
-          type="button"
-          className={`border px-3 py-2 text-sm ${value === 'color' ? 'border-primary bg-primary/10 text-primary' : 'border-border'}`}
-          onClick={() => onChange('color')}
-        >
-          多色
-        </button>
+      <div className={`grid gap-2 ${items.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        {items.map((item) => {
+          const disabled = disabledValues.includes(item.value);
+          return (
+            <button
+              key={item.value}
+              type="button"
+              className={`border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${value === item.value ? 'border-primary bg-primary/10 text-primary' : 'border-border'}`}
+              disabled={disabled}
+              onClick={() => {
+                if (!disabled) onChange(item.value);
+              }}
+            >
+              {item.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
+}
+
+function ChoiceSwitch(props: {
+  hint: string;
+  label: string;
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (value: string) => void;
+}) {
+  return <ModeSwitch {...props} />;
 }
 
 function RangeField({
@@ -949,6 +1253,7 @@ function samePixelizerOptions(left: ImagePixelizerOptions, right: ImagePixelizer
     && left.contrast === right.contrast
     && left.brightness === right.brightness
     && left.scale === right.scale
+    && left.rotationDeg === right.rotationDeg
     && left.offsetX === right.offsetX
     && left.offsetY === right.offsetY;
 }

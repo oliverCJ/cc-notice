@@ -36,6 +36,7 @@ pub struct CustomFacePixelizeOptions {
     pub contrast: i16,
     pub brightness: i16,
     pub scale: f32,
+    pub rotation_deg: i16,
     pub offset_x: i32,
     pub offset_y: i32,
 }
@@ -255,6 +256,7 @@ fn pixelize_decoded_image(
         target_width,
         target_height,
         options.scale,
+        options.rotation_deg,
         options.offset_x,
         options.offset_y,
     );
@@ -300,6 +302,7 @@ fn pixelize_decoded_image(
         dither = options.dither,
         invert = options.invert,
         scale = options.scale,
+        rotation_deg = options.rotation_deg,
         offset_x = options.offset_x,
         offset_y = options.offset_y,
         "pixelizing custom face image"
@@ -384,6 +387,7 @@ fn render_image_to_target_canvas(
     target_width: u32,
     target_height: u32,
     scale: f32,
+    rotation_deg: i16,
     offset_x: i32,
     offset_y: i32,
 ) -> (image::RgbaImage, Vec<bool>) {
@@ -405,27 +409,63 @@ fn render_image_to_target_canvas(
     let mut canvas =
         image::RgbaImage::from_pixel(target_width, target_height, image::Rgba([255, 255, 255, 0]));
     let mut mask = vec![false; (target_width as usize) * (target_height as usize)];
-    let origin_x = ((target_width as i32 - scaled_width as i32) / 2) + offset_x;
-    let origin_y = ((target_height as i32 - scaled_height as i32) / 2) + offset_y;
-    for y in 0..scaled_height {
-        for x in 0..scaled_width {
-            let target_x = origin_x + x as i32;
-            let target_y = origin_y + y as i32;
-            if target_x < 0
-                || target_y < 0
-                || target_x >= target_width as i32
-                || target_y >= target_height as i32
+    render_transformed_object(
+        &resized,
+        &mut canvas,
+        &mut mask,
+        rotation_deg.clamp(-180, 180),
+        offset_x,
+        offset_y,
+    );
+    (canvas, mask)
+}
+
+fn render_transformed_object(
+    source: &image::RgbaImage,
+    canvas: &mut image::RgbaImage,
+    mask: &mut [bool],
+    rotation_deg: i16,
+    offset_x: i32,
+    offset_y: i32,
+) {
+    let target_width = canvas.width();
+    let target_height = canvas.height();
+    let source_width = source.width();
+    let source_height = source.height();
+    if target_width == 0 || target_height == 0 || source_width == 0 || source_height == 0 {
+        return;
+    }
+
+    let radians = (rotation_deg as f32).to_radians();
+    let cos = radians.cos();
+    let sin = radians.sin();
+    let target_center_x = ((target_width as f32 - 1.0) / 2.0) + offset_x as f32;
+    let target_center_y = ((target_height as f32 - 1.0) / 2.0) + offset_y as f32;
+    let source_center_x = (source_width as f32 - 1.0) / 2.0;
+    let source_center_y = (source_height as f32 - 1.0) / 2.0;
+
+    for target_y in 0..target_height {
+        for target_x in 0..target_width {
+            let translated_x = target_x as f32 - target_center_x;
+            let translated_y = target_y as f32 - target_center_y;
+            let source_x = translated_x * cos + translated_y * sin + source_center_x;
+            let source_y = -translated_x * sin + translated_y * cos + source_center_y;
+            let source_x = source_x.round() as i32;
+            let source_y = source_y.round() as i32;
+            if source_x < 0
+                || source_y < 0
+                || source_x >= source_width as i32
+                || source_y >= source_height as i32
             {
                 continue;
             }
-            let pixel = *resized.get_pixel(x, y);
-            canvas.put_pixel(target_x as u32, target_y as u32, pixel);
+            let pixel = *source.get_pixel(source_x as u32, source_y as u32);
+            canvas.put_pixel(target_x, target_y, pixel);
             if pixel.0[3] > 0 {
                 mask[target_y as usize * target_width as usize + target_x as usize] = true;
             }
         }
     }
-    (canvas, mask)
 }
 
 fn pack_pixels_from_luma(

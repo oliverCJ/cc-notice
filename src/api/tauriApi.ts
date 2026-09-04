@@ -1154,6 +1154,7 @@ export type CustomFacePixelizeOptions = {
   scale: number;
   offsetX: number;
   offsetY: number;
+  rotationDeg: number;
 };
 
 export type CustomFacePixelizeRequest = {
@@ -1207,6 +1208,18 @@ export type ExportCustomFaceRequest = {
 
 export type ExportCustomFaceGifRequest = ExportCustomFaceRequest & {
   scale: number;
+  invert?: boolean;
+  transparentBackground?: boolean;
+  frameIndices?: number[];
+};
+
+export type ExportCustomFacePngRequest = {
+  packedPixels: number[];
+  displayProfileId: string;
+  path: string;
+  scale: number;
+  invert?: boolean;
+  transparentBackground?: boolean;
 };
 
 export type CustomFaceGifExportResult = {
@@ -1456,6 +1469,10 @@ export function exportCustomFaceGif(request: ExportCustomFaceGifRequest) {
   return invoke<CustomFaceGifExportResult>('export_custom_face_gif', { request });
 }
 
+export function exportCustomFacePng(request: ExportCustomFacePngRequest) {
+  return invoke<void>('export_custom_face_png', { request });
+}
+
 export function readCustomFaceSvg(path: string) {
   return invoke<string>('read_custom_face_svg', { path });
 }
@@ -1507,6 +1524,94 @@ export function releaseCustomFaceImagePixelizerSource(sourceId: string) {
 
 export function applyCustomFaceImageImport(payload: CustomFaceImageImportReadyPayload) {
   return invoke<void>('apply_custom_face_image_import', { payload });
+}
+
+export type PrepareCustomFaceVectorizerSourceRequest = {
+  fileName: string;
+  imageBytes: number[];
+  targetWidth: number;
+  targetHeight: number;
+};
+
+export type PrepareCustomFaceVectorizerSourceResult = {
+  sourceId: string;
+  sourceWidth: number;
+  sourceHeight: number;
+  workingWidth: number;
+  workingHeight: number;
+};
+
+export type CustomFaceVectorizeMode = 'binary' | 'color';
+
+export type CustomFaceVectorizeOptions = {
+  mode: CustomFaceVectorizeMode;
+  filterSpeckle: number;
+  colorPrecision: number;
+  layerDifference: number;
+  cornerThreshold: number;
+  lengthThreshold: number;
+  maxIterations: number;
+  spliceThreshold: number;
+  pathPrecision: number;
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  rotationDeg: number;
+  invert: boolean;
+  brightness: number;
+  contrast: number;
+};
+
+export type CustomFaceVectorizeSourceRequest = {
+  sourceId: string;
+  options: CustomFaceVectorizeOptions;
+};
+
+export type CustomFaceVectorizeResult = {
+  svg: string;
+  width: number;
+  height: number;
+};
+
+export type VectorizedSvgTempFileResult = {
+  path: string;
+};
+
+export type OpenCustomFaceImageVectorizerRequest = {
+  width: number;
+  height: number;
+};
+
+export function openCustomFaceImageVectorizer(request: OpenCustomFaceImageVectorizerRequest) {
+  return invoke<void>('open_custom_face_image_vectorizer', { request });
+}
+
+export function closeCustomFaceImageVectorizer() {
+  return invoke<void>('close_custom_face_image_vectorizer');
+}
+
+export function prepareCustomFaceImageVectorizerSource(request: PrepareCustomFaceVectorizerSourceRequest) {
+  return invoke<PrepareCustomFaceVectorizerSourceResult>('prepare_custom_face_image_vectorizer_source', { request });
+}
+
+export function vectorizeCustomFaceImageVectorizerSource(request: CustomFaceVectorizeSourceRequest) {
+  return invoke<CustomFaceVectorizeResult>('vectorize_custom_face_image_vectorizer_source', { request });
+}
+
+export function releaseCustomFaceImageVectorizerSource(sourceId: string) {
+  return invoke<boolean>('release_custom_face_image_vectorizer_source', { sourceId });
+}
+
+export function writeCustomFaceVectorizedSvgTempFile(svg: string) {
+  return invoke<VectorizedSvgTempFileResult>('write_custom_face_vectorized_svg_temp_file', { svg });
+}
+
+export function emitCustomFaceOpenSvgPathEvent(path: string) {
+  return invoke<boolean>('emit_custom_face_open_svg_path_event', { path });
+}
+
+export function takeLatestVectorizedSvgTempFilePath() {
+  return invoke<string | null>('take_latest_vectorized_svg_temp_file_path');
 }
 
 export function getInternalEventCatalog() {

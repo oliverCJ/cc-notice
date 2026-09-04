@@ -39,6 +39,25 @@ pub struct ExportCustomFaceGifRequest {
     pub display_profile_id: String,
     pub path: String,
     pub scale: u8,
+    #[serde(default)]
+    pub invert: bool,
+    #[serde(default)]
+    pub transparent_background: bool,
+    #[serde(default)]
+    pub frame_indices: Vec<usize>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportCustomFacePngRequest {
+    pub packed_pixels: Vec<u8>,
+    pub display_profile_id: String,
+    pub path: String,
+    pub scale: u8,
+    #[serde(default)]
+    pub invert: bool,
+    #[serde(default)]
+    pub transparent_background: bool,
 }
 
 #[tauri::command]
@@ -275,6 +294,30 @@ pub fn export_custom_face_gif(
             &request.display_profile_id,
             &PathBuf::from(request.path),
             request.scale,
+            request.invert,
+            request.transparent_background,
+            &request.frame_indices,
+        )
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn export_custom_face_png(
+    state: tauri::State<'_, AppState>,
+    request: ExportCustomFacePngRequest,
+) -> Result<(), String> {
+    require_extension(&request.path, "png")?;
+    state
+        .custom_face_library_service
+        .lock()
+        .map_err(|error| error.to_string())?
+        .export_face_png(
+            &request.packed_pixels,
+            &request.display_profile_id,
+            &PathBuf::from(request.path),
+            request.scale,
+            request.invert,
+            request.transparent_background,
         )
         .map_err(|error| error.to_string())
 }

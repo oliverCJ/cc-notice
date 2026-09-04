@@ -31,6 +31,16 @@ describe('parseSvgDocument', () => {
     expect(document.elementCount).toBe(1);
   });
 
+  test('accepts svg roots that provide width and height without a viewBox', () => {
+    const document = parseSvgDocument(
+      '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="8" height="8"><path d="M0 0 H8 V8 H0 Z" fill="#000000" transform="translate(0,0)"/></svg>',
+    );
+
+    expect(document.viewBox).toEqual([0, 0, 8, 8]);
+    expect(document.width).toBe(8);
+    expect(document.height).toBe(8);
+  });
+
   test('rejects unsafe or unsupported style content', () => {
     for (const source of [
       '<svg viewBox="0 0 10 10"><style>rect { fill: red; }</style></svg>',

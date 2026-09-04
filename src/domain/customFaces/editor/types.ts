@@ -12,13 +12,27 @@ export type ToolId = 'brush' | 'eraser' | 'select' | 'line' | 'rectangle' | 'cir
 
 export type EditorMode = 'editing' | 'empty-group' | 'empty-frame';
 
+export type SelectionShape = 'rectangle' | 'circle';
+export type SelectionRect = { x: number; y: number; width: number; height: number; shape?: SelectionShape };
+export type SelectionPivot = { x: number; y: number };
+
 export type SelectionMoveBaseline = {
   faceId: string;
   frameIndex: number;
-  selection: { x: number; y: number; width: number; height: number };
+  selection: SelectionRect;
   packedPixels: number[];
   pastLength: number;
 };
+
+export type SelectionRotationBaseline = {
+  faceId: string;
+  frameIndex: number;
+  selection: SelectionRect;
+  packedPixels: number[];
+  pastLength: number;
+};
+
+export type SelectionTransformKind = 'move' | 'rotate';
 
 export type EditorState = {
   mode: EditorMode;
@@ -29,9 +43,13 @@ export type EditorState = {
   selectedFrameIndex: number;
   past: CustomFaceGroup[];
   future: CustomFaceGroup[];
-  selection: { x: number; y: number; width: number; height: number } | null;
-  selectionOrigin: { x: number; y: number; width: number; height: number } | null;
+  selection: SelectionRect | null;
+  selectionOrigin: SelectionRect | null;
   selectionMoveBaseline: SelectionMoveBaseline | null;
+  selectionPivot: SelectionPivot | null;
+  selectionRotationBaseline: SelectionRotationBaseline | null;
+  selectionRotationDegrees: number;
+  selectionTransformKind: SelectionTransformKind | null;
   clipboard: { width: number; height: number; pixels: boolean[] } | null;
 };
 
@@ -44,9 +62,16 @@ export type EditorAction =
   | { type: 'rename-face'; faceId: string; name: string }
   | { type: 'set-default-face'; faceId: string }
   | { type: 'select-frame'; index: number }
-  | { type: 'set-selection'; selection: { x: number; y: number; width: number; height: number } | null }
+  | { type: 'set-selection'; selection: SelectionRect | null }
+  | { type: 'set-selection-pivot'; pivot: SelectionPivot }
   | { type: 'move-selection'; dx: number; dy: number }
+  | { type: 'confirm-selection-move' }
   | { type: 'cancel-selection-move' }
+  | { type: 'rotate-selection'; degrees: number }
+  | { type: 'confirm-selection-transform' }
+  | { type: 'cancel-selection-transform' }
+  | { type: 'confirm-selection-rotation' }
+  | { type: 'cancel-selection-rotation' }
   | { type: 'copy-selection' }
   | { type: 'paste-selection' }
   | { type: 'clear-selection' }

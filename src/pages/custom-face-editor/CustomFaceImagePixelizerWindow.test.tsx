@@ -48,6 +48,11 @@ vi.mock('@tauri-apps/api/window', () => ({
 
 beforeEach(() => {
   vi.stubGlobal('PointerEvent', MouseEvent);
+  vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
+    callback(new Blob([new Uint8Array([4, 5, 6])], { type: 'image/png' }));
+  });
+  Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:text-source') });
+  Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
   prepareSourceMock.mockReset();
   pixelizeSourceMock.mockReset();
   releaseSourceMock.mockReset().mockResolvedValue(undefined);
@@ -68,7 +73,25 @@ beforeEach(() => {
   Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', { configurable: true, value: vi.fn() });
   Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', { configurable: true, value: vi.fn(() => true) });
   Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', { configurable: true, value: vi.fn() });
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ clearRect: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), stroke: vi.fn(), createImageData: vi.fn((width: number, height: number) => ({ data: new Uint8ClampedArray(width * height * 4) })), putImageData: vi.fn(), imageSmoothingEnabled: false, fillStyle: '', strokeStyle: '', lineWidth: 1 } as unknown as CanvasRenderingContext2D);
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+    clearRect: vi.fn(),
+    fillRect: vi.fn(),
+    fillText: vi.fn(),
+    measureText: vi.fn((text: string) => ({ width: text.length * 10 })),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    createImageData: vi.fn((width: number, height: number) => ({ data: new Uint8ClampedArray(width * height * 4) })),
+    putImageData: vi.fn(),
+    imageSmoothingEnabled: false,
+    fillStyle: '',
+    strokeStyle: '',
+    font: '',
+    textAlign: 'left',
+    textBaseline: 'top',
+    lineWidth: 1
+  } as unknown as CanvasRenderingContext2D);
 });
 
 test('reads the canvas size from the window url', () => {
@@ -204,20 +227,21 @@ test('passes transform adjustments to the pixelizer and can reset them', async (
   await waitFor(() => expect(pixelizeSourceMock).toHaveBeenCalledOnce());
 
   fireEvent.change(screen.getByRole('slider', { name: '缩放' }), { target: { value: '1.5' } });
+  fireEvent.change(screen.getByRole('slider', { name: '旋转' }), { target: { value: '45' } });
   fireEvent.change(screen.getByRole('slider', { name: '水平位置' }), { target: { value: '8' } });
   fireEvent.change(screen.getByRole('slider', { name: '垂直位置' }), { target: { value: '-4' } });
   await waitFor(() => expect(pixelizeSourceMock).toHaveBeenLastCalledWith(expect.objectContaining({
-    options: expect.objectContaining({ scale: 1.5, offsetX: 8, offsetY: -4 })
+    options: expect.objectContaining({ scale: 1.5, rotationDeg: 45, offsetX: 8, offsetY: -4 })
   })));
 
   fireEvent.click(screen.getByRole('button', { name: '居中' }));
   await waitFor(() => expect(pixelizeSourceMock).toHaveBeenLastCalledWith(expect.objectContaining({
-    options: expect.objectContaining({ scale: 1.5, offsetX: 0, offsetY: 0 })
+    options: expect.objectContaining({ scale: 1.5, rotationDeg: 45, offsetX: 0, offsetY: 0 })
   })));
 
   fireEvent.click(screen.getByRole('button', { name: '还原图像位置' }));
   await waitFor(() => expect(pixelizeSourceMock).toHaveBeenLastCalledWith(expect.objectContaining({
-    options: expect.objectContaining({ scale: 1, offsetX: 0, offsetY: 0 })
+    options: expect.objectContaining({ scale: 1, rotationDeg: 0, offsetX: 0, offsetY: 0 })
   })));
 });
 
@@ -290,8 +314,9 @@ test('pixelizes once after object drag ends instead of on every pointer move', a
   fireEvent.pointerUp(screenCanvas, { pointerId: 1, clientX: 132, clientY: 116 });
 
   await waitFor(() => expect(pixelizeSourceMock).toHaveBeenCalledTimes(2));
-  expect(pixelizeSourceMock.mock.calls.at(-1)?.[0].options.offsetX).not.toBe(0);
-  expect(pixelizeSourceMock.mock.calls.at(-1)?.[0].options.offsetY).not.toBe(0);
+  const latestCall = pixelizeSourceMock.mock.calls[pixelizeSourceMock.mock.calls.length - 1];
+  expect(latestCall?.[0].options.offsetX).not.toBe(0);
+  expect(latestCall?.[0].options.offsetY).not.toBe(0);
 });
 
 test('drags the converted pixel result on the target canvas without rendering a source image overlay', async () => {
@@ -321,22 +346,28 @@ test('drags the converted pixel result on the target canvas without rendering a 
   expect(screen.getByTestId('image-pixelizer-source-thumb')).not.toHaveClass('overflow-hidden');
   expect(screen.queryByTestId('image-pixelizer-object')).not.toBeInTheDocument();
   expect(screen.getByTestId('custom-face-pixel-preview-canvas').parentElement).not.toHaveClass('opacity-20');
-  const initialOptions = pixelizeSourceMock.mock.calls.at(-1)?.[0].options;
+  const initialCall = pixelizeSourceMock.mock.calls[pixelizeSourceMock.mock.calls.length - 1];
+  const initialOptions = initialCall?.[0].options;
 
   const screenCanvas = screen.getByTestId('custom-face-image-pixelizer-screen');
   fireEvent.pointerDown(screenCanvas, { pointerId: 1, buttons: 1, clientX: 100, clientY: 100 });
   fireEvent.pointerMove(screenCanvas, { pointerId: 1, buttons: 1, clientX: 132, clientY: 116 });
   fireEvent.pointerUp(screenCanvas, { pointerId: 1, clientX: 132, clientY: 116 });
 
-  await waitFor(() => expect(pixelizeSourceMock.mock.calls.at(-1)?.[0].options).not.toEqual(initialOptions));
-  expect(pixelizeSourceMock.mock.calls.at(-1)?.[0].options.offsetX).not.toBe(0);
-  expect(pixelizeSourceMock.mock.calls.at(-1)?.[0].options.offsetY).not.toBe(0);
+  await waitFor(() => {
+    const latestCall = pixelizeSourceMock.mock.calls[pixelizeSourceMock.mock.calls.length - 1];
+    expect(latestCall?.[0].options).not.toEqual(initialOptions);
+  });
+  const latestCall = pixelizeSourceMock.mock.calls[pixelizeSourceMock.mock.calls.length - 1];
+  expect(latestCall?.[0].options.offsetX).not.toBe(0);
+  expect(latestCall?.[0].options.offsetY).not.toBe(0);
 
-  fireEvent.mouseEnter(screen.getByTestId('image-pixelizer-source-thumb'));
-  await waitFor(() => expect(screen.getByTestId('image-pixelizer-object-hover')).toBeInTheDocument());
-  expect(screen.getByTestId('image-pixelizer-object-hover')).toHaveStyle({ width: '192px', height: '192px' });
-  fireEvent.mouseLeave(screen.getByTestId('image-pixelizer-source-thumb'));
-  await waitFor(() => expect(screen.queryByTestId('image-pixelizer-object-hover')).not.toBeInTheDocument());
+  const sourceThumb = screen.getByTestId('image-pixelizer-source-thumb');
+  fireEvent.mouseEnter(sourceThumb);
+  expect(sourceThumb).toHaveStyle({ width: '192px', height: '192px' });
+  expect(screen.queryByTestId('image-pixelizer-object-hover')).not.toBeInTheDocument();
+  fireEvent.mouseLeave(sourceThumb);
+  expect(sourceThumb).toHaveStyle({ width: '96px', height: '96px' });
 });
 
 test('allows moving the source image thumbnail without changing pixelizer options', async () => {
@@ -361,7 +392,8 @@ test('allows moving the source image thumbnail without changing pixelizer option
   const file = new File([new Uint8Array([1, 2, 3])], 'sample.png', { type: 'image/png' });
   fireEvent.change(input, { target: { files: [file] } });
   await waitFor(() => expect(pixelizeSourceMock).toHaveBeenCalledOnce());
-  const initialOptions = pixelizeSourceMock.mock.calls.at(-1)?.[0].options;
+  const initialCall = pixelizeSourceMock.mock.calls[pixelizeSourceMock.mock.calls.length - 1];
+  const initialOptions = initialCall?.[0].options;
 
   const thumb = screen.getByTestId('image-pixelizer-source-thumb');
   fireEvent.pointerDown(thumb, { pointerId: 1, buttons: 1, clientX: 10, clientY: 10 });
@@ -370,7 +402,8 @@ test('allows moving the source image thumbnail without changing pixelizer option
 
   expect(thumb).toHaveStyle({ transform: 'translate(34px, 26px)' });
   expect(pixelizeSourceMock).toHaveBeenCalledOnce();
-  expect(pixelizeSourceMock.mock.calls.at(-1)?.[0].options).toEqual(initialOptions);
+  const latestCall = pixelizeSourceMock.mock.calls[pixelizeSourceMock.mock.calls.length - 1];
+  expect(latestCall?.[0].options).toEqual(initialOptions);
 });
 
 test('stretches the converted pixel preview across the full target canvas viewport', async () => {
@@ -534,4 +567,127 @@ test('releases a prepared source that resolves after the window unmounts', async
 
   await waitFor(() => expect(releaseSourceMock).toHaveBeenCalledWith('source-after-unmount'));
   expect(pixelizeSourceMock).not.toHaveBeenCalled();
+});
+
+test('switches to text mode, renders text source, and applies the converted pixels', async () => {
+  prepareSourceMock.mockResolvedValue({
+    sourceId: 'text-source-1',
+    sourceWidth: 64,
+    sourceHeight: 32,
+    workingWidth: 64,
+    workingHeight: 32
+  });
+  pixelizeSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    packedPixels: createPackedPixels(128, 32),
+    previewPixels: new Array(128 * 32 * 4).fill(255),
+    sourceWidth: 64,
+    sourceHeight: 32
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.click(screen.getByRole('button', { name: '文字' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '文字内容' }), { target: { value: 'Hi\n通知' } });
+
+  await waitFor(() => expect(prepareSourceMock).toHaveBeenCalledWith({
+    profileWidth: 128,
+    profileHeight: 32,
+    imageBytes: [4, 5, 6]
+  }));
+  await waitFor(() => expect(pixelizeSourceMock).toHaveBeenCalled());
+  fireEvent.click(screen.getByRole('button', { name: '应用' }));
+  expect(applyMock).toHaveBeenCalledWith({
+    packedPixels: createPackedPixels(128, 32),
+    sourceWidth: 128,
+    sourceHeight: 32
+  });
+});
+
+test('uses the app select control for font family in text mode', () => {
+  render(<CustomFaceImagePixelizerWindow />);
+
+  fireEvent.click(screen.getByRole('button', { name: '文字' }));
+
+  expect(screen.getByRole('combobox', { name: '字体' })).toBeInTheDocument();
+  expect(document.querySelector('select[aria-label="字体"]')).not.toBeInTheDocument();
+});
+
+test('shows letter spacing control in text mode and regenerates the text source after changes', async () => {
+  prepareSourceMock.mockResolvedValue({
+    sourceId: 'text-source-1',
+    sourceWidth: 64,
+    sourceHeight: 32,
+    workingWidth: 64,
+    workingHeight: 32
+  });
+  pixelizeSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    packedPixels: createPackedPixels(128, 32),
+    previewPixels: new Array(128 * 32 * 4).fill(255),
+    sourceWidth: 64,
+    sourceHeight: 32
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.click(screen.getByRole('button', { name: '文字' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '文字内容' }), { target: { value: 'AB' } });
+  await waitFor(() => expect(prepareSourceMock).toHaveBeenCalledOnce());
+
+  fireEvent.change(screen.getByRole('slider', { name: '字间距' }), { target: { value: '0.5' } });
+
+  await waitFor(() => expect(prepareSourceMock).toHaveBeenCalledTimes(2));
+  expect(screen.getByRole('spinbutton', { name: '字间距数值' })).toHaveValue(0.5);
+});
+
+test('locks text mode to monochrome conversion', async () => {
+  render(<CustomFaceImagePixelizerWindow />);
+
+  fireEvent.click(screen.getByRole('button', { name: '多色' }));
+  fireEvent.click(screen.getByRole('button', { name: '文字' }));
+
+  expect(screen.getByRole('button', { name: '多色' })).toBeDisabled();
+  expect(screen.getByRole('spinbutton', { name: '颜色数量数值' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '黑白' })).toHaveClass('border-primary');
+});
+
+test('clears text input when clearing the text workspace', async () => {
+  prepareSourceMock.mockResolvedValue({
+    sourceId: 'text-source-1',
+    sourceWidth: 64,
+    sourceHeight: 32,
+    workingWidth: 64,
+    workingHeight: 32
+  });
+  pixelizeSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    packedPixels: createPackedPixels(128, 32),
+    previewPixels: new Array(128 * 32 * 4).fill(255),
+    sourceWidth: 64,
+    sourceHeight: 32
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.click(screen.getByRole('button', { name: '文字' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '文字内容' }), { target: { value: 'Keep me' } });
+  await waitFor(() => expect(prepareSourceMock).toHaveBeenCalled());
+
+  fireEvent.click(screen.getByRole('button', { name: '清空画布' }));
+
+  expect(screen.getByRole('textbox', { name: '文字内容' })).toHaveValue('');
+  expect(releaseSourceMock).toHaveBeenCalledWith('text-source-1');
+});
+
+test('restores text layout controls without clearing text on reset all', async () => {
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.click(screen.getByRole('button', { name: '文字' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '文字内容' }), { target: { value: 'Keep me' } });
+  fireEvent.change(screen.getByRole('slider', { name: '字号' }), { target: { value: '48' } });
+
+  fireEvent.click(screen.getByRole('button', { name: '还原设置' }));
+
+  expect(screen.getByRole('textbox', { name: '文字内容' })).toHaveValue('Keep me');
+  expect(screen.getByRole('slider', { name: '字号' })).toHaveValue('24');
 });

@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { readCustomFaceSvg } from '@/api/tauriApi';
+import { openCustomFaceImageVectorizer, readCustomFaceSvg } from '@/api/tauriApi';
 import { parseSvgDocument, SvgParseError } from '@/domain/customFaces/svg/svgParser';
 import {
   rasterizeSvg,
@@ -24,6 +24,8 @@ type Props = {
   open: boolean;
   width: number;
   height: number;
+  initialSourcePath?: string | null;
+  initialSourceRevision?: number;
   onCancel: () => void;
   onApply: (packedPixels: number[], mode: 'merge' | 'replace') => void;
 };
@@ -34,6 +36,8 @@ export function CustomFaceSvgImportDialog({
   open: visible,
   width,
   height,
+  initialSourcePath,
+  initialSourceRevision,
   onCancel,
   onApply,
 }: Props) {
@@ -67,6 +71,7 @@ export function CustomFaceSvgImportDialog({
   } | null>(null);
   const pendingDragOffsetRef = useRef<{ x: number; y: number } | null>(null);
   const dragFrameRef = useRef<number | null>(null);
+  const appliedInitialSourceRevisionRef = useRef<number | null>(null);
   const document = useMemo(() => {
     if (!source) return null;
     try {
@@ -77,6 +82,31 @@ export function CustomFaceSvgImportDialog({
       };
     }
   }, [source]);
+
+  useEffect(() => {
+    if (!visible || !initialSourcePath) return;
+    if (initialSourceRevision != null && appliedInitialSourceRevisionRef.current === initialSourceRevision) return;
+    appliedInitialSourceRevisionRef.current = initialSourceRevision ?? null;
+    let cancelled = false;
+    setBusy(true);
+    setError(null);
+    setRecognitionMode('brightness');
+    void readCustomFaceSvg(initialSourcePath)
+      .then((nextSource) => {
+        if (cancelled) return;
+        setSource(nextSource);
+      })
+      .catch((caught) => {
+        if (cancelled) return;
+        setError(caught instanceof Error ? caught.message : String(caught));
+      })
+      .finally(() => {
+        if (!cancelled) setBusy(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [initialSourcePath, initialSourceRevision, visible]);
 
   useEffect(() => {
     const version = renderVersionRef.current + 1;
@@ -178,13 +208,15 @@ export function CustomFaceSvgImportDialog({
     event: React.PointerEvent<HTMLDivElement>,
   ) => {
     if (!raster) return;
+    if (typeof event.currentTarget.setPointerCapture === 'function') {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
     dragRef.current = {
       clientX: event.clientX,
       clientY: event.clientY,
       offsetX,
       offsetY,
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
   };
   const flushPendingDragOffset = () => {
     const pending = pendingDragOffsetRef.current;
@@ -198,7 +230,7 @@ export function CustomFaceSvgImportDialog({
     event: React.PointerEvent<HTMLDivElement>,
   ) => {
     const origin = dragRef.current;
-    if (!origin || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    if (!origin) return;
     pendingDragOffsetRef.current = {
       x: clampOffset(
         origin.offsetX + Math.round((event.clientX - origin.clientX) / displayScale),
@@ -221,7 +253,7 @@ export function CustomFaceSvgImportDialog({
       window.cancelAnimationFrame(dragFrameRef.current);
       flushPendingDragOffset();
     }
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+    if (typeof event.currentTarget.hasPointerCapture === 'function' && event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
   };
@@ -244,6 +276,9 @@ export function CustomFaceSvgImportDialog({
         </DialogHeader>
         <button type="button" className="border border-border px-3 py-2" disabled={busy} onClick={() => void selectFile()}>
           {busy ? t('customFaceEditor.svgImport.read') : t('customFaceEditor.svgImport.selectFile')}
+        </button>
+        <button type="button" className="border border-border px-3 py-2" disabled={busy} onClick={() => void openCustomFaceImageVectorizer({ width, height })}>
+          {t('customFaceEditor.svgImport.importImage')}
         </button>
         {document && !('error' in document) ? (
           <p className="text-xs text-muted-foreground">

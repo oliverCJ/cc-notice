@@ -85,9 +85,11 @@ export function parseSvgDocument(source: string): SvgDocument {
 
   removeSafeStaticStyles(root);
   validateAttributes(root, allowedSvgAttributes, 'svg');
-  const viewBox = parseViewBox(root.getAttribute('viewBox'));
-  const width = parsePositiveNumber(root.getAttribute('width')) ?? viewBox[2];
-  const height = parsePositiveNumber(root.getAttribute('height')) ?? viewBox[3];
+  const widthAttribute = parsePositiveNumber(root.getAttribute('width'));
+  const heightAttribute = parsePositiveNumber(root.getAttribute('height'));
+  const viewBox = parseViewBox(root.getAttribute('viewBox'), widthAttribute, heightAttribute);
+  const width = widthAttribute ?? viewBox[2];
+  const height = heightAttribute ?? viewBox[3];
   const elementCount = validateChildren(root);
   if (elementCount > MAX_ELEMENTS) {
     throw new SvgParseError('SVG 元素数量超过限制');
@@ -162,9 +164,16 @@ function validateAttributes(
   }
 }
 
-function parseViewBox(value: string | null): [number, number, number, number] {
+function parseViewBox(
+  value: string | null,
+  width?: number,
+  height?: number,
+): [number, number, number, number] {
   if (!value) {
-    throw new SvgParseError('必须提供有效 viewBox 或尺寸');
+    if (width == null || height == null) {
+      throw new SvgParseError('必须提供有效 viewBox 或尺寸');
+    }
+    return [0, 0, width, height];
   }
   const values = value.trim().split(/[ ,]+/).map(Number);
   if (

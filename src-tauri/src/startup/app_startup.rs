@@ -7,6 +7,7 @@ use tauri_plugin_autostart::MacosLauncher;
 use crate::app_services::app_config_service::AppConfigService;
 use crate::app_services::custom_face_library::CustomFaceLibraryService;
 use crate::app_services::custom_face_pixelizer::CustomFacePixelizerSourceStore;
+use crate::app_services::custom_face_vectorizer::CustomFaceVectorizerSourceStore;
 use crate::app_services::custom_internal_event_service::CustomInternalEventService;
 use crate::app_services::desktop_notice_service::DesktopNoticeService;
 use crate::app_services::device_input_service::DeviceInputService;
@@ -249,6 +250,9 @@ pub fn run() {
                 custom_face_pixelizer_source_store: Arc::new(
                     CustomFacePixelizerSourceStore::default(),
                 ),
+                custom_face_vectorizer_source_store: Arc::new(
+                    CustomFaceVectorizerSourceStore::default(),
+                ),
                 local_hook_server_status: hook_server_status,
                 hook_auth_token: auth_token,
                 output_executor,
@@ -362,6 +366,7 @@ pub fn run() {
             commands::custom_faces::preview_custom_face_item_import,
             commands::custom_faces::export_custom_face_item,
             commands::custom_faces::export_custom_face_gif,
+            commands::custom_faces::export_custom_face_png,
             commands::custom_faces::read_custom_face_svg,
             commands::custom_faces::custom_face_assets,
             commands::custom_faces::save_custom_face_asset,
@@ -376,6 +381,15 @@ pub fn run() {
             commands::custom_face_pixelizer::pixelize_custom_face_image_source,
             commands::custom_face_pixelizer::release_custom_face_image_pixelizer_source,
             commands::custom_face_pixelizer::apply_custom_face_image_import,
+            commands::custom_face_vectorizer::open_custom_face_image_vectorizer,
+            commands::custom_face_vectorizer::close_custom_face_image_vectorizer,
+            commands::custom_face_vectorizer::vectorize_custom_face_image,
+            commands::custom_face_vectorizer::prepare_custom_face_image_vectorizer_source,
+            commands::custom_face_vectorizer::vectorize_custom_face_image_vectorizer_source,
+            commands::custom_face_vectorizer::release_custom_face_image_vectorizer_source,
+            commands::custom_face_vectorizer::write_custom_face_vectorized_svg_temp_file,
+            commands::custom_face_vectorizer::emit_custom_face_open_svg_path_event,
+            commands::custom_face_vectorizer::take_latest_vectorized_svg_temp_file_path,
             commands::profile::profile_state,
             commands::profile::save_profile,
             commands::profile::create_profile,

@@ -1,5 +1,6 @@
 import type { CustomFaceGroup } from '@/api/tauriApi';
 import type { EditorAction, EditorProfile, EditorState } from './types';
+import { isPointInsideSelection, rotateSelection } from './raster';
 import { normalizeFrameDuration } from './playback';
 
 const MAX_FACES_PER_GROUP = 15;
@@ -44,6 +45,10 @@ export function createEditorState(group: CustomFaceGroup, profile: EditorProfile
     selection: null,
     selectionOrigin: null,
     selectionMoveBaseline: null,
+    selectionPivot: null,
+    selectionRotationBaseline: null,
+    selectionRotationDegrees: 0,
+    selectionTransformKind: null,
     clipboard: null
   };
 }
@@ -110,8 +115,129 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     group.defaultFaceId = action.faceId;
     return commit(state, group, state.selectedFaceId, state.selectedFrameIndex);
   }
-  if (action.type === 'set-selection') return { ...state, selection: action.selection, selectionOrigin: null, selectionMoveBaseline: null };
-  if (action.type === 'cancel-selection-move' && state.selection && state.selectionMoveBaseline) {
+  if (action.type === 'set-selection') {
+    return {
+      ...state,
+      selection: action.selection,
+      selectionOrigin: null,
+      selectionMoveBaseline: null,
+      selectionPivot: action.selection ? selectionCenter(action.selection) : null,
+      selectionRotationBaseline: null,
+      selectionRotationDegrees: 0,
+      selectionTransformKind: null,
+    };
+  }
+  if (action.type === 'set-selection-pivot' && state.selection && !state.selectionRotationBaseline) {
+    if (!inProfileBounds(state.profile, action.pivot.x, action.pivot.y)) return state;
+    return { ...state, selectionPivot: action.pivot };
+  }
+  if ((action.type === 'cancel-selection-rotation' || action.type === 'cancel-selection-transform') && state.selectionRotationBaseline) {
+    const baseline = state.selectionRotationBaseline;
+    const group = clone(state.presentGroup);
+    const frame = group.faces.find((item) => item.faceId === baseline.faceId)?.frames[baseline.frameIndex];
+    if (!frame) return state;
+    frame.packedPixels = [...baseline.packedPixels];
+    return {
+      ...state,
+      mode: modeFor(group, state.selectedFaceId),
+      presentGroup: group,
+      selection: baseline.selection,
+      selectionOrigin: null,
+      selectionPivot: selectionCenter(baseline.selection),
+      selectionRotationBaseline: null,
+      selectionRotationDegrees: 0,
+      selectionTransformKind: null,
+    };
+  }
+  if ((action.type === 'confirm-selection-transform' || action.type === 'confirm-selection-move') && state.selectionMoveBaseline) {
+    return {
+      ...state,
+      selection: null,
+      selectionOrigin: null,
+      selectionPivot: null,
+      selectionMoveBaseline: null,
+      selectionTransformKind: null,
+    };
+  }
+  if ((action.type === 'confirm-selection-rotation' || action.type === 'confirm-selection-transform') && state.selectionRotationBaseline) {
+    const baseline = state.selectionRotationBaseline;
+    const previous = clone(state.presentGroup);
+    const frame = previous.faces.find((item) => item.faceId === baseline.faceId)?.frames[baseline.frameIndex];
+    if (!frame) return state;
+    frame.packedPixels = [...baseline.packedPixels];
+    return {
+      ...state,
+      past: [...state.past, previous],
+      future: [],
+      selection: null,
+      selectionOrigin: null,
+      selectionPivot: null,
+      selectionMoveBaseline: null,
+      selectionRotationBaseline: null,
+      selectionRotationDegrees: 0,
+      selectionTransformKind: null,
+    };
+  }
+  if (action.type === 'rotate-selection' && state.selection) {
+    if (!Number.isFinite(action.degrees) || state.selectionMoveBaseline) return state;
+    const pivot = state.selectionPivot ?? selectionCenter(state.selection);
+    if (!inProfileBounds(state.profile, pivot.x, pivot.y)) return state;
+    const baseline = state.selectionRotationBaseline;
+    const faceId = baseline?.faceId ?? state.selectedFaceId;
+    const frameIndex = baseline?.frameIndex ?? state.selectedFrameIndex;
+    if (!faceId) return state;
+    const face = state.presentGroup.faces.find((item) => item.faceId === faceId);
+    const frame = face?.frames[frameIndex];
+    if (!frame) return state;
+    const rotationBaseline = baseline ?? {
+      faceId,
+      frameIndex,
+      selection: state.selection,
+      packedPixels: [...frame.packedPixels],
+      pastLength: state.past.length,
+    };
+    const normalizedDegrees = normalizeRotationDegrees(action.degrees);
+    if (normalizedDegrees === 0) {
+      if (!baseline) return state;
+      const group = clone(state.presentGroup);
+      const nextFrame = group.faces.find((item) => item.faceId === faceId)?.frames[frameIndex];
+      if (!nextFrame) return state;
+      nextFrame.packedPixels = [...baseline.packedPixels];
+      return {
+        ...state,
+        mode: modeFor(group, state.selectedFaceId),
+        presentGroup: group,
+        selection: baseline.selection,
+        selectionOrigin: null,
+        selectionRotationBaseline: null,
+        selectionRotationDegrees: 0,
+        selectionTransformKind: null,
+      };
+    }
+    const rotated = rotateSelection(
+      new Uint8Array(rotationBaseline.packedPixels),
+      state.profile,
+      rotationBaseline.selection,
+      pivot,
+      normalizedDegrees,
+    );
+    const group = clone(state.presentGroup);
+    const nextFrame = group.faces.find((item) => item.faceId === faceId)?.frames[frameIndex];
+    if (!nextFrame) return state;
+    nextFrame.packedPixels = Array.from(rotated.pixels);
+    return {
+      ...state,
+      mode: modeFor(group, state.selectedFaceId),
+      presentGroup: group,
+      selection: rotated.selection,
+      selectionOrigin: rotationBaseline.selection,
+      selectionPivot: pivot,
+      selectionRotationBaseline: rotationBaseline,
+      selectionRotationDegrees: normalizedDegrees,
+      selectionTransformKind: 'rotate',
+    };
+  }
+  if ((action.type === 'cancel-selection-move' || action.type === 'cancel-selection-transform') && state.selection && state.selectionMoveBaseline) {
     const baseline = state.selectionMoveBaseline;
     const group = clone(state.presentGroup);
     const frame = group.faces.find((item) => item.faceId === baseline.faceId)?.frames[baseline.frameIndex];
@@ -121,15 +247,19 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       ...state,
       mode: modeFor(group, state.selectedFaceId),
       presentGroup: group,
-      selection: null,
+      selection: baseline.selection,
       selectionOrigin: null,
       selectionMoveBaseline: null,
+      selectionPivot: selectionCenter(baseline.selection),
+      selectionRotationBaseline: null,
+      selectionRotationDegrees: 0,
+      selectionTransformKind: null,
       past: state.past.slice(0, baseline.pastLength),
       future: []
     };
   }
   if (action.type === 'move-selection' && state.selection) {
-    if (!Number.isFinite(action.dx) || !Number.isFinite(action.dy) || (action.dx === 0 && action.dy === 0)) return state;
+    if (state.selectionRotationBaseline || !Number.isFinite(action.dx) || !Number.isFinite(action.dy) || (action.dx === 0 && action.dy === 0)) return state;
     const baseline = state.selectionMoveBaseline;
     const faceId = baseline?.faceId ?? state.selectedFaceId;
     const frameIndex = baseline?.frameIndex ?? state.selectedFrameIndex;
@@ -145,7 +275,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     const moveBaseline = baseline ?? {
       faceId,
       frameIndex,
-      selection: { x, y, width, height },
+      selection: { x, y, width, height, shape: origin.shape },
       packedPixels: [...frame.packedPixels],
       pastLength: state.past.length
     };
@@ -153,11 +283,12 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     const nextFrame = group.faces.find((item) => item.faceId === faceId)?.frames[frameIndex];
     if (!nextFrame) return state;
     nextFrame.packedPixels = [...moveBaseline.packedPixels];
-    clearActiveRegionOnFrame(nextFrame, state.profile.width, state.profile.height, x, y, width, height, moveBaseline.packedPixels);
+    clearActiveRegionOnFrame(nextFrame, state.profile.width, state.profile.height, origin, moveBaseline.packedPixels);
     for (let row = 0; row < height; row += 1) {
       for (let column = 0; column < width; column += 1) {
         const sourceX = x + column;
         const sourceY = y + row;
+        if (!isPointInsideSelection(origin, sourceX, sourceY)) continue;
         const sourceIndex = sourceX + Math.floor(sourceY / 8) * state.profile.width;
         if ((moveBaseline.packedPixels[sourceIndex] & (1 << (sourceY & 7))) === 0) continue;
         const pixelX = nextX + column;
@@ -170,9 +301,10 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     const committed = commit(state, group);
     return {
       ...committed,
-      selection: { x: nextX, y: nextY, width: state.selection.width, height: state.selection.height },
-      selectionOrigin: state.selectionOrigin ?? { x, y, width, height },
-      selectionMoveBaseline: moveBaseline
+      selection: { x: nextX, y: nextY, width: state.selection.width, height: state.selection.height, shape: origin.shape },
+      selectionOrigin: state.selectionOrigin ?? { x, y, width, height, shape: origin.shape },
+      selectionMoveBaseline: moveBaseline,
+      selectionTransformKind: 'move',
     };
   }
   if (action.type === 'copy-selection') {
@@ -181,14 +313,24 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     const { x, y, width, height } = state.selection;
     const pixels = face.frames[state.selectedFrameIndex].packedPixels;
     const copied: boolean[] = [];
-    for (let row = 0; row < height; row += 1) for (let col = 0; col < width; col += 1) copied.push((pixels[x + col + Math.floor((y + row) / 8) * state.profile.width] & (1 << ((y + row) & 7))) !== 0);
+    for (let row = 0; row < height; row += 1) for (let col = 0; col < width; col += 1) {
+      const pixelX = x + col;
+      const pixelY = y + row;
+      copied.push(isPointInsideSelection(state.selection, pixelX, pixelY) && (pixels[pixelX + Math.floor(pixelY / 8) * state.profile.width] & (1 << (pixelY & 7))) !== 0);
+    }
     return { ...state, clipboard: { width, height, pixels: copied } };
   }
   if (action.type === 'clear-selection' && state.selection) {
     const group = clone(state.presentGroup); const face = group.faces.find((item) => item.faceId === state.selectedFaceId); const frame = face?.frames[state.selectedFrameIndex];
     if (!frame) return state;
     const { x, y, width, height } = state.selection;
-    for (let row = 0; row < height; row += 1) for (let col = 0; col < width; col += 1) { const index = x + col + Math.floor((y + row) / 8) * state.profile.width; frame.packedPixels[index] &= ~(1 << ((y + row) & 7)); }
+    for (let row = 0; row < height; row += 1) for (let col = 0; col < width; col += 1) {
+      const pixelX = x + col;
+      const pixelY = y + row;
+      if (!isPointInsideSelection(state.selection, pixelX, pixelY)) continue;
+      const index = pixelX + Math.floor(pixelY / 8) * state.profile.width;
+      frame.packedPixels[index] &= ~(1 << (pixelY & 7));
+    }
     return { ...commit(state, group), selection: null, selectionOrigin: null };
   }
   if (action.type === 'set-selection-active' && state.selection) {
@@ -201,6 +343,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       for (let column = 0; column < width; column += 1) {
         const pixelX = x + column;
         const pixelY = y + row;
+        if (!isPointInsideSelection(state.selection, pixelX, pixelY)) continue;
         const index = pixelX + Math.floor(pixelY / 8) * state.profile.width;
         const mask = 1 << (pixelY & 7);
         frame.packedPixels[index] = action.active ? frame.packedPixels[index] | mask : frame.packedPixels[index] & ~mask;
@@ -295,16 +438,32 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
   return state;
 }
 
+function selectionCenter(selection: { x: number; y: number; width: number; height: number }) {
+  return {
+    x: Math.round(selection.x + (selection.width - 1) / 2),
+    y: Math.round(selection.y + (selection.height - 1) / 2),
+  };
+}
+
+function inProfileBounds(profile: EditorProfile, x: number, y: number) {
+  return Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x < profile.width && y < profile.height;
+}
+
+function normalizeRotationDegrees(degrees: number) {
+  const normalized = ((Math.trunc(degrees) % 360) + 360) % 360;
+  return normalized > 180 ? normalized - 360 : normalized;
+}
+
 function hasFaceName(group: CustomFaceGroup, name: string, exceptFaceId?: string) {
   const normalized = name.trim().toLocaleLowerCase();
   return group.faces.some((face) => face.faceId !== exceptFaceId && face.name.trim().toLocaleLowerCase() === normalized);
 }
 
-function clearActiveRegionOnFrame(frame: { packedPixels: number[] }, canvasWidth: number, canvasHeight: number, originX: number, originY: number, width: number, height: number, sourcePixels: number[]) {
-  for (let row = 0; row < height; row += 1) for (let column = 0; column < width; column += 1) {
-    const pixelX = originX + column;
-    const pixelY = originY + row;
-    if (pixelX < 0 || pixelY < 0 || pixelX >= canvasWidth || pixelY >= canvasHeight) continue;
+function clearActiveRegionOnFrame(frame: { packedPixels: number[] }, canvasWidth: number, canvasHeight: number, selection: { x: number; y: number; width: number; height: number; shape?: 'rectangle' | 'circle' }, sourcePixels: number[]) {
+  for (let row = 0; row < selection.height; row += 1) for (let column = 0; column < selection.width; column += 1) {
+    const pixelX = selection.x + column;
+    const pixelY = selection.y + row;
+    if (!isPointInsideSelection(selection, pixelX, pixelY) || pixelX < 0 || pixelY < 0 || pixelX >= canvasWidth || pixelY >= canvasHeight) continue;
     const index = pixelX + Math.floor(pixelY / 8) * canvasWidth;
     if ((sourcePixels[index] & (1 << (pixelY & 7))) !== 0) frame.packedPixels[index] &= ~(1 << (pixelY & 7));
   }

@@ -2,6 +2,7 @@ use std::io::Cursor;
 use std::path::Path;
 
 use gif::{DisposalMethod, Encoder, Frame, Repeat};
+use image::{ImageBuffer, Rgba, RgbaImage};
 
 use crate::core::custom_faces::contract_generated::custom_face_profile_by_id;
 use crate::core::custom_faces::{validate_face_for_profile, CustomFace};
@@ -11,7 +12,7 @@ use super::model::{CustomFaceGifExportResult, CustomFaceLibraryError};
 use super::service::CustomFaceLibraryService;
 
 const GIF_BACKGROUND: [u8; 3] = [12, 18, 24];
-const MAX_GIF_SCALE: u8 = 4;
+const MAX_GIF_SCALE: u8 = 8;
 const MAX_GIF_DIMENSION: usize = 2_048;
 const MAX_GIF_PIXELS: usize = 2_097_152;
 const MAX_GIF_RAW_FRAME_BYTES: usize = 16 * 1024 * 1024;
@@ -24,31 +25,73 @@ impl CustomFaceLibraryService {
         display_profile_id: &str,
         path: &Path,
         scale: u8,
+        invert: bool,
+        transparent_background: bool,
+        frame_indices: &[usize],
     ) -> Result<CustomFaceGifExportResult, CustomFaceLibraryError> {
         validate_face_for_profile(display_profile_id, face)?;
         let profile = custom_face_profile_by_id(display_profile_id).ok_or_else(|| {
             CustomFaceLibraryError::InvalidFramesFile(display_profile_id.to_string())
         })?;
+
+        let selected_frames: Vec<_> = if frame_indices.is_empty() {
+            face.frames.iter().collect()
+        } else {
+            let mut unique_indices: Vec<_> = frame_indices.iter().copied().collect();
+            unique_indices.sort_unstable();
+            unique_indices.dedup();
+            unique_indices.retain(|&i| i < face.frames.len());
+            if unique_indices.is_empty() {
+                return Err(CustomFaceLibraryError::InvalidGifExport(
+                    "no valid frame indices".into(),
+                ));
+            }
+            unique_indices.iter().map(|&i| &face.frames[i]).collect()
+        };
+
         let (width, height, frame_bytes) =
-            gif_output_size(profile.width, profile.height, face.frames.len(), scale)?;
-        let palette = [
-            GIF_BACKGROUND[0],
-            GIF_BACKGROUND[1],
-            GIF_BACKGROUND[2],
-            face.color.red,
-            face.color.green,
-            face.color.blue,
-        ];
+            gif_output_size(profile.width, profile.height, selected_frames.len(), scale)?;
+
+        let (palette, transparent_index, active_color_index, background_color_index) =
+            if transparent_background {
+                let palette = if invert {
+                    [255, 255, 255, 0, 0, 0]
+                } else {
+                    [0, 0, 0, 0, 0, 0]
+                };
+                (palette, Some(1u8), 0u8, 1u8)
+            } else if invert {
+                let palette = [
+                    face.color.red,
+                    face.color.green,
+                    face.color.blue,
+                    GIF_BACKGROUND[0],
+                    GIF_BACKGROUND[1],
+                    GIF_BACKGROUND[2],
+                ];
+                (palette, None, 1u8, 0u8)
+            } else {
+                let palette = [
+                    GIF_BACKGROUND[0],
+                    GIF_BACKGROUND[1],
+                    GIF_BACKGROUND[2],
+                    face.color.red,
+                    face.color.green,
+                    face.color.blue,
+                ];
+                (palette, None, 1u8, 0u8)
+            };
+
         let mut output = Cursor::new(Vec::new());
         {
             let mut encoder =
                 Encoder::new(&mut output, width, height, &palette).map_err(gif_error)?;
             encoder.set_repeat(Repeat::Infinite).map_err(gif_error)?;
-            for source in &face.frames {
+            for source in &selected_frames {
                 let frame = Frame {
                     delay: quantize_delay_centiseconds(source.duration_ms),
                     dispose: DisposalMethod::Background,
-                    transparent: None,
+                    transparent: transparent_index,
                     needs_user_input: false,
                     left: 0,
                     top: 0,
@@ -62,6 +105,8 @@ impl CustomFaceLibraryService {
                         profile.height,
                         scale,
                         frame_bytes,
+                        active_color_index,
+                        background_color_index,
                     )?
                     .into(),
                 };
@@ -75,8 +120,7 @@ impl CustomFaceLibraryService {
             ));
         }
         file_config::write_bytes_atomic(path, &output).map_err(CustomFaceLibraryError::Io)?;
-        let frame_delays_ms = face
-            .frames
+        let frame_delays_ms = selected_frames
             .iter()
             .map(|frame| u16::from(quantize_delay_centiseconds(frame.duration_ms)) * 10)
             .collect::<Vec<_>>();
@@ -86,6 +130,98 @@ impl CustomFaceLibraryService {
             frame_delays_ms,
             total_duration_ms,
         })
+    }
+
+    pub fn export_face_png(
+        &self,
+        packed_pixels: &[u8],
+        display_profile_id: &str,
+        path: &Path,
+        scale: u8,
+        invert: bool,
+        transparent_background: bool,
+    ) -> Result<(), CustomFaceLibraryError> {
+        let profile = custom_face_profile_by_id(display_profile_id).ok_or_else(|| {
+            CustomFaceLibraryError::InvalidFramesFile(display_profile_id.to_string())
+        })?;
+
+        if !(1..=MAX_GIF_SCALE).contains(&scale) {
+            return Err(CustomFaceLibraryError::InvalidGifExport(
+                "scale must be an integer from 1 to 8".into(),
+            ));
+        }
+
+        let source_width = usize::from(profile.width);
+        let source_height = usize::from(profile.height);
+        let expected_bytes = source_width * ((source_height + 7) / 8);
+        if packed_pixels.len() != expected_bytes {
+            return Err(CustomFaceLibraryError::InvalidGifExport(
+                "packed framebuffer length mismatch".into(),
+            ));
+        }
+
+        let scaled_width = source_width
+            .checked_mul(usize::from(scale))
+            .and_then(|w| u16::try_from(w).ok())
+            .filter(|&w| w as usize <= MAX_GIF_DIMENSION)
+            .ok_or_else(|| {
+                CustomFaceLibraryError::InvalidGifExport("scaled width out of range".into())
+            })?;
+
+        let scaled_height = source_height
+            .checked_mul(usize::from(scale))
+            .and_then(|h| u16::try_from(h).ok())
+            .filter(|&h| h as usize <= MAX_GIF_DIMENSION)
+            .ok_or_else(|| {
+                CustomFaceLibraryError::InvalidGifExport("scaled height out of range".into())
+            })?;
+
+        let total_pixels = (scaled_width as usize)
+            .checked_mul(scaled_height as usize)
+            .filter(|&p| p <= MAX_GIF_PIXELS)
+            .ok_or_else(|| {
+                CustomFaceLibraryError::InvalidGifExport("scaled pixel count exceeds limit".into())
+            })?;
+
+        let (active_color, background_color) = if transparent_background {
+            let opaque_black = Rgba([0, 0, 0, 255]);
+            let transparent = Rgba([0, 0, 0, 0]);
+            (opaque_black, transparent)
+        } else if invert {
+            (Rgba([0, 0, 0, 255]), Rgba([255, 255, 255, 255]))
+        } else {
+            (Rgba([255, 255, 255, 255]), Rgba([0, 0, 0, 255]))
+        };
+
+        let mut img: RgbaImage =
+            ImageBuffer::from_pixel(scaled_width as u32, scaled_height as u32, background_color);
+
+        for y in 0..source_height {
+            for x in 0..source_width {
+                let source_index = x + (y / 8) * source_width;
+                let active = packed_pixels.get(source_index).ok_or_else(|| {
+                    CustomFaceLibraryError::InvalidGifExport(
+                        "source framebuffer index out of bounds".into(),
+                    )
+                })? & (1 << (y & 7))
+                    != 0;
+
+                if active {
+                    for sy in 0..scale {
+                        for sx in 0..scale {
+                            let px = (x * usize::from(scale) + usize::from(sx)) as u32;
+                            let py = (y * usize::from(scale) + usize::from(sy)) as u32;
+                            img.put_pixel(px, py, active_color);
+                        }
+                    }
+                }
+            }
+        }
+
+        img.save(path)
+            .map_err(|e| CustomFaceLibraryError::Io(format!("PNG encoding failed: {e}")))?;
+        tracing::info!(path = %path.display(), profile = %display_profile_id, "custom face PNG exported");
+        Ok(())
     }
 }
 
@@ -97,7 +233,7 @@ fn gif_output_size(
 ) -> Result<(u16, u16, usize), CustomFaceLibraryError> {
     if !(1..=MAX_GIF_SCALE).contains(&scale) {
         return Err(CustomFaceLibraryError::InvalidGifExport(
-            "scale must be an integer from 1 to 4".into(),
+            "scale must be an integer from 1 to 8".into(),
         ));
     }
     let width = usize::from(source_width)
@@ -143,6 +279,8 @@ fn pixel_art_frame_scaled(
     source_height: u16,
     scale: u8,
     frame_bytes: usize,
+    active_color_index: u8,
+    background_color_index: u8,
 ) -> Result<Vec<u8>, CustomFaceLibraryError> {
     let source_width = usize::from(source_width);
     let source_height = usize::from(source_height);
@@ -150,7 +288,7 @@ fn pixel_art_frame_scaled(
     let output_width = source_width
         .checked_mul(scale)
         .ok_or_else(|| CustomFaceLibraryError::InvalidGifExport("scaled width overflows".into()))?;
-    let mut indexed = vec![0; frame_bytes];
+    let mut indexed = vec![background_color_index; frame_bytes];
     for y in 0..source_height {
         for x in 0..source_width {
             let source = x
@@ -179,7 +317,7 @@ fn pixel_art_frame_scaled(
                     })?;
                     *indexed.get_mut(target).ok_or_else(|| {
                         CustomFaceLibraryError::InvalidGifExport("output buffer is invalid".into())
-                    })? = 1;
+                    })? = active_color_index;
                 }
             }
         }

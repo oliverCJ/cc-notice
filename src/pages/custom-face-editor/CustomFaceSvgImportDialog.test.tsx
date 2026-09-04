@@ -5,6 +5,7 @@ import { CustomFaceSvgImportDialog } from './CustomFaceSvgImportDialog';
 const rasterizeMock = vi.hoisted(() => vi.fn());
 const openMock = vi.hoisted(() => vi.fn());
 const readSvgMock = vi.hoisted(() => vi.fn());
+const openVectorizerMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 
 vi.mock('@/domain/customFaces/svg/svgRasterizer', () => ({
   rasterizeSvg: rasterizeMock,
@@ -14,7 +15,7 @@ vi.mock('@/api/tauriApi', async () => {
   const actual = await vi.importActual<typeof import('@/api/tauriApi')>(
     '@/api/tauriApi',
   );
-  return { ...actual, readCustomFaceSvg: readSvgMock };
+  return { ...actual, openCustomFaceImageVectorizer: openVectorizerMock, readCustomFaceSvg: readSvgMock };
 });
 
 const raster = (value: number) => ({
@@ -32,10 +33,67 @@ function deferred<T>() {
 }
 
 beforeEach(() => {
+  vi.stubGlobal('PointerEvent', MouseEvent);
   openMock.mockReset();
   readSvgMock.mockReset();
+  openVectorizerMock.mockReset().mockResolvedValue(undefined);
   rasterizeMock.mockReset();
   rasterizeMock.mockResolvedValue(raster(1));
+  Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', { configurable: true, value: vi.fn() });
+  Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', { configurable: true, value: vi.fn(() => true) });
+  Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', { configurable: true, value: vi.fn() });
+});
+
+test('loads svg content from an external initial source path', async () => {
+  readSvgMock.mockResolvedValue('<svg viewBox="0 0 8 8"><rect width="4" height="4" /></svg>');
+
+  render(
+    <CustomFaceSvgImportDialog
+      open
+      width={8}
+      height={8}
+      initialSourcePath="/tmp/vectorized.svg"
+      initialSourceRevision={1}
+      onCancel={vi.fn()}
+      onApply={vi.fn()}
+    />
+  );
+
+  await waitFor(() => expect(readSvgMock).toHaveBeenCalledWith('/tmp/vectorized.svg'));
+  await waitFor(() => expect(screen.getByText(/高亮像素：1/)).toBeInTheDocument());
+});
+
+test('uses brightness recognition by default for vectorizer supplied svg paths', async () => {
+  readSvgMock.mockResolvedValue('<svg viewBox="0 0 8 8"><rect width="4" height="4" /></svg>');
+
+  render(
+    <CustomFaceSvgImportDialog
+      open
+      width={8}
+      height={8}
+      initialSourcePath="/tmp/vectorized.svg"
+      initialSourceRevision={1}
+      onCancel={vi.fn()}
+      onApply={vi.fn()}
+    />
+  );
+
+  await waitFor(() => expect(readSvgMock).toHaveBeenCalledWith('/tmp/vectorized.svg'));
+  await waitFor(() => expect(rasterizeMock).toHaveBeenLastCalledWith(
+    expect.anything(),
+    { width: 8, height: 8 },
+    expect.objectContaining({ recognitionMode: 'brightness' }),
+  ));
+  expect(screen.getByRole('radio', { name: '按亮度识别像素' })).toBeChecked();
+});
+
+test('opens the image vectorizer from the svg import dialog', async () => {
+  render(<CustomFaceSvgImportDialog open width={8} height={8} onCancel={vi.fn()} onApply={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '从图片生成' }));
+
+  await waitFor(() => expect(openVectorizerMock).toHaveBeenCalledOnce());
+  expect(openVectorizerMock).toHaveBeenCalledWith({ width: 8, height: 8 });
 });
 
 test('selects only svg files, previews target resolution and applies packed pixels once', async () => {
@@ -84,6 +142,38 @@ test('switches pixel recognition mode and passes it to rasterization', async () 
     expect.anything(),
     { width: 8, height: 8 },
     expect.objectContaining({ recognitionMode: 'brightness' }),
+  ));
+});
+
+test('accepts vtracer-like svg output without a viewBox', async () => {
+  openMock.mockResolvedValue('/tmp/face.svg');
+  readSvgMock.mockResolvedValue('<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="8" height="8"><path d="M0 0 H8 V8 H0 Z" fill="#000000" transform="translate(0,0)"/></svg>');
+
+  render(<CustomFaceSvgImportDialog open width={8} height={8} onCancel={vi.fn()} onApply={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '选择 SVG 文件' }));
+
+  await waitFor(() => expect(screen.getByText(/高亮像素：1/)).toBeInTheDocument());
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+test('lets the svg preview object move inside the import canvas by dragging', async () => {
+  openMock.mockResolvedValue('/tmp/face.svg');
+  readSvgMock.mockResolvedValue('<svg viewBox="0 0 8 8"><rect width="4" height="4" /></svg>');
+
+  render(<CustomFaceSvgImportDialog open width={8} height={8} onCancel={vi.fn()} onApply={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '选择 SVG 文件' }));
+  await waitFor(() => expect(screen.getByText(/高亮像素：1/)).toBeInTheDocument());
+
+  const screenElement = screen.getByTestId('svg-import-screen');
+  fireEvent.pointerDown(screenElement, { clientX: 20, clientY: 20, pointerId: 1 });
+  fireEvent.pointerMove(screenElement, { clientX: 36, clientY: 4, pointerId: 1 });
+  fireEvent.pointerUp(screenElement, { clientX: 36, clientY: 4, pointerId: 1 });
+
+  expect(HTMLElement.prototype.setPointerCapture).toHaveBeenCalled();
+  await waitFor(() => expect(rasterizeMock).toHaveBeenLastCalledWith(
+    expect.anything(),
+    { width: 8, height: 8 },
+    expect.objectContaining({ offsetX: 1, offsetY: -1 }),
   ));
 });
 

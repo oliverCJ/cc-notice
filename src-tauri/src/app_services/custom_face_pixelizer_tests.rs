@@ -64,6 +64,24 @@ fn png_2x2_black() -> Vec<u8> {
     bytes
 }
 
+fn png_5x5_asymmetric_marker() -> Vec<u8> {
+    let mut bytes = Vec::new();
+    let image = image::RgbaImage::from_fn(5, 5, |x, y| {
+        if x == 1 && y == 1 {
+            image::Rgba([0, 0, 0, 255])
+        } else {
+            image::Rgba([255, 255, 255, 0])
+        }
+    });
+    image::DynamicImage::ImageRgba8(image)
+        .write_to(
+            &mut std::io::Cursor::new(&mut bytes),
+            image::ImageOutputFormat::Png,
+        )
+        .expect("png should encode");
+    bytes
+}
+
 fn png_solid(width: u32, height: u32, color: [u8; 4]) -> Vec<u8> {
     let mut bytes = Vec::new();
     let image = image::RgbaImage::from_pixel(width, height, image::Rgba(color));
@@ -86,6 +104,7 @@ fn default_options() -> CustomFacePixelizeOptions {
         contrast: 0,
         brightness: 0,
         scale: 1.0,
+        rotation_deg: 0,
         offset_x: 0,
         offset_y: 0,
     }
@@ -114,6 +133,7 @@ fn mono_preview_respects_invert() {
                 contrast: 0,
                 brightness: 0,
                 scale: 1.0,
+                rotation_deg: 0,
                 offset_x: 0,
                 offset_y: 0,
             },
@@ -135,6 +155,7 @@ fn mono_preview_respects_invert() {
                 contrast: 0,
                 brightness: 0,
                 scale: 1.0,
+                rotation_deg: 0,
                 offset_x: 0,
                 offset_y: 0,
             },
@@ -244,6 +265,28 @@ fn keeps_large_source_fit_inside_target_canvas_by_default() {
 }
 
 #[test]
+fn rotates_image_object_around_center_before_mono_packing() {
+    let root = unique_temp_root("cc-notice-pixelizer-service-rotation");
+    let rotated = pixelize_custom_face_image(
+        &root,
+        CustomFacePixelizeRequest {
+            profile_width: 5,
+            profile_height: 5,
+            image_bytes: png_5x5_asymmetric_marker(),
+            options: CustomFacePixelizeOptions {
+                rotation_deg: 180,
+                dither: false,
+                ..default_options()
+            },
+        },
+    )
+    .expect("png should pixelize with rotation");
+
+    assert!(packed_pixel_active(&rotated.packed_pixels, 5, 3, 3));
+    assert!(!packed_pixel_active(&rotated.packed_pixels, 5, 1, 1));
+}
+
+#[test]
 fn pixelizes_png_bytes_into_packed_pixels() {
     let root = unique_temp_root("cc-notice-pixelizer-service");
     let result = pixelize_custom_face_image(
@@ -282,6 +325,7 @@ fn pixelizes_png_bytes_into_color_preview() {
                 contrast: 0,
                 brightness: 0,
                 scale: 1.0,
+                rotation_deg: 0,
                 offset_x: 0,
                 offset_y: 0,
             },
@@ -314,6 +358,7 @@ fn accepts_max_color_palette_for_preview() {
                 contrast: 0,
                 brightness: 0,
                 scale: 1.0,
+                rotation_deg: 0,
                 offset_x: 0,
                 offset_y: 0,
             },

@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { createEditorState } from '@/domain/customFaces/editor/reducer';
 import { CustomFaceEditorWorkbench } from './CustomFaceEditorWorkbench';
+import { CUSTOM_FACE_OPEN_SVG_PATH_EVENT } from './customFaceVectorizerEvents';
 
 const saveCustomFaceGroupMock = vi.hoisted(() => vi.fn());
 const saveCustomFaceRecoveryMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
@@ -14,6 +15,9 @@ const exportCustomFaceGifMock = vi.hoisted(() => vi.fn().mockResolvedValue({ fra
 const openDialogMock = vi.hoisted(() => vi.fn());
 const saveDialogMock = vi.hoisted(() => vi.fn());
 const openCustomFaceImagePixelizerMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const readCustomFaceSvgMock = vi.hoisted(() => vi.fn());
+const takeLatestVectorizedSvgTempFilePathMock = vi.hoisted(() => vi.fn().mockResolvedValue(null));
+const rasterizeSvgMock = vi.hoisted(() => vi.fn());
 const listenMock = vi.hoisted(() => vi.fn());
 const windowApiMock = vi.hoisted(() => ({
   closeRequestedHandler: null as null | ((event: { preventDefault: () => void }) => void | Promise<void>),
@@ -34,7 +38,9 @@ vi.mock('@/api/tauriApi', async () => {
     previewCustomFaceItemImport: previewCustomFaceItemImportMock,
     exportCustomFaceItem: exportCustomFaceItemMock,
     exportCustomFaceGif: exportCustomFaceGifMock,
-    openCustomFaceImagePixelizer: openCustomFaceImagePixelizerMock
+    openCustomFaceImagePixelizer: openCustomFaceImagePixelizerMock,
+    readCustomFaceSvg: readCustomFaceSvgMock,
+    takeLatestVectorizedSvgTempFilePath: takeLatestVectorizedSvgTempFilePathMock
   };
 });
 
@@ -46,12 +52,17 @@ vi.mock('@tauri-apps/api/event', () => ({
   listen: listenMock
 }));
 
+vi.mock('@/domain/customFaces/svg/svgRasterizer', () => ({
+  rasterizeSvg: rasterizeSvgMock
+}));
+
 vi.mock('@tauri-apps/plugin-dialog', () => ({
   open: openDialogMock,
   save: saveDialogMock
 }));
 
 beforeEach(() => {
+  vi.stubGlobal('PointerEvent', MouseEvent);
   saveCustomFaceGroupMock.mockReset();
   saveCustomFaceRecoveryMock.mockClear();
   clearCustomFaceRecoveryMock.mockClear();
@@ -63,6 +74,13 @@ beforeEach(() => {
   openDialogMock.mockReset();
   saveDialogMock.mockReset();
   openCustomFaceImagePixelizerMock.mockClear();
+  readCustomFaceSvgMock.mockReset();
+  takeLatestVectorizedSvgTempFilePathMock.mockReset().mockResolvedValue(null);
+  rasterizeSvgMock.mockReset().mockResolvedValue({
+    pixels: new Uint8Array([1, ...Array(511).fill(0)]),
+    activePixelCount: 1,
+    clipped: false
+  });
   listenMock.mockReset();
   windowApiMock.closeRequestedHandler = null;
   windowApiMock.closeRequestedHandlers = [];
@@ -82,6 +100,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   cleanup();
 });
 
@@ -92,6 +111,38 @@ test('opens the toolbar by default and clears selection when another tool is cho
   fireEvent.click(screen.getByRole('button', { name: '框选' }));
   fireEvent.click(screen.getByRole('button', { name: '画笔' }));
   expect(screen.queryByText(/选区：/)).not.toBeInTheDocument();
+});
+
+test('rotates a selected region from the workbench controls', async () => {
+  const state = createState();
+  state.presentGroup.faces[0].frames[0].packedPixels[2] = 1 << 1;
+  state.selection = { x: 1, y: 1, width: 2, height: 2 };
+  state.selectionPivot = { x: 2, y: 2 };
+  render(<CustomFaceEditorWorkbench initialState={state} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+  await waitFor(() => expect(screen.getByRole('button', { name: '设置旋转轴' })).toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: '顺时针旋转 90°' }));
+  expect(screen.getByRole('button', { name: '确认旋转' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '确认移动' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '确认旋转' }));
+  expect(screen.queryByRole('button', { name: '确认旋转' })).not.toBeInTheDocument();
+});
+
+test('separates move, rotation, and selection actions', async () => {
+  const state = createState();
+  state.selection = { x: 1, y: 1, width: 2, height: 2 };
+  state.selectionPivot = { x: 2, y: 2 };
+  render(<CustomFaceEditorWorkbench initialState={state} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+  expect(screen.getByRole('region', { name: '移动' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: '旋转' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: '选区操作' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '向右移动选区' }));
+  expect(screen.getByRole('button', { name: '确认移动' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '取消移动' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '顺时针旋转 90°' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '取消选择' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: '取消移动' }));
+  await waitFor(() => expect(screen.getByText('选区：1,1 · 2 × 2')).toBeInTheDocument());
+  expect(screen.getByRole('button', { name: '取消选择' })).toBeEnabled();
 });
 
 test('adds and manages faces inside the current group', () => {
@@ -149,6 +200,102 @@ test('allows closing the editor after the image import window reports closed', a
 
   await waitFor(() => expect(closeCustomFaceEditorMock).toHaveBeenCalledOnce());
   expect(screen.queryByText('图片导入窗口已打开，请先关闭它再退出编辑器。')).not.toBeInTheDocument();
+});
+
+test('blocks editor close while the image vectorizer window is open', async () => {
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+
+  let vectorizerStateListener: ((event: { payload: boolean }) => void) | undefined;
+  await waitFor(() => {
+    vectorizerStateListener = listenMock.mock.calls.find((call) => call[0] === 'cc-notice://custom-face-image-vectorizer-state-changed')?.[1] as ((event: { payload: boolean }) => void) | undefined;
+    expect(vectorizerStateListener).toBeDefined();
+  });
+
+  await act(async () => {
+    vectorizerStateListener?.({ payload: true });
+  });
+  await act(async () => {
+    await windowApiMock.closeRequestedHandler?.({ preventDefault: vi.fn() });
+  });
+
+  expect(closeCustomFaceEditorMock).not.toHaveBeenCalled();
+  await waitFor(() => expect(screen.getAllByText('图片转 SVG 窗口已打开，请先关闭它再退出编辑器。').length).toBeGreaterThan(0));
+});
+
+test('shows the image vectorizer close warning in the same top banner area as image import', async () => {
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+
+  let vectorizerStateListener: ((event: { payload: boolean }) => void) | undefined;
+  await waitFor(() => {
+    vectorizerStateListener = listenMock.mock.calls.find((call) => call[0] === 'cc-notice://custom-face-image-vectorizer-state-changed')?.[1] as ((event: { payload: boolean }) => void) | undefined;
+    expect(vectorizerStateListener).toBeDefined();
+  });
+
+  await act(async () => {
+    vectorizerStateListener?.({ payload: true });
+  });
+
+  const banners = screen.getAllByRole('status');
+  expect(banners[0]).toHaveTextContent('图片转 SVG 窗口已打开，请先关闭它再退出编辑器。');
+  expect(banners[0]).toHaveClass('border-b');
+});
+
+test('opens the svg import dialog after receiving a vectorized svg path', async () => {
+  readCustomFaceSvgMock.mockResolvedValue('<svg viewBox="0 0 8 8"><rect width="8" height="8" /></svg>');
+
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+
+  let svgPathListener: ((event: { payload: string }) => void) | undefined;
+  await waitFor(() => {
+    svgPathListener = listenMock.mock.calls.find((call) => call[0] === CUSTOM_FACE_OPEN_SVG_PATH_EVENT)?.[1] as ((event: { payload: string }) => void) | undefined;
+    expect(svgPathListener).toBeDefined();
+  });
+
+  await act(async () => {
+    svgPathListener?.({ payload: '/tmp/vectorized.svg' });
+  });
+
+  await waitFor(() => expect(readCustomFaceSvgMock).toHaveBeenCalledWith('/tmp/vectorized.svg'));
+  expect(screen.getByRole('dialog', { name: '导入 SVG' })).toBeInTheDocument();
+});
+
+test('pulls a pending vectorized svg path when the editor regains focus', async () => {
+  takeLatestVectorizedSvgTempFilePathMock.mockResolvedValue('/tmp/vectorized.svg');
+  readCustomFaceSvgMock.mockResolvedValue('<svg viewBox="0 0 8 8"><rect width="8" height="8" /></svg>');
+
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+
+  await waitFor(() => expect(takeLatestVectorizedSvgTempFilePathMock).toHaveBeenCalled());
+  await waitFor(() => expect(readCustomFaceSvgMock).toHaveBeenCalledWith('/tmp/vectorized.svg'));
+  expect(screen.getByRole('dialog', { name: '导入 SVG' })).toBeInTheDocument();
+});
+
+test('lets a vectorized svg become a movable pending canvas object after applying it', async () => {
+  readCustomFaceSvgMock.mockResolvedValue('<svg viewBox="0 0 8 8"><rect width="8" height="8" /></svg>');
+
+  render(<CustomFaceEditorWorkbench initialState={createState()} expectedLibraryHash="hash" onBack={vi.fn()} onSaved={vi.fn()} />);
+
+  let svgPathListener: ((event: { payload: string }) => void) | undefined;
+  await waitFor(() => {
+    svgPathListener = listenMock.mock.calls.find((call) => call[0] === CUSTOM_FACE_OPEN_SVG_PATH_EVENT)?.[1] as ((event: { payload: string }) => void) | undefined;
+    expect(svgPathListener).toBeDefined();
+  });
+
+  await act(async () => {
+    svgPathListener?.({ payload: '/tmp/vectorized.svg' });
+  });
+  await waitFor(() => expect(screen.getByRole('button', { name: '应用到当前帧' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: '应用到当前帧' }));
+
+  const pendingImport = screen.getByLabelText('待确认导入对象');
+  const pendingPreview = screen.getByTestId('custom-face-pending-import-preview');
+  expect(pendingPreview).toHaveStyle({ width: '1px', height: '1px', transform: 'translate(0px, 0px)' });
+
+  fireEvent.pointerDown(pendingImport, { clientX: 20, clientY: 20, pointerId: 1 });
+  fireEvent.pointerMove(pendingImport, { clientX: 24, clientY: 23, pointerId: 1 });
+  fireEvent.pointerUp(pendingImport, { clientX: 24, clientY: 23, pointerId: 1 });
+
+  await waitFor(() => expect(pendingPreview).toHaveStyle({ transform: 'translate(4px, 3px)' }));
 });
 
 test('does not let a stale image import close handler block editor close', async () => {

@@ -15,6 +15,8 @@ pub const CUSTOM_FACE_IMAGE_PIXELIZER_OPEN_REQUEST_EVENT: &str =
     "cc-notice://custom-face-image-pixelizer-open-request";
 pub const CUSTOM_FACE_IMAGE_PIXELIZER_STATE_EVENT: &str =
     "cc-notice://custom-face-image-pixelizer-state-changed";
+pub const CUSTOM_FACE_IMAGE_PIXELIZER_INNER_SIZE: (f64, f64) = (1920.0, 1080.0);
+pub const CUSTOM_FACE_IMAGE_PIXELIZER_MIN_INNER_SIZE: (f64, f64) = (1440.0, 900.0);
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -132,8 +134,14 @@ fn open_or_focus(
         WebviewUrl::App(url.into()),
     )
     .title("CC Notice 图片导入")
-    .inner_size(1180.0, 760.0)
-    .min_inner_size(900.0, 620.0)
+    .inner_size(
+        CUSTOM_FACE_IMAGE_PIXELIZER_INNER_SIZE.0,
+        CUSTOM_FACE_IMAGE_PIXELIZER_INNER_SIZE.1,
+    )
+    .min_inner_size(
+        CUSTOM_FACE_IMAGE_PIXELIZER_MIN_INNER_SIZE.0,
+        CUSTOM_FACE_IMAGE_PIXELIZER_MIN_INNER_SIZE.1,
+    )
     .build()
     .map_err(|error| error.to_string())?;
     let destroyed_app = app.clone();
@@ -156,7 +164,8 @@ fn emit_pixelizer_state(app: &AppHandle, open: bool) {
 #[cfg(test)]
 mod tests {
     use super::{
-        CUSTOM_FACE_IMAGE_IMPORT_READY_EVENT, CUSTOM_FACE_IMAGE_PIXELIZER_LABEL,
+        CUSTOM_FACE_IMAGE_IMPORT_READY_EVENT, CUSTOM_FACE_IMAGE_PIXELIZER_INNER_SIZE,
+        CUSTOM_FACE_IMAGE_PIXELIZER_LABEL, CUSTOM_FACE_IMAGE_PIXELIZER_MIN_INNER_SIZE,
         CUSTOM_FACE_IMAGE_PIXELIZER_OPEN_REQUEST_EVENT, CUSTOM_FACE_IMAGE_PIXELIZER_STATE_EVENT,
     };
 
@@ -193,5 +202,11 @@ mod tests {
         assert_eq!(capability["windows"][0], CUSTOM_FACE_IMAGE_PIXELIZER_LABEL);
         assert!(permissions.contains(&serde_json::json!("core:default")));
         assert!(permissions.contains(&serde_json::json!("dialog:allow-open")));
+    }
+
+    #[test]
+    fn pixelizer_window_size_defaults_leave_room_for_text_tools() {
+        assert_eq!((1920.0, 1080.0), CUSTOM_FACE_IMAGE_PIXELIZER_INNER_SIZE);
+        assert_eq!((1440.0, 900.0), CUSTOM_FACE_IMAGE_PIXELIZER_MIN_INNER_SIZE);
     }
 }

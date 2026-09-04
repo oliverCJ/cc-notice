@@ -56,6 +56,7 @@ import { useThemeMode } from '@/hooks/useThemeMode';
 import { ProfileRepairAlert } from '@/components/app/ProfileRepairAlert';
 import { CustomFaceEditorWindow } from './pages/custom-face-editor/CustomFaceEditorWindow';
 import { CustomFaceImagePixelizerWindow } from './pages/custom-face-editor/CustomFaceImagePixelizerWindow';
+import { CustomFaceImageVectorizerWindow } from './pages/custom-face-editor/CustomFaceImageVectorizerWindow';
 
 const DEBUG_REFRESH_INTERVAL_MS = 2_000;
 const DESKTOP_NOTICE_WINDOW_BOUNDS_CHANGED_EVENT =
@@ -86,6 +87,9 @@ export default function App() {
   }
   if (window.location.pathname === '/custom-face-image-pixelizer') {
     return <CustomFaceImagePixelizerWindowApp />;
+  }
+  if (window.location.pathname === '/custom-face-image-vectorizer') {
+    return <CustomFaceImageVectorizerWindowApp />;
   }
   const desktopNoticeInstanceId = getDesktopNoticeWindowInstanceId();
   if (desktopNoticeInstanceId) {
@@ -755,6 +759,43 @@ function CustomFaceImagePixelizerWindowApp() {
   return (
     <I18nProvider language={language}>
       <CustomFaceImagePixelizerWindow />
+    </I18nProvider>
+  );
+}
+
+function CustomFaceImageVectorizerWindowApp() {
+  const [language, setLanguage] = useState<Language>('zh-CN');
+  const [themeMode, setThemeMode] = useState<AppConfigView['ui']['themeMode']>('system');
+  useThemeMode(themeMode);
+
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<AppConfigView>(APP_CONFIG_UPDATED_EVENT, (event) => {
+      if (disposed) return;
+      setLanguage(event.payload.ui.language as Language);
+      setThemeMode(event.payload.ui.themeMode ?? 'system');
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize custom face image vectorizer config listener', error));
+    void getAppConfig()
+      .then((config) => {
+        if (!disposed) {
+          setLanguage(config.ui.language as Language);
+          setThemeMode(config.ui.themeMode ?? 'system');
+        }
+      })
+      .catch((error) => console.warn('failed to load app config for custom face image vectorizer window', error));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
+  return (
+    <I18nProvider language={language}>
+      <CustomFaceImageVectorizerWindow />
     </I18nProvider>
   );
 }

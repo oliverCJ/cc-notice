@@ -27,6 +27,17 @@ test('maps one pointer click to exactly one logical pixel', () => {
   expect(transaction).toHaveBeenCalledWith([{ x: 1, y: 2, active: true }]);
 });
 
+test('selects a rotation pivot without creating a pixel transaction', () => {
+  const transaction = vi.fn();
+  const pivot = vi.fn();
+  render(<CustomFaceCanvas width={128} height={32} pixels={new Uint8Array(512)} selectedTool="brush" selectionPivot={{ x: 3, y: 4 }} pickingSelectionPivot onSelectionPivotChange={pivot} onPixelTransaction={transaction} />);
+  const canvas = screen.getByRole('img', { name: '自定义表情画布 128 × 32' });
+  expect(screen.getAllByLabelText('旋转轴')).toHaveLength(2);
+  fireEvent.pointerDown(canvas, { clientX: 55, clientY: 65, pointerId: 1 });
+  expect(pivot).toHaveBeenCalledWith({ x: 5, y: 6 });
+  expect(transaction).not.toHaveBeenCalled();
+});
+
 test('uses the configured eraser size for one erase transaction', () => {
   const transaction = vi.fn();
   render(<CustomFaceCanvas width={128} height={32} pixels={new Uint8Array(512)} selectedTool="eraser" eraserSize={4} onPixelTransaction={transaction} />);
@@ -92,5 +103,31 @@ test('locks the current magnifier range while the main canvas keeps moving', () 
 
   fireEvent.pointerMove(canvas, { clientX: 20, clientY: 10, pointerId: 1 });
   expect(screen.getByTestId('custom-face-magnifier-range')).toHaveTextContent('82,14 至 97,25');
+  expect(transaction).not.toHaveBeenCalled();
+});
+
+test('drags pending import pixels inside the canvas without editing the base frame', () => {
+  const transaction = vi.fn();
+  const movePendingImport = vi.fn();
+  render(
+    <CustomFaceCanvas
+      width={128}
+      height={32}
+      pixels={new Uint8Array(512)}
+      selectedTool="brush"
+      pendingImportPixels={[1, ...Array(511).fill(0)]}
+      pendingImportSize={{ width: 128, height: 32 }}
+      pendingImportOffset={{ x: 0, y: 0 }}
+      onPendingImportMove={movePendingImport}
+      onPixelTransaction={transaction}
+    />
+  );
+
+  const pendingImport = screen.getByLabelText('待确认导入对象');
+  fireEvent.pointerDown(pendingImport, { clientX: 20, clientY: 20, pointerId: 1 });
+  fireEvent.pointerMove(pendingImport, { clientX: 24, clientY: 23, pointerId: 1 });
+  fireEvent.pointerUp(pendingImport, { clientX: 24, clientY: 23, pointerId: 1 });
+
+  expect(movePendingImport).toHaveBeenCalledWith(4, 3);
   expect(transaction).not.toHaveBeenCalled();
 });

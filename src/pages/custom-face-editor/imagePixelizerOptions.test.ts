@@ -12,11 +12,14 @@ describe('image pixelizer options', () => {
     expect(defaults.scale).toBe(1);
     expect(defaults.offsetX).toBe(0);
     expect(defaults.offsetY).toBe(0);
+    expect(defaults.rotationDeg).toBe(0);
     expect(normalizePixelizerOptions({ ...defaults, colorCount: 0 }).colorCount).toBe(2);
     expect(normalizePixelizerOptions({ ...defaultPixelizerOptions(), colorCount: 999 }).colorCount).toBe(256);
     expect(normalizePixelizerOptions({ ...defaults, contrast: -999 }).contrast).toBe(-100);
     expect(normalizePixelizerOptions({ ...defaults, brightness: 999 }).brightness).toBe(100);
     expect(normalizePixelizerOptions({ ...defaults, scale: 99 }).scale).toBe(4);
     expect(normalizePixelizerOptions({ ...defaults, offsetX: 999 }).offsetX).toBe(512);
+    expect(normalizePixelizerOptions({ ...defaults, rotationDeg: 240 }).rotationDeg).toBe(180);
+    expect(normalizePixelizerOptions({ ...defaults, rotationDeg: -240 }).rotationDeg).toBe(-180);
   });
 });

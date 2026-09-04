@@ -22,7 +22,7 @@ describe('custom face image pixelizer Tauri API', () => {
       profileWidth: 128,
       profileHeight: 32,
       imageBytes: [1, 2, 3],
-      options: { mode: 'mono', colorCount: 8, dither: true, invert: false, threshold: 128, contrast: 0, brightness: 0, scale: 1, offsetX: 0, offsetY: 0 }
+      options: { mode: 'mono', colorCount: 8, dither: true, invert: false, threshold: 128, contrast: 0, brightness: 0, scale: 1, offsetX: 0, offsetY: 0, rotationDeg: 0 }
     });
     await prepareCustomFaceImagePixelizerSource({
       profileWidth: 128,
@@ -33,7 +33,7 @@ describe('custom face image pixelizer Tauri API', () => {
       sourceId: 'custom-face-image-source-1',
       profileWidth: 128,
       profileHeight: 32,
-      options: { mode: 'mono', colorCount: 8, dither: true, invert: false, threshold: 128, contrast: 0, brightness: 0, scale: 1, offsetX: 0, offsetY: 0 }
+      options: { mode: 'mono', colorCount: 8, dither: true, invert: false, threshold: 128, contrast: 0, brightness: 0, scale: 1, offsetX: 0, offsetY: 0, rotationDeg: 0 }
     });
     await releaseCustomFaceImagePixelizerSource('custom-face-image-source-1');
     await applyCustomFaceImageImport({
@@ -49,7 +49,7 @@ describe('custom face image pixelizer Tauri API', () => {
           profileWidth: 128,
           profileHeight: 32,
           imageBytes: [1, 2, 3],
-          options: { mode: 'mono', colorCount: 8, dither: true, invert: false, threshold: 128, contrast: 0, brightness: 0, scale: 1, offsetX: 0, offsetY: 0 }
+          options: { mode: 'mono', colorCount: 8, dither: true, invert: false, threshold: 128, contrast: 0, brightness: 0, scale: 1, offsetX: 0, offsetY: 0, rotationDeg: 0 }
         }
       }],
       ['prepare_custom_face_image_pixelizer_source', {
@@ -64,7 +64,7 @@ describe('custom face image pixelizer Tauri API', () => {
           sourceId: 'custom-face-image-source-1',
           profileWidth: 128,
           profileHeight: 32,
-          options: { mode: 'mono', colorCount: 8, dither: true, invert: false, threshold: 128, contrast: 0, brightness: 0, scale: 1, offsetX: 0, offsetY: 0 }
+          options: { mode: 'mono', colorCount: 8, dither: true, invert: false, threshold: 128, contrast: 0, brightness: 0, scale: 1, offsetX: 0, offsetY: 0, rotationDeg: 0 }
         }
       }],
       ['release_custom_face_image_pixelizer_source', {

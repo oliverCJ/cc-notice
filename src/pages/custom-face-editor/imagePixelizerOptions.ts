@@ -9,6 +9,7 @@ export type ImagePixelizerOptions = {
   scale: number;
   offsetX: number;
   offsetY: number;
+  rotationDeg: number;
 };
 
 export function defaultPixelizerOptions(): ImagePixelizerOptions {
@@ -22,7 +23,8 @@ export function defaultPixelizerOptions(): ImagePixelizerOptions {
     brightness: 0,
     scale: 1,
     offsetX: 0,
-    offsetY: 0
+    offsetY: 0,
+    rotationDeg: 0
   };
 }
 
@@ -35,6 +37,7 @@ export function normalizePixelizerOptions(options: ImagePixelizerOptions): Image
   const scale = clamp(Number(options.scale) || 1, 0.1, 4);
   const offsetX = clamp(Math.trunc(options.offsetX || 0), -512, 512);
   const offsetY = clamp(Math.trunc(options.offsetY || 0), -512, 512);
+  const rotationDeg = clamp(Math.trunc(options.rotationDeg || 0), -180, 180);
   return {
     ...options,
     mode,
@@ -44,7 +47,8 @@ export function normalizePixelizerOptions(options: ImagePixelizerOptions): Image
     brightness,
     scale,
     offsetX,
-    offsetY
+    offsetY,
+    rotationDeg
   };
 }
 
