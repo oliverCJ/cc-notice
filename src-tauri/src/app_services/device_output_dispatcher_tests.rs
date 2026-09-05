@@ -123,6 +123,8 @@ fn dispatch_sends_device_extension_actions() {
                 lines: None,
                 face_template: None,
                 face_intensity: None,
+                custom_face_group_id: None,
+                custom_face_id: None,
                 duration_ms: None,
                 pattern: None,
                 control: None,

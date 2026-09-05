@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
+import { I18nProvider } from '@/i18n';
 import { CustomFaceImageVectorizerWindow } from './CustomFaceImageVectorizerWindow';
 
 const prepareSourceMock = vi.hoisted(() => vi.fn());
@@ -55,9 +56,18 @@ beforeEach(() => {
     return windowApiMock.unlisten;
   });
   windowApiMock.unlisten.mockReset();
-  Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', { configurable: true, value: vi.fn() });
-  Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', { configurable: true, value: vi.fn(() => true) });
-  Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', { configurable: true, value: vi.fn() });
+  Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', {
+    configurable: true,
+    value: vi.fn(),
+  });
+  Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', {
+    configurable: true,
+    value: vi.fn(() => true),
+  });
+  Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', {
+    configurable: true,
+    value: vi.fn(),
+  });
   Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
     configurable: true,
     value: function () {
@@ -142,13 +152,15 @@ test('prepares a source image, vectorizes it and can send the svg back to the ed
   await waitFor(() => expect(vectorizeSourceMock).toHaveBeenCalledOnce());
   expect(screen.getByTestId('custom-face-vectorizer-preview')).toHaveAttribute(
     'srcdoc',
-    expect.stringContaining('<svg'),
+    expect.stringContaining('<svg')
   );
 
   fireEvent.click(screen.getByRole('button', { name: '发送到 SVG 导入窗口' }));
 
   await waitFor(() => expect(writeTempSvgMock).toHaveBeenCalledOnce());
-  expect(writeTempSvgMock).toHaveBeenCalledWith('<svg viewBox="0 0 8 8"><rect width="8" height="8" /></svg>');
+  expect(writeTempSvgMock).toHaveBeenCalledWith(
+    '<svg viewBox="0 0 8 8"><rect width="8" height="8" /></svg>'
+  );
   expect(emitOpenSvgPathMock).toHaveBeenCalledWith('/tmp/vectorized.svg');
   expect(focusEditorMock).toHaveBeenCalledOnce();
 });
@@ -157,7 +169,7 @@ test('keeps the preview dominant and exposes fine adjustment controls', () => {
   render(<CustomFaceImageVectorizerWindow />);
 
   expect(screen.getByTestId('custom-face-vectorizer-layout')).toHaveClass(
-    'lg:grid-cols-[minmax(0,8fr)_minmax(280px,2fr)]',
+    'lg:grid-cols-[minmax(0,8fr)_minmax(360px,2fr)]'
   );
   expect(screen.getByRole('slider', { name: '噪点过滤' })).toBeInTheDocument();
   expect(screen.getByRole('textbox', { name: '噪点过滤数值' })).toBeInTheDocument();
@@ -189,8 +201,21 @@ test('uses the same compact slider plus numeric input style as the image import 
   expect(screen.queryByText('1.00x')).not.toBeInTheDocument();
   expect(screen.getByLabelText('减少缩放')).toBeInTheDocument();
   expect(screen.getByLabelText('增加缩放')).toBeInTheDocument();
-  expect(screen.getByRole('textbox', { name: '缩放数值' })).toHaveValue('1');
+  expect(screen.getByRole('textbox', { name: '缩放数值' })).toHaveValue('1.00x');
   expect(screen.getAllByRole('button', { name: '重置' }).length).toBeGreaterThan(0);
+});
+
+test('renders vector mode choices from the active language', () => {
+  render(
+    <I18nProvider language="en-US">
+      <CustomFaceImageVectorizerWindow />
+    </I18nProvider>
+  );
+
+  expect(screen.getByRole('button', { name: 'Binary' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Color' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '二值' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '多色' })).not.toBeInTheDocument();
 });
 
 test('shows a custom tooltip and lets the source thumbnail move inside the preview area', async () => {
@@ -213,9 +238,13 @@ test('shows a custom tooltip and lets the source thumbnail move inside the previ
   const file = new File([new Uint8Array([1, 2, 3])], 'sample.png', { type: 'image/png' });
   fireEvent.change(input, { target: { files: [file] } });
 
-  await waitFor(() => expect(screen.getByTestId('custom-face-vectorizer-source-thumb')).toBeInTheDocument());
+  await waitFor(() =>
+    expect(screen.getByTestId('custom-face-vectorizer-source-thumb')).toBeInTheDocument()
+  );
 
-  fireEvent.mouseEnter(screen.getByRole('button', { name: '缩放 说明' }));
+  fireEvent.mouseEnter(
+    screen.getByRole('button', { name: '在进入矢量化前放大或缩小源图。' })
+  );
   expect(screen.getByRole('tooltip')).toHaveTextContent('在进入矢量化前放大或缩小源图。');
 
   const thumb = screen.getByTestId('custom-face-vectorizer-source-thumb');
@@ -246,12 +275,17 @@ test('expands the existing source thumbnail on hover instead of opening a second
   const file = new File([new Uint8Array([1, 2, 3])], 'sample.png', { type: 'image/png' });
   fireEvent.change(input, { target: { files: [file] } });
 
-  await waitFor(() => expect(screen.getByTestId('custom-face-vectorizer-source-thumb')).toBeInTheDocument());
+  await waitFor(() =>
+    expect(screen.getByTestId('custom-face-vectorizer-source-thumb')).toBeInTheDocument()
+  );
 
   fireEvent.mouseEnter(screen.getByTestId('custom-face-vectorizer-source-thumb'));
 
   expect(screen.queryByTestId('custom-face-vectorizer-source-hover')).not.toBeInTheDocument();
-  expect(screen.getByTestId('custom-face-vectorizer-source-thumb')).toHaveStyle({ width: '192px', height: '192px' });
+  expect(screen.getByTestId('custom-face-vectorizer-source-thumb')).toHaveStyle({
+    width: '192px',
+    height: '192px',
+  });
 });
 
 test('lets the converted svg preview move locally without re-vectorizing', async () => {
@@ -328,7 +362,7 @@ test('provides typed numeric inputs for slider parameters and clamps them only a
   fireEvent.change(scaleInput, { target: { value: '9' } });
   expect(scaleInput).toHaveValue('9');
   fireEvent.blur(scaleInput);
-  expect(scaleInput).toHaveValue('4');
+  expect(scaleInput).toHaveValue('4.00x');
 });
 
 test('passes preprocessing parameters through to the vectorizer request', async () => {

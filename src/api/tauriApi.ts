@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import type {
   CustomMascotScanResult,
   DesktopMascotPlayMode,
-  DesktopMascotState
+  DesktopMascotState,
 } from '@/domain/desktopMascot';
 import type {
   DesktopNoticeColorMode,
@@ -12,7 +12,7 @@ import type {
   DesktopNoticeRestoreBehavior,
   DesktopNoticeRuleTarget,
   DesktopNoticeRuleEffect,
-  DesktopNoticeWindowPayload
+  DesktopNoticeWindowPayload,
 } from '@/domain/desktopNotice';
 
 export async function openExternalUrl(url: string): Promise<void> {
@@ -241,11 +241,7 @@ export type AppConfigSaveResult = {
 };
 
 export type ResetConfigurationScope =
-  | 'app-settings'
-  | 'hook-settings'
-  | 'profile-mappings'
-  | 'devices'
-  | 'all';
+  'app-settings' | 'hook-settings' | 'profile-mappings' | 'devices' | 'all';
 
 export type ResetConfigurationResult = {
   config: AppConfig;
@@ -343,13 +339,7 @@ export type HardwareOutputType =
   | 'desktop-notice'
   | 'custom';
 export type DeviceTransportKind =
-  | 'serial'
-  | 'usb-hid'
-  | 'usb-bulk'
-  | 'tcp'
-  | 'websocket'
-  | 'mqtt'
-  | 'ble-gatt';
+  'serial' | 'usb-hid' | 'usb-bulk' | 'tcp' | 'websocket' | 'mqtt' | 'ble-gatt';
 export type DeviceConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 export type DeviceOperationKind =
   | 'manual-connect'
@@ -451,21 +441,10 @@ export type DeviceInputEvent = {
 export type DeviceTransportMonitorDirection = 'outbound' | 'inbound' | 'system';
 
 export type DeviceTransportMonitorCategory =
-  | 'command'
-  | 'ack'
-  | 'input-event'
-  | 'heartbeat'
-  | 'connection'
-  | 'error';
+  'command' | 'ack' | 'input-event' | 'heartbeat' | 'connection' | 'error';
 
 export type DeviceTransportMonitorStatus =
-  | 'pending'
-  | 'sent'
-  | 'ok'
-  | 'timeout'
-  | 'error'
-  | 'skipped'
-  | 'stopped';
+  'pending' | 'sent' | 'ok' | 'timeout' | 'error' | 'skipped' | 'stopped';
 
 export type DeviceTransportMonitorEvent = {
   id: string;
@@ -549,11 +528,7 @@ export type DeviceCandidateHandshakeInfo = {
 export type DeviceIdentityPersistence = 'persisted' | 'fallback';
 
 export type DeviceDiscoveryStatus =
-  | 'unidentified'
-  | 'identifying'
-  | 'identified'
-  | 'matched'
-  | 'failed';
+  'unidentified' | 'identifying' | 'identified' | 'matched' | 'failed';
 
 export type DeviceChannelAction = {
   deviceId: string;
@@ -579,20 +554,9 @@ export type DeviceExtensionActionType =
   | 'buzzer-pattern'
   | 'device-control';
 
-export type DeviceExtensionStatus =
-  | 'idle'
-  | 'working'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'notice';
+export type DeviceExtensionStatus = 'idle' | 'working' | 'success' | 'warning' | 'error' | 'notice';
 
-export type DeviceBuzzerPattern =
-  | 'notice'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'working';
+export type DeviceBuzzerPattern = 'notice' | 'success' | 'warning' | 'error' | 'working';
 
 export type DeviceExtensionAction = {
   deviceId: string;
@@ -604,6 +568,8 @@ export type DeviceExtensionAction = {
   lines?: string[] | null;
   faceTemplate?: string | null;
   faceIntensity?: 'subtle' | 'standard' | 'strong' | null;
+  customFaceGroupId?: string | null;
+  customFaceId?: string | null;
   durationMs?: number | null;
   pattern?: DeviceBuzzerPattern | null;
   control?: 'mute' | null;
@@ -707,6 +673,14 @@ export type DeviceFirmwareInfo = {
   protocolVersion: number;
   customFace?: DeviceCustomFaceCapabilities | null;
   customFaceError?: DeviceCustomFaceErrorCode | null;
+  customFaceActive?: DeviceCustomFaceActiveState | null;
+};
+
+export type DeviceCustomFaceActiveSource = 'builtin' | 'custom';
+
+export type DeviceCustomFaceActiveState = {
+  source: DeviceCustomFaceActiveSource;
+  groupId?: string | null;
 };
 
 export type DeviceCustomFaceCapabilities = {
@@ -727,11 +701,7 @@ export type DeviceCustomFaceErrorCode =
   | 'custom-face-storage-error'
   | 'custom-face-status-invalid';
 
-export type DeviceCustomFaceStatusState =
-  | 'unknown'
-  | 'empty'
-  | 'installed'
-  | 'unavailable';
+export type DeviceCustomFaceStatusState = 'unknown' | 'empty' | 'installed' | 'unavailable';
 
 export type DeviceInstalledCustomFaceGroup = {
   profileCode: number;
@@ -750,18 +720,9 @@ export type DeviceCustomFaceStatus = {
 };
 
 export type DeviceFirmwareStatus =
-  | 'unknown'
-  | 'up-to-date'
-  | 'update-available'
-  | 'incompatible'
-  | 'unsupported';
+  'unknown' | 'up-to-date' | 'update-available' | 'incompatible' | 'unsupported';
 
-export type DeviceHeartbeatStatus =
-  | 'unknown'
-  | 'healthy'
-  | 'stale'
-  | 'lost'
-  | 'unsupported';
+export type DeviceHeartbeatStatus = 'unknown' | 'healthy' | 'stale' | 'lost' | 'unsupported';
 
 export type DevicePortDescriptor = {
   id: string;
@@ -1011,10 +972,7 @@ export type ProfileFrontendState = {
 };
 
 export type ProfilePackageDeviceBindingStatus =
-  | 'full-match'
-  | 'partial-match'
-  | 'board-mismatch'
-  | 'unbound';
+  'full-match' | 'partial-match' | 'board-mismatch' | 'unbound';
 
 export type ProfilePackageDeviceRequirement = {
   ruleId: string;
@@ -1318,13 +1276,13 @@ export function saveDesktopNoticeInstance(instance: DesktopNoticeInstance) {
 
 export function deleteDesktopNoticeInstance(instanceId: string) {
   return invoke<DesktopNoticeInstance[]>('delete_desktop_notice_instance', {
-    request: { instanceId }
+    request: { instanceId },
   });
 }
 
 export function previewDesktopNoticeInstance(instanceId: string) {
   return invoke<DesktopNoticeWindowPayload>('preview_desktop_notice_instance', {
-    request: { instanceId }
+    request: { instanceId },
   });
 }
 
@@ -1353,19 +1311,19 @@ export function previewDesktopNoticeRuleEffect(request: DesktopNoticeRuleEffectP
 
 export function hideDesktopNoticeInstance(instanceId: string) {
   return invoke<void>('hide_desktop_notice_instance', {
-    request: { instanceId }
+    request: { instanceId },
   });
 }
 
 export function getDesktopNoticeWindowPayload(instanceId: string) {
   return invoke<DesktopNoticeWindowPayload>('desktop_notice_window_payload', {
-    request: { instanceId }
+    request: { instanceId },
   });
 }
 
 export function saveDesktopNoticeWindowBounds(instanceId: string) {
   return invoke<DesktopNoticeInstance[]>('save_desktop_notice_window_bounds', {
-    request: { instanceId }
+    request: { instanceId },
   });
 }
 
@@ -1381,11 +1339,7 @@ export function saveProfile(profile: NoticeProfile) {
   return invoke<ProfileFrontendState>('save_profile', { profile });
 }
 
-export function createProfile(
-  profileId: string,
-  profileName: string,
-  template?: ProfileTemplate
-) {
+export function createProfile(profileId: string, profileName: string, template?: ProfileTemplate) {
   return invoke<ProfileFrontendState>('create_profile', { profileId, profileName, template });
 }
 
@@ -1393,7 +1347,7 @@ export function duplicateProfile(sourceProfileId: string, profileId: string, pro
   return invoke<ProfileFrontendState>('duplicate_profile', {
     sourceProfileId,
     profileId,
-    profileName
+    profileName,
   });
 }
 
@@ -1457,6 +1411,22 @@ export function importCustomFaceGroup(request: CustomFaceImportRequest) {
   return invoke<SaveCustomFaceGroupResult>('import_custom_face_group', { request });
 }
 
+export function installCustomFaceGroupToDevice(deviceId: string, groupId: string) {
+  return invoke<DeviceRuntimeState>('install_custom_face_group_to_device', {
+    request: { deviceId, groupId },
+  });
+}
+
+export function setCustomFaceActiveSource(
+  deviceId: string,
+  source: DeviceCustomFaceActiveSource,
+  groupId?: string | null
+) {
+  return invoke<DeviceRuntimeState>('set_custom_face_active_source', {
+    request: { deviceId, source, groupId: groupId ?? null },
+  });
+}
+
 export function previewCustomFaceItemImport(path: string) {
   return invoke<CustomFaceItemImportPreview>('preview_custom_face_item_import', { path });
 }
@@ -1477,9 +1447,15 @@ export function readCustomFaceSvg(path: string) {
   return invoke<string>('read_custom_face_svg', { path });
 }
 
-export function getCustomFaceAssets() { return invoke<PersonalCustomFaceAsset[]>('custom_face_assets'); }
-export function saveCustomFaceAsset(asset: PersonalCustomFaceAsset) { return invoke<PersonalCustomFaceAsset>('save_custom_face_asset', { asset }); }
-export function deleteCustomFaceAsset(assetId: string) { return invoke<void>('delete_custom_face_asset', { assetId }); }
+export function getCustomFaceAssets() {
+  return invoke<PersonalCustomFaceAsset[]>('custom_face_assets');
+}
+export function saveCustomFaceAsset(asset: PersonalCustomFaceAsset) {
+  return invoke<PersonalCustomFaceAsset>('save_custom_face_asset', { asset });
+}
+export function deleteCustomFaceAsset(assetId: string) {
+  return invoke<void>('delete_custom_face_asset', { assetId });
+}
 
 export function openCustomFaceEditor() {
   return invoke<void>('open_custom_face_editor');
@@ -1510,8 +1486,13 @@ export function pixelizeCustomFaceImage(request: CustomFacePixelizeRequest) {
   return invoke<CustomFacePixelizeResult>('pixelize_custom_face_image', { request });
 }
 
-export function prepareCustomFaceImagePixelizerSource(request: PrepareCustomFacePixelizerSourceRequest) {
-  return invoke<PrepareCustomFacePixelizerSourceResult>('prepare_custom_face_image_pixelizer_source', { request });
+export function prepareCustomFaceImagePixelizerSource(
+  request: PrepareCustomFacePixelizerSourceRequest
+) {
+  return invoke<PrepareCustomFacePixelizerSourceResult>(
+    'prepare_custom_face_image_pixelizer_source',
+    { request }
+  );
 }
 
 export function pixelizeCustomFaceImageSource(request: CustomFacePixelizeSourceRequest) {
@@ -1590,12 +1571,21 @@ export function closeCustomFaceImageVectorizer() {
   return invoke<void>('close_custom_face_image_vectorizer');
 }
 
-export function prepareCustomFaceImageVectorizerSource(request: PrepareCustomFaceVectorizerSourceRequest) {
-  return invoke<PrepareCustomFaceVectorizerSourceResult>('prepare_custom_face_image_vectorizer_source', { request });
+export function prepareCustomFaceImageVectorizerSource(
+  request: PrepareCustomFaceVectorizerSourceRequest
+) {
+  return invoke<PrepareCustomFaceVectorizerSourceResult>(
+    'prepare_custom_face_image_vectorizer_source',
+    { request }
+  );
 }
 
-export function vectorizeCustomFaceImageVectorizerSource(request: CustomFaceVectorizeSourceRequest) {
-  return invoke<CustomFaceVectorizeResult>('vectorize_custom_face_image_vectorizer_source', { request });
+export function vectorizeCustomFaceImageVectorizerSource(
+  request: CustomFaceVectorizeSourceRequest
+) {
+  return invoke<CustomFaceVectorizeResult>('vectorize_custom_face_image_vectorizer_source', {
+    request,
+  });
 }
 
 export function releaseCustomFaceImageVectorizerSource(sourceId: string) {
@@ -1704,13 +1694,13 @@ export function identifyDeviceCandidate(
   transport: DeviceTransportConfig
 ) {
   return invoke<DeviceCandidateResource>('identify_device_candidate', {
-    request: { resourceId, displayName, transport }
+    request: { resourceId, displayName, transport },
   });
 }
 
 export function registerIdentifiedDevice(resource: DeviceCandidateResource, label: string) {
   return invoke<DeviceRuntimeState>('register_identified_device', {
-    request: { resource, label }
+    request: { resource, label },
   });
 }
 
@@ -1718,8 +1708,8 @@ export function connectDevice(deviceId: string, transport?: DeviceTransportConfi
   return invoke<DeviceRuntimeState>('connect_device', {
     request: {
       deviceId,
-      transport: transport ?? null
-    }
+      transport: transport ?? null,
+    },
   });
 }
 
@@ -1757,19 +1747,19 @@ export function pingConnectedDevices() {
 
 export function openDeviceTransportMonitorWindow(deviceId: string) {
   return invoke<DeviceTransportMonitorSnapshot>('open_device_transport_monitor_window', {
-    deviceId
+    deviceId,
   });
 }
 
 export function getDeviceTransportMonitorSnapshot(deviceId: string) {
   return invoke<DeviceTransportMonitorSnapshot>('device_transport_monitor_snapshot', {
-    deviceId
+    deviceId,
   });
 }
 
 export function clearDeviceTransportMonitorEvents(deviceId: string) {
   return invoke<DeviceTransportMonitorSnapshot>('clear_device_transport_monitor_events', {
-    deviceId
+    deviceId,
   });
 }
 
@@ -1793,8 +1783,8 @@ export function updateDeviceChannels(deviceId: string, channels: DeviceChannel[]
   return invoke<DeviceRuntimeState>('update_device_channels', {
     request: {
       deviceId,
-      channels
-    }
+      channels,
+    },
   });
 }
 

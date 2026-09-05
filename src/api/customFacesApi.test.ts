@@ -14,12 +14,13 @@ import {
   getCustomFaceGroups,
   getCustomFaceRecovery,
   importCustomFaceGroup,
+  installCustomFaceGroupToDevice,
   previewCustomFaceGroupImport,
   previewCustomFaceItemImport,
   readCustomFaceSvg,
   saveCustomFaceGroup,
   saveCustomFaceRecovery,
-  type CustomFaceGroup
+  type CustomFaceGroup,
 } from './tauriApi';
 
 const group: CustomFaceGroup = {
@@ -34,9 +35,9 @@ const group: CustomFaceGroup = {
       faceId: '00000000-0000-4000-8000-000000000111',
       name: 'Ready',
       color: { red: 18, green: 52, blue: 86 },
-      frames: [{ durationMs: 200, packedPixels: [0, 1] }]
-    }
-  ]
+      frames: [{ durationMs: 200, packedPixels: [0, 1] }],
+    },
+  ],
 };
 
 describe('custom face Tauri API', () => {
@@ -53,41 +54,59 @@ describe('custom face Tauri API', () => {
     await exportCustomFaceGroup(group.groupId, '/tmp/a.ccface');
     await previewCustomFaceGroupImport('/tmp/a.ccface');
     await importCustomFaceGroup({ path: '/tmp/a.ccface', mode: 'copy' });
+    await installCustomFaceGroupToDevice('desk-wio', group.groupId);
     await previewCustomFaceItemImport('/tmp/a.ccfaceitem');
-    await exportCustomFaceItem({ face: group.faces[0], displayProfileId: group.displayProfileId, path: '/tmp/a.ccfaceitem' });
-    await exportCustomFaceGif({ face: group.faces[0], displayProfileId: group.displayProfileId, path: '/tmp/a.gif', scale: 2 });
+    await exportCustomFaceItem({
+      face: group.faces[0],
+      displayProfileId: group.displayProfileId,
+      path: '/tmp/a.ccfaceitem',
+    });
+    await exportCustomFaceGif({
+      face: group.faces[0],
+      displayProfileId: group.displayProfileId,
+      path: '/tmp/a.gif',
+      scale: 2,
+    });
     await readCustomFaceSvg('/tmp/a.svg');
 
     expect(invoke.mock.calls).toEqual([
       ['custom_face_groups'],
       ['custom_face_group', { groupId: group.groupId }],
-      [
-        'save_custom_face_group',
-        { request: { group, expectedLibraryHash: 'abc' } }
-      ],
-      [
-        'delete_custom_face_group',
-        { groupId: group.groupId, expectedLibraryHash: 'abc' }
-      ],
+      ['save_custom_face_group', { request: { group, expectedLibraryHash: 'abc' } }],
+      ['delete_custom_face_group', { groupId: group.groupId, expectedLibraryHash: 'abc' }],
       ['save_custom_face_recovery', { group }],
       ['custom_face_recovery', { groupId: group.groupId }],
       ['clear_custom_face_recovery', { groupId: group.groupId }],
       ['export_custom_face_group', { groupId: group.groupId, path: '/tmp/a.ccface' }],
       ['preview_custom_face_group_import', { path: '/tmp/a.ccface' }],
+      ['import_custom_face_group', { request: { path: '/tmp/a.ccface', mode: 'copy' } }],
       [
-        'import_custom_face_group',
-        { request: { path: '/tmp/a.ccface', mode: 'copy' } }
+        'install_custom_face_group_to_device',
+        { request: { deviceId: 'desk-wio', groupId: group.groupId } },
       ],
       ['preview_custom_face_item_import', { path: '/tmp/a.ccfaceitem' }],
       [
         'export_custom_face_item',
-        { request: { face: group.faces[0], displayProfileId: group.displayProfileId, path: '/tmp/a.ccfaceitem' } }
+        {
+          request: {
+            face: group.faces[0],
+            displayProfileId: group.displayProfileId,
+            path: '/tmp/a.ccfaceitem',
+          },
+        },
       ],
       [
         'export_custom_face_gif',
-        { request: { face: group.faces[0], displayProfileId: group.displayProfileId, path: '/tmp/a.gif', scale: 2 } }
+        {
+          request: {
+            face: group.faces[0],
+            displayProfileId: group.displayProfileId,
+            path: '/tmp/a.gif',
+            scale: 2,
+          },
+        },
       ],
-      ['read_custom_face_svg', { path: '/tmp/a.svg' }]
+      ['read_custom_face_svg', { path: '/tmp/a.svg' }],
     ]);
   });
 });

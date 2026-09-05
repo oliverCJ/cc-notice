@@ -7,7 +7,8 @@ use crate::app_services::device_io_worker::{
 use crate::core::device::{
     ActiveLevel, DeviceChannel, DeviceChannelAction, DeviceChannelActionType,
     DeviceConnectionStatus, DeviceCustomFaceCapabilities, DeviceCustomFaceErrorCode,
-    DeviceCustomFaceStatusState, DeviceExtensionAction, DeviceExtensionActionType,
+    DeviceCustomFaceActiveSource, DeviceCustomFaceStatusState, DeviceExtensionAction,
+    DeviceExtensionActionType,
     DeviceFirmwareInfo, DeviceFirmwareStatus, DeviceHeartbeatStatus, DeviceInstance,
     DeviceOperationKind, DeviceRuntimeErrorCode, DeviceTransportConfig,
 };
@@ -900,6 +901,80 @@ fn disconnect_preserves_last_confirmed_custom_face_status() {
 }
 
 #[test]
+fn set_custom_face_active_source_updates_firmware_info_after_device_ack() {
+    let device = test_device("desk-wio");
+    let transport = MockDeviceTransport::with_received_lines(vec![
+        r#"{"ok":true,"v":2,"type":"set_custom_face_active_source"}"#.to_string(),
+    ]);
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(transport));
+    service.apply_firmware_info(
+        firmware_info_with_wio_custom_face_active(),
+        &bundled_artifact_for_board("seeed-wio-terminal", "0.2.1", 2),
+    );
+    let status_query = service
+        .prepare_custom_face_status_query()
+        .expect("connected custom face device should prepare status query");
+    service
+        .complete_custom_face_status_query(
+            status_query.session_id,
+            Ok(DeviceIoCommandResult {
+                ack: Some(r#"{"ok":true,"v":2,"type":"custom_face_status","state":"installed","profile_code":3,"group_id":"2133e686-77f5-4a29-923b-10d65211ca94","group_runtime_hash":"b7b9bc4dd2cf2f56600ac55d8bd68dfe2063c03b1eb4a781b006779675981fc8","default_face_id":"00000000-0000-4000-8000-000000000211","face_count":1,"encoded_bytes":1463}"#.to_string()),
+            }),
+        )
+        .expect("installed custom face status should be accepted");
+
+    let state = service.set_custom_face_active_source(DeviceCustomFaceActiveSource::Custom, Some(
+        "2133e686-77f5-4a29-923b-10d65211ca94".to_string(),
+    ))
+    .expect("custom face activation should succeed");
+
+    assert_eq!(
+        vec![
+            "{\"v\":2,\"type\":\"set_custom_face_active_source\",\"source\":\"custom\",\"group_id\":\"2133e686-77f5-4a29-923b-10d65211ca94\"}\n",
+        ],
+        service.sent_lines()
+    );
+    assert_eq!(
+        Some(DeviceCustomFaceActiveSource::Custom),
+        state.firmware_info.and_then(|info| info.custom_face_active).map(|active| active.source)
+    );
+}
+
+#[test]
+fn set_custom_face_active_source_rejects_custom_group_mismatch() {
+    let device = test_device("desk-wio");
+    let transport = MockDeviceTransport::default();
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(transport));
+    service.apply_firmware_info(
+        firmware_info_with_wio_custom_face_active(),
+        &bundled_artifact_for_board("seeed-wio-terminal", "0.2.1", 2),
+    );
+    let status_query = service
+        .prepare_custom_face_status_query()
+        .expect("connected custom face device should prepare status query");
+    service
+        .complete_custom_face_status_query(
+            status_query.session_id,
+            Ok(DeviceIoCommandResult {
+                ack: Some(r#"{"ok":true,"v":2,"type":"custom_face_status","state":"installed","profile_code":3,"group_id":"2133e686-77f5-4a29-923b-10d65211ca94","group_runtime_hash":"b7b9bc4dd2cf2f56600ac55d8bd68dfe2063c03b1eb4a781b006779675981fc8","default_face_id":"00000000-0000-4000-8000-000000000211","face_count":1,"encoded_bytes":1463}"#.to_string()),
+            }),
+        )
+        .expect("installed custom face status should be accepted");
+
+    let error = service
+        .set_custom_face_active_source(
+            DeviceCustomFaceActiveSource::Custom,
+            Some("2133e686-77f5-4a29-923b-10d65211ca95".to_string()),
+        )
+        .expect_err("mismatched custom group should be rejected");
+
+    assert_eq!("custom face active group does not match installed group", error);
+    assert_eq!(Vec::<String>::new(), service.sent_lines());
+}
+
+#[test]
 fn background_read_error_stops_worker_without_retrying_forever() {
     let device = test_device("desk-pico");
     let mut transport = MockDeviceTransport::default();
@@ -991,6 +1066,32 @@ fn firmware_info_with_custom_face() -> DeviceFirmwareInfo {
             incremental_update: true,
         }),
         custom_face_error: None,
+        custom_face_active: None,
+    }
+}
+
+fn firmware_info_with_wio_custom_face_active() -> DeviceFirmwareInfo {
+    DeviceFirmwareInfo {
+        board_id: "seeed-wio-terminal".to_string(),
+        device_uid: "seeed-wio-terminal:0011223344556677".to_string(),
+        firmware_version: "0.2.1".to_string(),
+        protocol_version: 2,
+        custom_face: Some(DeviceCustomFaceCapabilities {
+            protocol_version: 1,
+            profile_code: 3,
+            pixel_width: 320,
+            pixel_height: 240,
+            max_faces: 15,
+            max_frames_per_face: 10,
+            max_group_bytes: 393_216,
+            chunk_bytes: 512,
+            incremental_update: true,
+        }),
+        custom_face_error: None,
+        custom_face_active: Some(crate::core::device::DeviceCustomFaceActiveState {
+            source: DeviceCustomFaceActiveSource::Builtin,
+            group_id: None,
+        }),
     }
 }
 
@@ -1075,6 +1176,8 @@ fn test_display_card_action(device_id: &str) -> DeviceExtensionAction {
         lines: Some(vec!["Codex".to_string(), "Finished".to_string()]),
         face_template: None,
         face_intensity: None,
+        custom_face_group_id: None,
+        custom_face_id: None,
         duration_ms: None,
         pattern: None,
         control: None,
@@ -1094,6 +1197,8 @@ fn test_display_lines_action(device_id: &str) -> DeviceExtensionAction {
         lines: Some(vec!["Codex".to_string(), "Waiting".to_string()]),
         face_template: None,
         face_intensity: None,
+        custom_face_group_id: None,
+        custom_face_id: None,
         duration_ms: None,
         pattern: None,
         control: None,

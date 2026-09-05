@@ -1,5 +1,6 @@
 pub mod app_config_service;
 pub mod arduino_cli_service;
+pub mod custom_face_installer;
 pub mod custom_face_library;
 pub mod custom_face_pixelizer;
 pub mod custom_face_vectorizer;
@@ -46,6 +47,8 @@ pub mod runtime_monitor;
 pub mod sound_asset_service;
 pub mod tool_bin_service;
 
+#[cfg(test)]
+mod custom_face_installer_tests;
 #[cfg(test)]
 mod custom_face_library_tests;
 #[cfg(test)]

@@ -13,11 +13,20 @@ beforeEach(() => {
   context.clearRect.mockReset();
   context.fillRect.mockReset();
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-    context as unknown as CanvasRenderingContext2D,
+    context as unknown as CanvasRenderingContext2D
   );
-  Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', { configurable: true, value: vi.fn() });
-  Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', { configurable: true, value: vi.fn(() => true) });
-  Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', { configurable: true, value: vi.fn() });
+  Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', {
+    configurable: true,
+    value: vi.fn(),
+  });
+  Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', {
+    configurable: true,
+    value: vi.fn(() => true),
+  });
+  Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', {
+    configurable: true,
+    value: vi.fn(),
+  });
 });
 
 test('renders only the selected logical viewport from the shared packed pixels', () => {
@@ -41,7 +50,7 @@ test('renders only the selected logical viewport from the shared packed pixels',
       onPointerLeave={() => undefined}
       onKeyDown={() => undefined}
       onModeChange={() => undefined}
-    />,
+    />
   );
 
   expect(screen.getByRole('img', { name: '局部放大像素画布' })).toHaveAttribute('width', '6');
@@ -70,13 +79,25 @@ test('drags the floating panel by its header and closes it without editing pixel
       onKeyDown={() => undefined}
       onModeChange={onModeChange}
       onClose={onClose}
-    />,
+    />
   );
 
-  Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 1000 });
-  Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get: () => 1000 });
-  Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get: () => 300 });
-  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get: () => 300 });
+  Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+    configurable: true,
+    get: () => 1000,
+  });
+  Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+    configurable: true,
+    get: () => 1000,
+  });
+  Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+    configurable: true,
+    get: () => 300,
+  });
+  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+    configurable: true,
+    get: () => 300,
+  });
   const panel = screen.getByRole('region', { name: '局部放大画布' });
   const header = panel.querySelector('div.mb-2') as HTMLElement;
   fireEvent.pointerDown(header, { clientX: 30, clientY: 40, pointerId: 1 });

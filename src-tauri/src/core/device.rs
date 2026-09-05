@@ -576,6 +576,10 @@ pub struct DeviceExtensionAction {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub face_intensity: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_face_group_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_face_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub duration_ms: Option<u64>,
     pub pattern: Option<String>,
     pub control: Option<String>,
@@ -774,6 +778,21 @@ pub struct DeviceFirmwareInfo {
     pub protocol_version: u16,
     pub custom_face: Option<DeviceCustomFaceCapabilities>,
     pub custom_face_error: Option<DeviceCustomFaceErrorCode>,
+    pub custom_face_active: Option<DeviceCustomFaceActiveState>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum DeviceCustomFaceActiveSource {
+    Builtin,
+    Custom,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceCustomFaceActiveState {
+    pub source: DeviceCustomFaceActiveSource,
+    pub group_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

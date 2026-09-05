@@ -6,7 +6,7 @@ import {
   drawPolygon,
   drawRectangle,
   drawTriangle,
-  getPixel
+  getPixel,
 } from '@/domain/customFaces/editor/raster';
 import type { SelectionShape, ToolId } from '@/domain/customFaces/editor/types';
 import type { CanvasGuide } from './CustomFaceRulers';
@@ -21,7 +21,13 @@ import { CustomFacePixelPreview } from './CustomFacePixelPreview';
 import { CustomFaceMagnifier } from './CustomFaceMagnifier';
 
 type Point = [number, number];
-export type CanvasSelection = { x: number; y: number; width: number; height: number; shape?: SelectionShape };
+export type CanvasSelection = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  shape?: SelectionShape;
+};
 export type CanvasToolState = {
   pointer: Point | null;
   start: Point | null;
@@ -91,7 +97,7 @@ export function CustomFaceCanvas({
   pendingImportPixels = null,
   pendingImportSize = { width, height },
   pendingImportOffset = { x: 0, y: 0 },
-  onPendingImportMove = () => undefined
+  onPendingImportMove = () => undefined,
 }: Props) {
   const t = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -111,21 +117,32 @@ export function CustomFaceCanvas({
   ]);
   const [pointerSurface, setPointerSurface] = useState<'main' | 'magnifier' | null>(null);
 
-  const previewEnd = useMemo(() => start && end ? clampPoint(constrainEnd(start, end, selectedTool, constraintEnabled), width, height) : end, [constraintEnabled, end, height, selectedTool, start, width]);
-  const bounds = useMemo(() => start && previewEnd ? boundsForTool(start, previewEnd, selectedTool, selectionShape) : null, [previewEnd, selectedTool, selectionShape, start]);
+  const previewEnd = useMemo(
+    () =>
+      start && end
+        ? clampPoint(constrainEnd(start, end, selectedTool, constraintEnabled), width, height)
+        : end,
+    [constraintEnabled, end, height, selectedTool, start, width]
+  );
+  const bounds = useMemo(
+    () =>
+      start && previewEnd ? boundsForTool(start, previewEnd, selectedTool, selectionShape) : null,
+    [previewEnd, selectedTool, selectionShape, start]
+  );
   const magnifier = useMemo(
-    () => magnifierViewport(
-      magnifierCenter,
-      width,
-      height,
-      MAGNIFIER_MAX_WIDTH,
-      MAGNIFIER_MAX_HEIGHT,
-    ),
-    [height, magnifierCenter, width],
+    () =>
+      magnifierViewport(magnifierCenter, width, height, MAGNIFIER_MAX_WIDTH, MAGNIFIER_MAX_HEIGHT),
+    [height, magnifierCenter, width]
   );
 
   useEffect(() => {
-    onToolStateChange?.({ pointer, start, end: previewEnd, bounds, penPointCount: penPoints.length });
+    onToolStateChange?.({
+      pointer,
+      start,
+      end: previewEnd,
+      bounds,
+      penPointCount: penPoints.length,
+    });
   }, [bounds, onToolStateChange, penPoints.length, pointer, previewEnd, start]);
 
   useEffect(() => {
@@ -143,7 +160,12 @@ export function CustomFaceCanvas({
     const updateScale = () => {
       const availableWidth = Math.max(1, workspace.clientWidth - 16);
       const availableHeight = Math.max(1, workspace.clientHeight - 16);
-      setDisplayScale(Math.max(1, Math.min(16, Math.floor(Math.min(availableWidth / width, availableHeight / height)))));
+      setDisplayScale(
+        Math.max(
+          1,
+          Math.min(16, Math.floor(Math.min(availableWidth / width, availableHeight / height)))
+        )
+      );
     };
     updateScale();
     if (typeof ResizeObserver === 'undefined') return;
@@ -199,7 +221,7 @@ export function CustomFaceCanvas({
   const handlePointerDown = (
     event: React.PointerEvent<HTMLCanvasElement>,
     point: Point,
-    surface: 'main' | 'magnifier',
+    surface: 'main' | 'magnifier'
   ) => {
     if (disabled) return;
     if (pickingSelectionPivot) {
@@ -228,11 +250,13 @@ export function CustomFaceCanvas({
       return;
     }
     if (selectedTool === 'brush') {
-      onPixelTransaction([{
-        x: point[0],
-        y: point[1],
-        active: !getPixel(pixels, { width, height }, point[0], point[1])
-      }]);
+      onPixelTransaction([
+        {
+          x: point[0],
+          y: point[1],
+          active: !getPixel(pixels, { width, height }, point[0], point[1]),
+        },
+      ]);
       return;
     }
     setStart(point);
@@ -242,7 +266,7 @@ export function CustomFaceCanvas({
   const handlePointerMove = (
     _event: React.PointerEvent<HTMLCanvasElement>,
     point: Point,
-    updateMagnifierCenter: boolean,
+    updateMagnifierCenter: boolean
   ) => {
     setPointer(point);
     setPointerSurface(updateMagnifierCenter ? 'main' : 'magnifier');
@@ -292,7 +316,14 @@ export function CustomFaceCanvas({
         false
       );
     } else if (selectedTool === 'triangle') {
-      next = drawTriangle(pixels, { width, height }, start[0], start[1], previewEnd[0], previewEnd[1]);
+      next = drawTriangle(
+        pixels,
+        { width, height },
+        start[0],
+        start[1],
+        previewEnd[0],
+        previewEnd[1]
+      );
     }
     const changes = pixelsToChanges(next);
     if (changes.length) onPixelTransaction(changes);
@@ -317,21 +348,23 @@ export function CustomFaceCanvas({
     const point = coordinate(event);
     if (point) handlePointerMove(event, point, true);
   };
-  const handleMagnifierPointerMove = (
-    event: React.PointerEvent<HTMLCanvasElement>,
-    point: Point,
-  ) => handlePointerMove(event, point, false);
-  const handleMagnifierPointerDown = (
-    event: React.PointerEvent<HTMLCanvasElement>,
-    point: Point,
-  ) => handlePointerDown(event, point, 'magnifier');
+  const handleMagnifierPointerMove = (event: React.PointerEvent<HTMLCanvasElement>, point: Point) =>
+    handlePointerMove(event, point, false);
+  const handleMagnifierPointerDown = (event: React.PointerEvent<HTMLCanvasElement>, point: Point) =>
+    handlePointerDown(event, point, 'magnifier');
   const handlePointerLeave = (surface: 'main' | 'magnifier') => {
     if (!drawingRef.current && pointerSurface === surface) {
       setPointer(null);
       setPointerSurface(null);
     }
   };
-  const magnifierDragRef = useRef<{ pointerId: number; clientX: number; clientY: number; originX: number; originY: number } | null>(null);
+  const magnifierDragRef = useRef<{
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
   const handleMagnifierFramePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     event.stopPropagation();
     if (magnifierMode === 'follow') return;
@@ -346,13 +379,21 @@ export function CustomFaceCanvas({
   };
   const handleMagnifierFramePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const drag = magnifierDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    if (
+      !drag ||
+      drag.pointerId !== event.pointerId ||
+      !event.currentTarget.hasPointerCapture(event.pointerId)
+    )
+      return;
     event.stopPropagation();
     const next = moveMagnifierViewportOrigin(
       { ...magnifier, originX: drag.originX, originY: drag.originY },
-      [(event.clientX - drag.clientX) / displayScale, (event.clientY - drag.clientY) / displayScale],
+      [
+        (event.clientX - drag.clientX) / displayScale,
+        (event.clientY - drag.clientY) / displayScale,
+      ],
       width,
-      height,
+      height
     );
     setMagnifierCenter([
       next.originX + Math.floor(next.width / 2),
@@ -362,12 +403,20 @@ export function CustomFaceCanvas({
   const handleMagnifierFramePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
     event.stopPropagation();
     magnifierDragRef.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
   };
-  const pendingDragRef = useRef<{ clientX: number; clientY: number; pointerId: number } | null>(null);
+  const pendingDragRef = useRef<{ clientX: number; clientY: number; pointerId: number } | null>(
+    null
+  );
   const handlePendingPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    pendingDragRef.current = { clientX: event.clientX, clientY: event.clientY, pointerId: event.pointerId };
-    if (typeof event.currentTarget.setPointerCapture === 'function') event.currentTarget.setPointerCapture(event.pointerId);
+    pendingDragRef.current = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      pointerId: event.pointerId,
+    };
+    if (typeof event.currentTarget.setPointerCapture === 'function')
+      event.currentTarget.setPointerCapture(event.pointerId);
   };
   const handlePendingPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const origin = pendingDragRef.current;
@@ -376,15 +425,19 @@ export function CustomFaceCanvas({
     const dy = Math.round((event.clientY - origin.clientY) / displayScale);
     if (dx || dy) {
       onPendingImportMove(dx, dy);
-      pendingDragRef.current = { clientX: event.clientX, clientY: event.clientY, pointerId: event.pointerId };
+      pendingDragRef.current = {
+        clientX: event.clientX,
+        clientY: event.clientY,
+        pointerId: event.pointerId,
+      };
     }
   };
   const handlePendingPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
     pendingDragRef.current = null;
     if (
-      typeof event.currentTarget.hasPointerCapture === 'function'
-      && event.currentTarget.hasPointerCapture(event.pointerId)
-      && typeof event.currentTarget.releasePointerCapture === 'function'
+      typeof event.currentTarget.hasPointerCapture === 'function' &&
+      event.currentTarget.hasPointerCapture(event.pointerId) &&
+      typeof event.currentTarget.releasePointerCapture === 'function'
     ) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -398,40 +451,65 @@ export function CustomFaceCanvas({
     width: magnifier.width,
     height: magnifier.height,
   };
-  const pointerBounds: CanvasSelection | null = pointer ? {
-    x: pointer[0],
-    y: pointer[1],
-    width: 1,
-    height: 1,
-  } : null;
-  const eraserBounds = pointer ? {
-    x: pointer[0] - Math.floor((eraserSize - 1) / 2),
-    y: pointer[1] - Math.floor((eraserSize - 1) / 2),
-    width: eraserSize,
-    height: eraserSize
-  } : null;
+  const pointerBounds: CanvasSelection | null = pointer
+    ? {
+        x: pointer[0],
+        y: pointer[1],
+        width: 1,
+        height: 1,
+      }
+    : null;
+  const eraserBounds = pointer
+    ? {
+        x: pointer[0] - Math.floor((eraserSize - 1) / 2),
+        y: pointer[1] - Math.floor((eraserSize - 1) / 2),
+        width: eraserSize,
+        height: eraserSize,
+      }
+    : null;
   const penPreviewPoints = pointer && penPoints.length > 0 ? [...penPoints, pointer] : penPoints;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <div className="flex items-center justify-between gap-2 text-xs font-semibold">
-        <span>{width} × {height}</span>
+        <span>
+          {width} × {height}
+        </span>
         <div className="flex items-center gap-2 font-normal text-muted-foreground">
-          <span>{pointer ? t('customFaceEditor.canvas.coordinate', { x: pointer[0], y: pointer[1] }) : ''}{t('customFaceEditor.canvas.scale', { scale: displayScale })}</span>
+          <span>
+            {pointer
+              ? t('customFaceEditor.canvas.coordinate', { x: pointer[0], y: pointer[1] })
+              : ''}
+            {t('customFaceEditor.canvas.scale', { scale: displayScale })}
+          </span>
           <button
             type="button"
             aria-pressed={magnifierOpen}
             className="border border-border px-2 py-1 text-xs text-foreground"
             onClick={() => setMagnifierOpen((current) => !current)}
           >
-            {magnifierOpen ? t('customFaceEditor.magnifier.hide') : t('customFaceEditor.magnifier.show')}
+            {magnifierOpen
+              ? t('customFaceEditor.magnifier.hide')
+              : t('customFaceEditor.magnifier.show')}
           </button>
         </div>
       </div>
       <div className="relative flex min-h-0 flex-1 flex-col gap-3">
-        <div ref={workspaceRef} className="flex min-h-56 min-w-0 flex-1 items-center justify-center overflow-auto bg-muted/20 p-2">
-          <CustomFaceViewport width={width} height={height} scale={displayScale} guides={guides} onGuidesChange={onGuidesChange}>
-            <div className="relative shrink-0" style={{ width: `${width * displayScale}px`, height: `${height * displayScale}px` }}>
+        <div
+          ref={workspaceRef}
+          className="flex min-h-56 min-w-0 flex-1 items-center justify-center overflow-auto bg-muted/20 p-2"
+        >
+          <CustomFaceViewport
+            width={width}
+            height={height}
+            scale={displayScale}
+            guides={guides}
+            onGuidesChange={onGuidesChange}
+          >
+            <div
+              className="relative shrink-0"
+              style={{ width: `${width * displayScale}px`, height: `${height * displayScale}px` }}
+            >
               <canvas
                 ref={canvasRef}
                 tabIndex={0}
@@ -467,7 +545,37 @@ export function CustomFaceCanvas({
                 onMagnifierPointerMove={handleMagnifierFramePointerMove}
                 onMagnifierPointerUp={handleMagnifierFramePointerUp}
               />
-              {pendingImportPixels ? <div aria-label={t('customFaceEditor.canvasOverlay.pendingImport')} className="pointer-events-auto absolute inset-0 z-20 cursor-move border-2 border-dashed border-fuchsia-400 bg-fuchsia-400/10" onPointerDown={handlePendingPointerDown} onPointerMove={handlePendingPointerMove} onPointerUp={handlePendingPointerUp} onPointerCancel={handlePendingPointerUp}><div data-testid="custom-face-pending-import-preview" className="pointer-events-none absolute left-0 top-0 opacity-60" style={{ width: `${pendingImportSize.width * displayScale}px`, height: `${pendingImportSize.height * displayScale}px`, transform: `translate(${pendingImportOffset.x * displayScale}px, ${pendingImportOffset.y * displayScale}px)` }}><CustomFacePixelPreview width={pendingImportSize.width} height={pendingImportSize.height} displayScale={displayScale} packedPixels={pendingImportPixels} ariaLabel={t('customFaceEditor.canvasOverlay.pendingImportPreview', { width: pendingImportSize.width, height: pendingImportSize.height })} /></div></div> : null}
+              {pendingImportPixels ? (
+                <div
+                  aria-label={t('customFaceEditor.canvasOverlay.pendingImport')}
+                  className="pointer-events-auto absolute inset-0 z-20 cursor-move border-2 border-dashed border-fuchsia-400 bg-fuchsia-400/10"
+                  onPointerDown={handlePendingPointerDown}
+                  onPointerMove={handlePendingPointerMove}
+                  onPointerUp={handlePendingPointerUp}
+                  onPointerCancel={handlePendingPointerUp}
+                >
+                  <div
+                    data-testid="custom-face-pending-import-preview"
+                    className="pointer-events-none absolute left-0 top-0 opacity-60"
+                    style={{
+                      width: `${pendingImportSize.width * displayScale}px`,
+                      height: `${pendingImportSize.height * displayScale}px`,
+                      transform: `translate(${pendingImportOffset.x * displayScale}px, ${pendingImportOffset.y * displayScale}px)`,
+                    }}
+                  >
+                    <CustomFacePixelPreview
+                      width={pendingImportSize.width}
+                      height={pendingImportSize.height}
+                      displayScale={displayScale}
+                      packedPixels={pendingImportPixels}
+                      ariaLabel={t('customFaceEditor.canvasOverlay.pendingImportPreview', {
+                        width: pendingImportSize.width,
+                        height: pendingImportSize.height,
+                      })}
+                    />
+                  </div>
+                </div>
+              ) : null}
             </div>
           </CustomFaceViewport>
         </div>
@@ -511,7 +619,26 @@ export function CustomFaceCanvas({
   );
 }
 
-function ToolOverlay({ width, height, tool, start, end, bounds, selection, selectionOrigin, selectionPivot, eraserBounds, penPoints, magnifierBounds, pointerBounds, magnifierMode, onMagnifierPointerDown, onMagnifierPointerMove, onMagnifierPointerUp, viewport }: {
+function ToolOverlay({
+  width,
+  height,
+  tool,
+  start,
+  end,
+  bounds,
+  selection,
+  selectionOrigin,
+  selectionPivot,
+  eraserBounds,
+  penPoints,
+  magnifierBounds,
+  pointerBounds,
+  magnifierMode,
+  onMagnifierPointerDown,
+  onMagnifierPointerMove,
+  onMagnifierPointerUp,
+  viewport,
+}: {
   width: number;
   height: number;
   tool: ToolId;
@@ -534,10 +661,10 @@ function ToolOverlay({ width, height, tool, start, end, bounds, selection, selec
   const t = useI18n();
   const visible = viewport ?? { originX: 0, originY: 0, width, height };
   const styleFor = (value: CanvasSelection) => ({
-    left: `${(value.x - visible.originX) / visible.width * 100}%`,
-    top: `${(value.y - visible.originY) / visible.height * 100}%`,
-    width: `${value.width / visible.width * 100}%`,
-    height: `${value.height / visible.height * 100}%`
+    left: `${((value.x - visible.originX) / visible.width) * 100}%`,
+    top: `${((value.y - visible.originY) / visible.height) * 100}%`,
+    width: `${(value.width / visible.width) * 100}%`,
+    height: `${(value.height / visible.height) * 100}%`,
   });
   return (
     <>
@@ -552,47 +679,187 @@ function ToolOverlay({ width, height, tool, start, end, bounds, selection, selec
           onPointerCancel={onMagnifierPointerUp}
         />
       ) : null}
-      {pointerBounds ? <div aria-label={t('customFaceEditor.canvasOverlay.currentPixel')} className="pointer-events-none absolute border-2 border-cyan-300 shadow-[0_0_0_1px_rgba(0,0,0,.95)]" style={styleFor(pointerBounds)} /> : null}
+      {pointerBounds ? (
+        <div
+          aria-label={t('customFaceEditor.canvasOverlay.currentPixel')}
+          className="pointer-events-none absolute border-2 border-cyan-300 shadow-[0_0_0_1px_rgba(0,0,0,.95)]"
+          style={styleFor(pointerBounds)}
+        />
+      ) : null}
       {selectionOrigin ? (
         selectionOrigin.shape === 'circle' ? (
-          <svg aria-label={t('customFaceEditor.canvasOverlay.originalSelection')} className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`${visible.originX} ${visible.originY} ${visible.width} ${visible.height}`} preserveAspectRatio="none">
-            <ellipse cx={selectionOrigin.x + selectionOrigin.width / 2} cy={selectionOrigin.y + selectionOrigin.height / 2} rx={selectionOrigin.width / 2} ry={selectionOrigin.height / 2} fill="rgba(253,224,71,.1)" stroke="rgb(253,224,71)" strokeWidth="0.55" strokeDasharray="1.2 0.8" vectorEffect="non-scaling-stroke" filter="drop-shadow(0 0 0.25px rgba(0,0,0,.85))" />
+          <svg
+            aria-label={t('customFaceEditor.canvasOverlay.originalSelection')}
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox={`${visible.originX} ${visible.originY} ${visible.width} ${visible.height}`}
+            preserveAspectRatio="none"
+          >
+            <ellipse
+              cx={selectionOrigin.x + selectionOrigin.width / 2}
+              cy={selectionOrigin.y + selectionOrigin.height / 2}
+              rx={selectionOrigin.width / 2}
+              ry={selectionOrigin.height / 2}
+              fill="rgba(253,224,71,.1)"
+              stroke="rgb(253,224,71)"
+              strokeWidth="0.55"
+              strokeDasharray="1.2 0.8"
+              vectorEffect="non-scaling-stroke"
+              filter="drop-shadow(0 0 0.25px rgba(0,0,0,.85))"
+            />
           </svg>
         ) : (
-          <div aria-label={t('customFaceEditor.canvasOverlay.originalSelection')} className="pointer-events-none absolute border-2 border-dashed border-yellow-300 bg-yellow-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(selectionOrigin)} />
+          <div
+            aria-label={t('customFaceEditor.canvasOverlay.originalSelection')}
+            className="pointer-events-none absolute border-2 border-dashed border-yellow-300 bg-yellow-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.85)]"
+            style={styleFor(selectionOrigin)}
+          />
         )
       ) : null}
       {selection ? (
         selection.shape === 'circle' ? (
-          <svg aria-label={t('customFaceEditor.canvasOverlay.selection')} className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`${visible.originX} ${visible.originY} ${visible.width} ${visible.height}`} preserveAspectRatio="none">
-            <ellipse cx={selection.x + selection.width / 2} cy={selection.y + selection.height / 2} rx={selection.width / 2} ry={selection.height / 2} fill="rgba(103,232,249,.1)" stroke="rgb(103,232,249)" strokeWidth="0.55" vectorEffect="non-scaling-stroke" filter="drop-shadow(0 0 0.25px rgba(0,0,0,.85))" />
+          <svg
+            aria-label={t('customFaceEditor.canvasOverlay.selection')}
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox={`${visible.originX} ${visible.originY} ${visible.width} ${visible.height}`}
+            preserveAspectRatio="none"
+          >
+            <ellipse
+              cx={selection.x + selection.width / 2}
+              cy={selection.y + selection.height / 2}
+              rx={selection.width / 2}
+              ry={selection.height / 2}
+              fill="rgba(103,232,249,.1)"
+              stroke="rgb(103,232,249)"
+              strokeWidth="0.55"
+              vectorEffect="non-scaling-stroke"
+              filter="drop-shadow(0 0 0.25px rgba(0,0,0,.85))"
+            />
           </svg>
         ) : (
-          <div aria-label={t('customFaceEditor.canvasOverlay.selection')} className="pointer-events-none absolute border-2 border-solid border-cyan-300 bg-cyan-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(selection)} />
+          <div
+            aria-label={t('customFaceEditor.canvasOverlay.selection')}
+            className="pointer-events-none absolute border-2 border-solid border-cyan-300 bg-cyan-300/10 shadow-[0_0_0_1px_rgba(0,0,0,.85)]"
+            style={styleFor(selection)}
+          />
         )
       ) : null}
-      {selectionPivot ? <div aria-label={t('customFaceEditor.canvasOverlay.selectionPivot')} className="pointer-events-none absolute z-10 flex items-center justify-center text-orange-300" style={{ left: `${(selectionPivot.x - visible.originX + 0.5) / visible.width * 100}%`, top: `${(selectionPivot.y - visible.originY + 0.5) / visible.height * 100}%`, transform: 'translate(-50%, -50%)' }}>+</div> : null}
-      {eraserBounds ? <div aria-label={t('customFaceEditor.canvasOverlay.eraserArea')} className="pointer-events-none absolute border-2 border-red-400 bg-red-400/15 shadow-[0_0_0_1px_rgba(0,0,0,.85)]" style={styleFor(eraserBounds)} /> : null}
+      {selectionPivot ? (
+        <div
+          aria-label={t('customFaceEditor.canvasOverlay.selectionPivot')}
+          className="pointer-events-none absolute z-10 flex items-center justify-center text-orange-300"
+          style={{
+            left: `${((selectionPivot.x - visible.originX + 0.5) / visible.width) * 100}%`,
+            top: `${((selectionPivot.y - visible.originY + 0.5) / visible.height) * 100}%`,
+            transform: 'translate(-50%, -50%)',
+          }}
+        >
+          +
+        </div>
+      ) : null}
+      {eraserBounds ? (
+        <div
+          aria-label={t('customFaceEditor.canvasOverlay.eraserArea')}
+          className="pointer-events-none absolute border-2 border-red-400 bg-red-400/15 shadow-[0_0_0_1px_rgba(0,0,0,.85)]"
+          style={styleFor(eraserBounds)}
+        />
+      ) : null}
       {start && end && bounds ? (
-        <svg aria-label={t('customFaceEditor.canvasOverlay.toolPreview')} className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`${visible.originX} ${visible.originY} ${visible.width} ${visible.height}`} preserveAspectRatio="none">
-          {tool === 'line' ? <line x1={start[0] + 0.5} y1={start[1] + 0.5} x2={end[0] + 0.5} y2={end[1] + 0.5} {...previewStroke()} /> : null}
-          {tool === 'rectangle' ? <rect x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} fill="rgba(103,232,249,.1)" {...previewStroke()} /> : null}
+        <svg
+          aria-label={t('customFaceEditor.canvasOverlay.toolPreview')}
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          viewBox={`${visible.originX} ${visible.originY} ${visible.width} ${visible.height}`}
+          preserveAspectRatio="none"
+        >
+          {tool === 'line' ? (
+            <line
+              x1={start[0] + 0.5}
+              y1={start[1] + 0.5}
+              x2={end[0] + 0.5}
+              y2={end[1] + 0.5}
+              {...previewStroke()}
+            />
+          ) : null}
+          {tool === 'rectangle' ? (
+            <rect
+              x={bounds.x}
+              y={bounds.y}
+              width={bounds.width}
+              height={bounds.height}
+              fill="rgba(103,232,249,.1)"
+              {...previewStroke()}
+            />
+          ) : null}
           {tool === 'select' ? (
             bounds.shape === 'circle' ? (
-              <ellipse cx={bounds.x + bounds.width / 2} cy={bounds.y + bounds.height / 2} rx={bounds.width / 2} ry={bounds.height / 2} fill="rgba(103,232,249,.1)" {...previewStroke(SELECTION_STROKE)} />
+              <ellipse
+                cx={bounds.x + bounds.width / 2}
+                cy={bounds.y + bounds.height / 2}
+                rx={bounds.width / 2}
+                ry={bounds.height / 2}
+                fill="rgba(103,232,249,.1)"
+                {...previewStroke(SELECTION_STROKE)}
+              />
             ) : (
-              <rect x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} fill="rgba(103,232,249,.1)" {...previewStroke(SELECTION_STROKE)} />
+              <rect
+                x={bounds.x}
+                y={bounds.y}
+                width={bounds.width}
+                height={bounds.height}
+                fill="rgba(103,232,249,.1)"
+                {...previewStroke(SELECTION_STROKE)}
+              />
             )
           ) : null}
-          {tool === 'circle' ? <ellipse cx={bounds.x + bounds.width / 2} cy={bounds.y + bounds.height / 2} rx={bounds.width / 2} ry={bounds.height / 2} fill="rgba(103,232,249,.1)" {...previewStroke()} /> : null}
-          {tool === 'triangle' ? <polygon points={`${start[0] + 0.5},${start[1] + 0.5} ${start[0] - Math.abs(end[0] - start[0]) + 0.5},${end[1] + 0.5} ${start[0] + Math.abs(end[0] - start[0]) + 0.5},${end[1] + 0.5}`} fill="rgba(103,232,249,.1)" {...previewStroke()} /> : null}
-          <circle cx={start[0] + 0.5} cy={start[1] + 0.5} r="0.8" fill={PREVIEW_STROKE} stroke={PREVIEW_HALO} strokeWidth="0.35" />
+          {tool === 'circle' ? (
+            <ellipse
+              cx={bounds.x + bounds.width / 2}
+              cy={bounds.y + bounds.height / 2}
+              rx={bounds.width / 2}
+              ry={bounds.height / 2}
+              fill="rgba(103,232,249,.1)"
+              {...previewStroke()}
+            />
+          ) : null}
+          {tool === 'triangle' ? (
+            <polygon
+              points={`${start[0] + 0.5},${start[1] + 0.5} ${start[0] - Math.abs(end[0] - start[0]) + 0.5},${end[1] + 0.5} ${start[0] + Math.abs(end[0] - start[0]) + 0.5},${end[1] + 0.5}`}
+              fill="rgba(103,232,249,.1)"
+              {...previewStroke()}
+            />
+          ) : null}
+          <circle
+            cx={start[0] + 0.5}
+            cy={start[1] + 0.5}
+            r="0.8"
+            fill={PREVIEW_STROKE}
+            stroke={PREVIEW_HALO}
+            strokeWidth="0.35"
+          />
         </svg>
       ) : null}
       {penPoints.length > 0 ? (
-        <svg aria-label={t('customFaceEditor.canvasOverlay.penPreview')} className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`${visible.originX} ${visible.originY} ${visible.width} ${visible.height}`} preserveAspectRatio="none">
-          <polyline points={penPoints.map(([x, y]) => `${x + 0.5},${y + 0.5}`).join(' ')} fill="none" {...previewStroke()} />
-          {penPoints.slice(0, -1).map(([x, y], index) => <circle key={`${x}:${y}:${index}`} cx={x + 0.5} cy={y + 0.5} r="0.75" fill={PREVIEW_STROKE} stroke={PREVIEW_HALO} strokeWidth="0.35" />)}
+        <svg
+          aria-label={t('customFaceEditor.canvasOverlay.penPreview')}
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          viewBox={`${visible.originX} ${visible.originY} ${visible.width} ${visible.height}`}
+          preserveAspectRatio="none"
+        >
+          <polyline
+            points={penPoints.map(([x, y]) => `${x + 0.5},${y + 0.5}`).join(' ')}
+            fill="none"
+            {...previewStroke()}
+          />
+          {penPoints.slice(0, -1).map(([x, y], index) => (
+            <circle
+              key={`${x}:${y}:${index}`}
+              cx={x + 0.5}
+              cy={y + 0.5}
+              r="0.75"
+              fill={PREVIEW_STROKE}
+              stroke={PREVIEW_HALO}
+              strokeWidth="0.35"
+            />
+          ))}
         </svg>
       ) : null}
     </>
@@ -600,14 +867,30 @@ function ToolOverlay({ width, height, tool, start, end, bounds, selection, selec
 }
 
 function previewStroke(stroke = PREVIEW_STROKE) {
-  return { stroke, strokeWidth: 0.55, strokeDasharray: '1.2 0.8', vectorEffect: 'non-scaling-stroke' as const, filter: 'drop-shadow(0 0 0.3px #000)' };
+  return {
+    stroke,
+    strokeWidth: 0.55,
+    strokeDasharray: '1.2 0.8',
+    vectorEffect: 'non-scaling-stroke' as const,
+    filter: 'drop-shadow(0 0 0.3px #000)',
+  };
 }
 
 function boundsFor(start: Point, end: Point): CanvasSelection {
-  return { x: Math.min(start[0], end[0]), y: Math.min(start[1], end[1]), width: Math.abs(end[0] - start[0]) + 1, height: Math.abs(end[1] - start[1]) + 1 };
+  return {
+    x: Math.min(start[0], end[0]),
+    y: Math.min(start[1], end[1]),
+    width: Math.abs(end[0] - start[0]) + 1,
+    height: Math.abs(end[1] - start[1]) + 1,
+  };
 }
 
-function boundsForTool(start: Point, end: Point, tool: ToolId, shape?: SelectionShape): CanvasSelection {
+function boundsForTool(
+  start: Point,
+  end: Point,
+  tool: ToolId,
+  shape?: SelectionShape
+): CanvasSelection {
   if (tool !== 'triangle') {
     const baseBounds = boundsFor(start, end);
     return tool === 'select' && shape ? { ...baseBounds, shape } : baseBounds;
@@ -617,7 +900,7 @@ function boundsForTool(start: Point, end: Point, tool: ToolId, shape?: Selection
     x: start[0] - halfWidth,
     y: Math.min(start[1], end[1]),
     width: halfWidth * 2 + 1,
-    height: Math.abs(end[1] - start[1]) + 1
+    height: Math.abs(end[1] - start[1]) + 1,
   };
 }
 
@@ -649,7 +932,13 @@ function cursorClass(tool: ToolId) {
   return 'block h-full w-full cursor-crosshair';
 }
 
-function drawPacked(context: CanvasRenderingContext2D, pixels: Uint8Array | undefined, width: number, height: number, color: string) {
+function drawPacked(
+  context: CanvasRenderingContext2D,
+  pixels: Uint8Array | undefined,
+  width: number,
+  height: number,
+  color: string
+) {
   if (!pixels) return;
   context.fillStyle = color;
   pixels.forEach((value, index) => {

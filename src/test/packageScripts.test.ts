@@ -16,6 +16,9 @@ test('package exposes relay build commands', () => {
     'npm run build:relay:release && node scripts/sync-relay-asset.mjs'
   );
   expect(packageJson.scripts['build:app']).toBe('npm run build:relay:asset && npm run build');
+  expect(packageJson.scripts['firmware:build:sync']).toBe(
+    'node scripts/firmware-build-and-sync.mjs'
+  );
   expect(packageJson.scripts['clean:rust:debug']).toBe(
     'node scripts/clean-rust-target.mjs debug'
   );

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import {
   DeviceChannel,
   DeviceInputBinding,
   DeviceRuntimeState,
-  DeviceTransportConfig
+  DeviceTransportConfig,
 } from '@/api/tauriApi';
 import { DeviceRuntimeRegistryState } from '@/hooks/useDeviceRuntimeRegistry';
 import { DeviceChannelTable } from './DeviceChannelTable';
@@ -15,7 +15,7 @@ import { DeviceInputTestPanel } from './DeviceInputTestPanel';
 import { DeviceOperationDialog } from './DeviceOperationDialog';
 import { DeviceRuntimeStatusPanel } from './DeviceRuntimeStatusPanel';
 import { DeviceTestActionPanel } from './DeviceTestActionPanel';
-import { DeviceExtensionPanel } from './DeviceExtensionPanel';
+import { CustomFaceDisplayTestContext, DeviceExtensionPanel } from './DeviceExtensionPanel';
 
 type DeviceDetailPanelProps = {
   fallbackBoardId: string;
@@ -32,6 +32,8 @@ type DeviceDetailPanelProps = {
   onOpenRulesPage?: () => void;
   onOpenDiagnosticsCenter?: () => void;
   onOpenTransportMonitor: (deviceId: string) => void;
+  customFaceInstallPanel?: ReactNode;
+  customFaceTestContext?: CustomFaceDisplayTestContext | null;
 };
 
 export function DeviceDetailPanel({
@@ -48,7 +50,9 @@ export function DeviceDetailPanel({
   onRefreshCapabilities,
   onOpenRulesPage,
   onOpenDiagnosticsCenter,
-  onOpenTransportMonitor
+  onOpenTransportMonitor,
+  customFaceInstallPanel,
+  customFaceTestContext,
 }: DeviceDetailPanelProps) {
   const [operationCancelling, setOperationCancelling] = useState(false);
   const [inputChannelDraft, setInputChannelDraft] = useState<DeviceChannel | null>(null);
@@ -82,7 +86,9 @@ export function DeviceDetailPanel({
       />
       <DeviceIdentityPanel
         selectedState={selectedState}
-        busy={Boolean(selectedState?.deviceId && registry.connectingDeviceId === selectedState.deviceId)}
+        busy={Boolean(
+          selectedState?.deviceId && registry.connectingDeviceId === selectedState.deviceId
+        )}
         error={registry.error}
         onResetIdentity={registry.resetDeviceIdentity}
       />
@@ -93,7 +99,11 @@ export function DeviceDetailPanel({
         channels={selectedChannels}
         availableChannels={addableChannels}
         inputBindings={registry.inputBindings}
-        error={registry.error?.code === 'device-channel-referenced-by-output-rule' ? registry.error : null}
+        error={
+          registry.error?.code === 'device-channel-referenced-by-output-rule'
+            ? registry.error
+            : null
+        }
         onAddChannel={onAddChannel}
         onRemoveChannel={onRemoveChannel}
         onUpdateChannelMode={onUpdateChannelMode}
@@ -137,7 +147,9 @@ export function DeviceDetailPanel({
         selectedState={selectedState}
         actionStatus={registry.actionStatus}
         onSend={registry.sendExtensionAction}
+        customFaceTestContext={customFaceTestContext}
       />
+      {customFaceInstallPanel}
       <DeviceRuntimeStatusPanel
         selectedState={selectedState}
         error={registry.error}

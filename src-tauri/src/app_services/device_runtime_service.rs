@@ -2,11 +2,12 @@ use crate::app_services::device_operation::{next_operation_id, CANCELLED_RECONNE
 use crate::core::custom_faces::parse_custom_face_status;
 use crate::core::device::{
     DeviceChannel, DeviceChannelAction, DeviceCommandOutputType, DeviceCommandResult,
-    DeviceConnectionStatus, DeviceCustomFaceErrorCode, DeviceCustomFaceStatus,
-    DeviceCustomFaceStatusState, DeviceExtensionAction, DeviceExtensionActionType,
-    DeviceFirmwareInfo, DeviceFirmwareStatus, DeviceHeartbeatStatus, DeviceInputEvent,
-    DeviceInputEventAction, DeviceInputKind, DeviceInstance, DeviceOperationKind,
-    DeviceOperationSummary, DeviceRuntimeErrorCode, DeviceRuntimeState, DeviceTransportConfig,
+    DeviceConnectionStatus, DeviceCustomFaceActiveSource, DeviceCustomFaceActiveState,
+    DeviceCustomFaceErrorCode, DeviceCustomFaceStatus, DeviceCustomFaceStatusState,
+    DeviceExtensionAction, DeviceExtensionActionType, DeviceFirmwareInfo, DeviceFirmwareStatus,
+    DeviceHeartbeatStatus, DeviceInputEvent, DeviceInputEventAction, DeviceInputKind,
+    DeviceInstance, DeviceOperationKind, DeviceOperationSummary, DeviceRuntimeErrorCode,
+    DeviceRuntimeState, DeviceTransportConfig,
 };
 use crate::core::firmware::FirmwareArtifact;
 use crate::core::protocol::{DeviceInfoAck, DeviceInputEventAck, ProtocolAck, ProtocolCommandV2};
@@ -857,6 +858,18 @@ impl DeviceRuntimeService {
         Ok(())
     }
 
+    pub fn set_custom_face_active_source(
+        &mut self,
+        source: DeviceCustomFaceActiveSource,
+        group_id: Option<String>,
+    ) -> Result<DeviceRuntimeState, String> {
+        let prepared = self.prepare_custom_face_active_source_command(source, group_id.clone())?;
+        let session_id = prepared.session_id;
+        let result = prepared.worker.send_protocol_command(prepared.command);
+        self.complete_custom_face_active_source_command(session_id, source, group_id, result)?;
+        Ok(self.state())
+    }
+
     pub fn prepare_custom_face_status_query(&self) -> Result<PreparedDeviceCommand, String> {
         let Some(worker) = self.io_worker.clone() else {
             return Err("device is not connected".to_string());
@@ -876,6 +889,77 @@ impl DeviceRuntimeService {
         Ok(PreparedDeviceCommand {
             worker,
             command: ProtocolCommandV2::custom_face_status(),
+            session_id: self.io_session_id,
+        })
+    }
+
+    pub fn prepare_custom_face_active_source_command(
+        &self,
+        source: DeviceCustomFaceActiveSource,
+        group_id: Option<String>,
+    ) -> Result<PreparedDeviceCommand, String> {
+        let Some(worker) = self.io_worker.clone() else {
+            return Err("device is not connected".to_string());
+        };
+        if self.state.status != DeviceConnectionStatus::Connected {
+            return Err("device is not connected".to_string());
+        }
+        if self
+            .state
+            .firmware_info
+            .as_ref()
+            .and_then(|info| info.custom_face.as_ref())
+            .is_none()
+        {
+            return Err("device firmware does not support custom face activation".to_string());
+        }
+        if matches!(source, DeviceCustomFaceActiveSource::Custom) {
+            let installed = self
+                .state
+                .custom_face_status
+                .installed
+                .as_ref()
+                .ok_or_else(|| "device has no installed custom face group".to_string())?;
+            if group_id.as_deref() != Some(installed.group_id.as_str()) {
+                return Err("custom face active group does not match installed group".to_string());
+            }
+        }
+        let command = ProtocolCommandV2::set_custom_face_active_source(
+            match source {
+                DeviceCustomFaceActiveSource::Builtin => "builtin",
+                DeviceCustomFaceActiveSource::Custom => "custom",
+            },
+            group_id,
+        );
+        Ok(PreparedDeviceCommand {
+            worker,
+            command,
+            session_id: self.io_session_id,
+        })
+    }
+
+    pub fn prepare_custom_face_install_command(
+        &self,
+        command: ProtocolCommandV2,
+    ) -> Result<PreparedDeviceCommand, String> {
+        let Some(worker) = self.io_worker.clone() else {
+            return Err("device is not connected".to_string());
+        };
+        if self.state.status != DeviceConnectionStatus::Connected {
+            return Err("device is not connected".to_string());
+        }
+        if self
+            .state
+            .firmware_info
+            .as_ref()
+            .and_then(|info| info.custom_face.as_ref())
+            .is_none()
+        {
+            return Err("device firmware does not support custom face install".to_string());
+        }
+        Ok(PreparedDeviceCommand {
+            worker,
+            command,
             session_id: self.io_session_id,
         })
     }
@@ -979,6 +1063,60 @@ impl DeviceRuntimeService {
                 Ok(())
             }
         }
+    }
+
+    pub fn complete_custom_face_active_source_command(
+        &mut self,
+        session_id: u64,
+        source: DeviceCustomFaceActiveSource,
+        group_id: Option<String>,
+        result: Result<DeviceIoCommandResult, DeviceIoError>,
+    ) -> Result<(), String> {
+        if !self.io_session_matches(session_id) {
+            return Ok(());
+        }
+        let side_effects = match self.apply_protocol_command_result(result) {
+            Ok(side_effects) => side_effects,
+            Err(error) => {
+                if error.code == DeviceIoErrorCode::ActionTimeout {
+                    self.record_command_error(
+                        DeviceRuntimeErrorCode::DeviceActionTimeout,
+                        error.message.clone(),
+                    );
+                } else {
+                    self.mark_transport_error(error.clone());
+                }
+                return Err(error.message);
+            }
+        };
+        let Some(ack_line) = side_effects.ack else {
+            return Err("custom face active source response timed out".to_string());
+        };
+        let ack = ProtocolAck::parse(&ack_line).map_err(|error| error.to_string())?;
+        if !ack.ok {
+            let error = ack
+                .error
+                .as_deref()
+                .unwrap_or("custom face active source failed")
+                .to_string();
+            self.record_command_error(device_action_error_code(&ack), error.clone());
+            return Err(error);
+        }
+        if ack.ack_type.as_deref() != Some("set_custom_face_active_source") {
+            let error = "unexpected custom face active source response type".to_string();
+            self.record_command_error(
+                DeviceRuntimeErrorCode::DeviceProtocolInvalidResponse,
+                error.clone(),
+            );
+            return Err(error);
+        }
+        if let Some(info) = self.state.firmware_info.as_mut() {
+            info.custom_face_active = Some(DeviceCustomFaceActiveState {
+                source,
+                group_id,
+            });
+        }
+        Ok(())
     }
 
     pub(super) fn ping(&mut self) -> Result<(), String> {
@@ -1472,6 +1610,8 @@ fn display_status_fallback_action(action: &DeviceExtensionAction) -> Option<Devi
             lines: None,
             face_template: None,
             face_intensity: None,
+            custom_face_group_id: None,
+            custom_face_id: None,
             duration_ms: None,
             pattern: None,
             control: None,
@@ -1500,6 +1640,8 @@ fn display_status_fallback_action(action: &DeviceExtensionAction) -> Option<Devi
             lines: None,
             face_template: None,
             face_intensity: None,
+            custom_face_group_id: None,
+            custom_face_id: None,
             duration_ms: None,
             pattern: None,
             control: None,

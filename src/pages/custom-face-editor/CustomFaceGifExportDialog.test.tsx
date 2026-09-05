@@ -4,7 +4,16 @@ import { CustomFaceGifExportDialog } from './CustomFaceGifExportDialog';
 
 test('shows integer scales and updates the physical export size', () => {
   const onConfirm = vi.fn();
-  render(<CustomFaceGifExportDialog open width={320} height={240} frameCount={5} onCancel={vi.fn()} onConfirm={onConfirm} />);
+  render(
+    <CustomFaceGifExportDialog
+      open
+      width={320}
+      height={240}
+      frameCount={5}
+      onCancel={vi.fn()}
+      onConfirm={onConfirm}
+    />
+  );
 
   expect(screen.getAllByText('320 × 240')).toHaveLength(2);
   fireEvent.click(screen.getByRole('combobox', { name: '导出倍率' }));
@@ -14,18 +23,32 @@ test('shows integer scales and updates the physical export size', () => {
   expect(screen.getByText('1280 × 960')).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: '选择保存位置' }));
-  expect(onConfirm).toHaveBeenCalledWith({ scale: 4, invert: false, transparentBackground: false, frameIndices: [] });
+  expect(onConfirm).toHaveBeenCalledWith({
+    scale: 4,
+    invert: false,
+    transparentBackground: false,
+    frameIndices: [],
+  });
 });
 
 test('supports custom frame selection', () => {
   const onConfirm = vi.fn();
-  render(<CustomFaceGifExportDialog open width={320} height={240} frameCount={5} onCancel={vi.fn()} onConfirm={onConfirm} />);
+  render(
+    <CustomFaceGifExportDialog
+      open
+      width={320}
+      height={240}
+      frameCount={5}
+      onCancel={vi.fn()}
+      onConfirm={onConfirm}
+    />
+  );
 
   // Switch to custom frame selection
   fireEvent.click(screen.getByLabelText('自定义选择帧'));
 
   // Get all checkboxes for frames (not the option checkboxes)
-  const frameLabels = screen.getAllByRole('checkbox').filter(cb => {
+  const frameLabels = screen.getAllByRole('checkbox').filter((cb) => {
     const parent = cb.closest('label');
     return parent && /^\d+$/.test(parent.textContent?.trim() || '');
   });
@@ -38,5 +61,10 @@ test('supports custom frame selection', () => {
   expect(screen.getByText('已选择 3 帧')).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: '选择保存位置' }));
-  expect(onConfirm).toHaveBeenCalledWith({ scale: 1, invert: false, transparentBackground: false, frameIndices: [0, 2, 4] });
+  expect(onConfirm).toHaveBeenCalledWith({
+    scale: 1,
+    invert: false,
+    transparentBackground: false,
+    frameIndices: [0, 2, 4],
+  });
 });

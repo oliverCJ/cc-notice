@@ -39,6 +39,8 @@ pub struct SendDeviceExtensionActionRequest {
     pub lines: Option<Vec<String>>,
     pub face_template: Option<String>,
     pub face_intensity: Option<String>,
+    pub custom_face_group_id: Option<String>,
+    pub custom_face_id: Option<String>,
     pub duration_ms: Option<u64>,
     pub pattern: Option<String>,
     pub control: Option<String>,

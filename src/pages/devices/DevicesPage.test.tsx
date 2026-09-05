@@ -8,13 +8,32 @@ import { DeviceDiscoveryState } from '@/hooks/useDeviceDiscovery';
 import { DeviceCandidateResource } from '@/api/tauriApi';
 import { getBoardAvailableChannels } from '@/domain/boards/boardCatalog';
 
+const getCustomFaceGroupsMock = vi.hoisted(() => vi.fn());
+const getCustomFaceGroupMock = vi.hoisted(() => vi.fn());
+const installCustomFaceGroupToDeviceMock = vi.hoisted(() => vi.fn());
+const openDeviceTransportMonitorWindowMock = vi.hoisted(() => vi.fn());
+
+vi.mock('@/api/tauriApi', async () => {
+  const actual = await vi.importActual<typeof import('@/api/tauriApi')>('@/api/tauriApi');
+  return {
+    ...actual,
+    getCustomFaceGroups: getCustomFaceGroupsMock,
+    getCustomFaceGroup: getCustomFaceGroupMock,
+    installCustomFaceGroupToDevice: installCustomFaceGroupToDeviceMock,
+    openDeviceTransportMonitorWindow: openDeviceTransportMonitorWindowMock,
+  };
+});
+
 vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
   clearRect: vi.fn(),
   fillRect: vi.fn(),
   imageSmoothingEnabled: true,
-  fillStyle: ''
+  fillStyle: '',
 } as unknown as CanvasRenderingContext2D);
-vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1));
+vi.stubGlobal(
+  'requestAnimationFrame',
+  vi.fn(() => 1)
+);
 vi.stubGlobal('cancelAnimationFrame', vi.fn());
 
 const tauriEventHandlers = vi.hoisted(
@@ -27,7 +46,7 @@ vi.mock('@tauri-apps/api/event', () => ({
     return Promise.resolve(() => {
       tauriEventHandlers.delete(eventName);
     });
-  })
+  }),
 }));
 
 const registryState: DeviceRuntimeRegistryState = {
@@ -39,7 +58,7 @@ const registryState: DeviceRuntimeRegistryState = {
       transport: {
         kind: 'serial',
         serialPort: 'mock://rp2040-pico-default',
-        baudRate: 115200
+        baudRate: 115200,
       },
       channels: [
         {
@@ -52,14 +71,14 @@ const registryState: DeviceRuntimeRegistryState = {
             pin: 2,
             activeLevel: 'high',
             defaultLevel: 'low',
-            allowBlink: true
+            allowBlink: true,
           },
           pwmOutput: null,
           buzzer: null,
           addressableLed: null,
           supportedActions: ['activate', 'deactivate', 'blink', 'pulse'],
-          hardwareGuideId: 'digital-output'
-        }
+          hardwareGuideId: 'digital-output',
+        },
       ],
       firmwareInfo: null,
       bundledFirmwareVersion: null,
@@ -74,7 +93,7 @@ const registryState: DeviceRuntimeRegistryState = {
       lastDiscoveredAt: null,
       lastAck: null,
       lastError: null,
-      lastSentAt: null
+      lastSentAt: null,
     },
     {
       deviceId: 'rp2040-pico-lab',
@@ -83,7 +102,7 @@ const registryState: DeviceRuntimeRegistryState = {
       transport: {
         kind: 'serial',
         serialPort: '/dev/tty.usbmodem1101',
-        baudRate: 115200
+        baudRate: 115200,
       },
       channels: [
         {
@@ -96,14 +115,14 @@ const registryState: DeviceRuntimeRegistryState = {
             pin: 28,
             activeLevel: 'high',
             defaultLevel: 'low',
-            allowBlink: true
+            allowBlink: true,
           },
           pwmOutput: null,
           buzzer: null,
           addressableLed: null,
           supportedActions: ['activate', 'deactivate', 'blink', 'pulse'],
-          hardwareGuideId: 'digital-output'
-        }
+          hardwareGuideId: 'digital-output',
+        },
       ],
       firmwareInfo: null,
       bundledFirmwareVersion: null,
@@ -118,16 +137,16 @@ const registryState: DeviceRuntimeRegistryState = {
       lastDiscoveredAt: null,
       lastAck: 'ack:pin.gp2',
       lastError: null,
-      lastSentAt: '2026-06-27T10:00:00+08:00'
-    }
+      lastSentAt: '2026-06-27T10:00:00+08:00',
+    },
   ],
   ports: [
     {
       id: 'mock://rp2040-pico-default',
       displayName: 'RP2040 Mock',
       transportKind: 'serial',
-      address: 'mock://rp2040-pico-default'
-    }
+      address: 'mock://rp2040-pico-default',
+    },
   ],
   inputBindings: [],
   loading: false,
@@ -151,7 +170,7 @@ const registryState: DeviceRuntimeRegistryState = {
   refreshInputBindings: vi.fn(),
   saveInputBindings: vi.fn(),
   checkDeviceFirmware: vi.fn(),
-  resetDeviceIdentity: vi.fn()
+  resetDeviceIdentity: vi.fn(),
 };
 
 const discoveryState: DeviceDiscoveryState = {
@@ -162,7 +181,7 @@ const discoveryState: DeviceDiscoveryState = {
   error: null,
   scanCandidates: vi.fn(),
   identifyCandidate: vi.fn(),
-  registerCandidate: vi.fn()
+  registerCandidate: vi.fn(),
 };
 
 vi.mock('@/hooks/useDeviceDiscovery', async () => {
@@ -171,11 +190,18 @@ vi.mock('@/hooks/useDeviceDiscovery', async () => {
   );
   return {
     ...actual,
-    useDeviceDiscovery: vi.fn(() => discoveryState)
+    useDeviceDiscovery: vi.fn(() => discoveryState),
   };
 });
 
 describe('DevicesPage', () => {
+  beforeEach(() => {
+    getCustomFaceGroupsMock.mockResolvedValue([]);
+    getCustomFaceGroupMock.mockResolvedValue(null);
+    installCustomFaceGroupToDeviceMock.mockReset();
+    openDeviceTransportMonitorWindowMock.mockResolvedValue(undefined);
+  });
+
   test('uses generic device management description instead of board-specific copy', () => {
     renderDevicesPage();
 
@@ -197,7 +223,9 @@ describe('DevicesPage', () => {
     );
     expect(screen.getByRole('cell', { name: 'GP2' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'GP2 · Pin 4' })).toBeInTheDocument();
-    expect(screen.getByText('按当前设备能力展示可用通道。通道类型、针脚和电平语义由板卡能力配置维护。')).toBeInTheDocument();
+    expect(
+      screen.getByText('按当前设备能力展示可用通道。通道类型、针脚和电平语义由板卡能力配置维护。')
+    ).toBeInTheDocument();
     expect(screen.queryByText(/默认 RP2040 Pico 数字输出通道/)).not.toBeInTheDocument();
     expect(screen.queryByRole('cell', { name: 'GP28' })).not.toBeInTheDocument();
 
@@ -219,12 +247,12 @@ describe('DevicesPage', () => {
     const upsertDeviceState = vi.fn();
     renderDevicesPage({
       ...registryState,
-      upsertDeviceState
+      upsertDeviceState,
     });
 
     expect(useDeviceDiscoveryModule.useDeviceDiscovery).toHaveBeenCalledWith(
       expect.objectContaining({
-        onRegisteredDevice: upsertDeviceState
+        onRegisteredDevice: upsertDeviceState,
       })
     );
   });
@@ -234,7 +262,7 @@ describe('DevicesPage', () => {
     const matchedTransport = {
       kind: 'serial' as const,
       serialPort: '/dev/cu.usbmodem-new',
-      baudRate: 115200
+      baudRate: 115200,
     };
     const matchedCandidate: DeviceCandidateResource = {
       resourceId: 'serial:/dev/cu.usbmodem-new',
@@ -244,12 +272,12 @@ describe('DevicesPage', () => {
       handshakeInfo: null,
       deviceUid: 'rp2040-pico:0011223344556677',
       matchedDeviceId: 'rp2040-pico-default',
-      error: null
+      error: null,
     };
 
     renderDevicesPage({
       ...registryState,
-      connectDevice
+      connectDevice,
     });
     const discoveryCalls = vi.mocked(useDeviceDiscoveryModule.useDeviceDiscovery).mock.calls;
     const discoveryOptions = discoveryCalls[discoveryCalls.length - 1]?.[0] as {
@@ -271,18 +299,18 @@ describe('DevicesPage', () => {
       transport: {
         kind: 'serial',
         serialPort: '/dev/tty.usbmodem1101',
-        baudRate: 115200
+        baudRate: 115200,
       },
       discoveryStatus: 'matched',
       handshakeInfo: null,
       deviceUid: 'rp2040-pico:lab',
       matchedDeviceId: 'rp2040-pico-lab',
-      error: null
+      error: null,
     };
 
     renderDevicesPage({
       ...registryState,
-      connectDevice
+      connectDevice,
     });
     const discoveryCalls = vi.mocked(useDeviceDiscoveryModule.useDeviceDiscovery).mock.calls;
     const discoveryOptions = discoveryCalls[discoveryCalls.length - 1]?.[0] as {
@@ -306,7 +334,7 @@ describe('DevicesPage', () => {
   test('connects selected registered device through its saved transport', () => {
     const stateWithConnectAction: DeviceRuntimeRegistryState = {
       ...registryState,
-      connectDevice: vi.fn()
+      connectDevice: vi.fn(),
     };
     renderDevicesPage(stateWithConnectAction);
 
@@ -318,12 +346,12 @@ describe('DevicesPage', () => {
   test('connects selected registered device through latest matched scanned transport', () => {
     const stateWithConnectAction: DeviceRuntimeRegistryState = {
       ...registryState,
-      connectDevice: vi.fn()
+      connectDevice: vi.fn(),
     };
     const latestTransport = {
       kind: 'serial' as const,
       serialPort: '/dev/cu.usbmodem-new',
-      baudRate: 115200
+      baudRate: 115200,
     };
     renderDevicesPage(stateWithConnectAction, {
       ...discoveryState,
@@ -336,9 +364,9 @@ describe('DevicesPage', () => {
           handshakeInfo: null,
           deviceUid: 'rp2040-pico:0011223344556677',
           matchedDeviceId: 'rp2040-pico-default',
-          error: null
-        }
-      ]
+          error: null,
+        },
+      ],
     });
 
     fireEvent.click(screen.getByRole('button', { name: '连接当前设备' }));
@@ -357,16 +385,16 @@ describe('DevicesPage', () => {
           ...registryState.states[0],
           deviceId: 'desk-nano',
           boardId: 'arduino-nano',
-          deviceUid: null
+          deviceUid: null,
         },
-        registryState.states[1]
+        registryState.states[1],
       ],
-      connectDevice: vi.fn()
+      connectDevice: vi.fn(),
     };
     const selectedTransport = {
       kind: 'serial' as const,
       serialPort: '/dev/cu.usbmodem-selected',
-      baudRate: 115200
+      baudRate: 115200,
     };
     renderDevicesPage(stateWithConnectAction, {
       ...discoveryState,
@@ -379,7 +407,7 @@ describe('DevicesPage', () => {
           handshakeInfo: null,
           deviceUid: null,
           matchedDeviceId: null,
-          error: null
+          error: null,
         },
         {
           resourceId: 'serial:/dev/tty.usbmodem1101',
@@ -387,15 +415,15 @@ describe('DevicesPage', () => {
           transport: {
             kind: 'serial',
             serialPort: '/dev/tty.usbmodem1101',
-            baudRate: 115200
+            baudRate: 115200,
           },
           discoveryStatus: 'matched',
           handshakeInfo: null,
           deviceUid: 'rp2040-pico:other',
           matchedDeviceId: 'rp2040-pico-lab',
-          error: null
-        }
-      ]
+          error: null,
+        },
+      ],
     });
 
     const connectionPanel = screen.getByTestId('device-connection-controls');
@@ -418,11 +446,11 @@ describe('DevicesPage', () => {
         state.deviceId === 'rp2040-pico-default'
           ? {
               ...state,
-              deviceUid: 'rp2040-pico:0011223344556677'
+              deviceUid: 'rp2040-pico:0011223344556677',
             }
           : state
       ),
-      connectDevice: vi.fn()
+      connectDevice: vi.fn(),
     };
     renderDevicesPage(stateWithConnectAction, {
       ...discoveryState,
@@ -433,15 +461,15 @@ describe('DevicesPage', () => {
           transport: {
             kind: 'serial',
             serialPort: '/dev/cu.wio-terminal',
-            baudRate: 115200
+            baudRate: 115200,
           },
           discoveryStatus: 'unidentified',
           handshakeInfo: null,
           deviceUid: null,
           matchedDeviceId: null,
-          error: null
-        }
-      ]
+          error: null,
+        },
+      ],
     });
 
     const connectionPanel = screen.getByTestId('device-connection-controls');
@@ -463,16 +491,16 @@ describe('DevicesPage', () => {
           transport: {
             kind: 'serial',
             serialPort: '/dev/cu.usbmodem-old',
-            baudRate: 115200
-          }
-        }
+            baudRate: 115200,
+          },
+        },
       ],
-      connectDevice: vi.fn()
+      connectDevice: vi.fn(),
     };
     const newTransport = {
       kind: 'serial' as const,
       serialPort: '/dev/cu.usbmodem1301',
-      baudRate: 115200
+      baudRate: 115200,
     };
     renderDevicesPage(stateWithConnectAction, {
       ...discoveryState,
@@ -485,14 +513,16 @@ describe('DevicesPage', () => {
           handshakeInfo: null,
           deviceUid: null,
           matchedDeviceId: null,
-          error: null
-        }
-      ]
+          error: null,
+        },
+      ],
     });
 
     const connectionPanel = screen.getByTestId('device-connection-controls');
 
-    expect(within(connectionPanel).getByText('Seeed Wio Terminal (cu.usbmodem1301)')).toBeInTheDocument();
+    expect(
+      within(connectionPanel).getByText('Seeed Wio Terminal (cu.usbmodem1301)')
+    ).toBeInTheDocument();
     fireEvent.click(
       within(connectionPanel).getByRole('button', { name: 'Seeed Wio Terminal (cu.usbmodem1301)' })
     );
@@ -511,12 +541,12 @@ describe('DevicesPage', () => {
               transport: {
                 kind: 'serial',
                 serialPort: '/dev/cu.usbmodem-current',
-                baudRate: 115200
-              }
+                baudRate: 115200,
+              },
             }
           : state
       ),
-      connectDevice: vi.fn()
+      connectDevice: vi.fn(),
     };
     renderDevicesPage(stateWithConnectAction, {
       ...discoveryState,
@@ -527,15 +557,15 @@ describe('DevicesPage', () => {
           transport: {
             kind: 'serial',
             serialPort: '/dev/cu.usbmodem-current',
-            baudRate: 115200
+            baudRate: 115200,
           },
           discoveryStatus: 'matched',
           handshakeInfo: null,
           deviceUid: 'rp2040-pico:0011223344556677',
           matchedDeviceId: 'rp2040-pico-default',
-          error: null
-        }
-      ]
+          error: null,
+        },
+      ],
     });
 
     const connectionPanel = screen.getByTestId('device-connection-controls');
@@ -546,12 +576,12 @@ describe('DevicesPage', () => {
   test('keeps current device stable uid matched transport even when another device has stale saved port', () => {
     const stateWithConnectAction: DeviceRuntimeRegistryState = {
       ...registryState,
-      connectDevice: vi.fn()
+      connectDevice: vi.fn(),
     };
     const matchedTransport = {
       kind: 'serial' as const,
       serialPort: '/dev/tty.usbmodem1101',
-      baudRate: 115200
+      baudRate: 115200,
     };
     renderDevicesPage(stateWithConnectAction, {
       ...discoveryState,
@@ -564,9 +594,9 @@ describe('DevicesPage', () => {
           handshakeInfo: null,
           deviceUid: 'rp2040-pico:0011223344556677',
           matchedDeviceId: 'rp2040-pico-default',
-          error: null
-        }
-      ]
+          error: null,
+        },
+      ],
     });
 
     const connectionPanel = screen.getByTestId('device-connection-controls');
@@ -582,7 +612,7 @@ describe('DevicesPage', () => {
   test('auto connects registered devices from connection controls', () => {
     const stateWithAutoConnectAction: DeviceRuntimeRegistryState = {
       ...registryState,
-      autoConnectRegisteredDevices: vi.fn()
+      autoConnectRegisteredDevices: vi.fn(),
     };
     renderDevicesPage(stateWithAutoConnectAction);
 
@@ -596,7 +626,9 @@ describe('DevicesPage', () => {
 
     const connectionPanel = screen.getByTestId('device-connection-controls');
 
-    expect(within(connectionPanel).queryByRole('button', { name: '自动连接已注册设备' })).not.toBeInTheDocument();
+    expect(
+      within(connectionPanel).queryByRole('button', { name: '自动连接已注册设备' })
+    ).not.toBeInTheDocument();
   });
 
   test('shows connection errors near connection management instead of runtime status', () => {
@@ -604,15 +636,17 @@ describe('DevicesPage', () => {
       ...registryState,
       error: {
         message: 'Device or resource busy',
-        scope: 'connection'
-      }
+        scope: 'connection',
+      },
     });
 
     const connectionPanel = screen.getByTestId('device-connection-controls');
     expect(within(connectionPanel).getByText('连接操作失败')).toBeInTheDocument();
     expect(within(connectionPanel).getByText('Device or resource busy')).toBeInTheDocument();
     expect(
-      within(screen.getByTestId('device-runtime-status-panel')).queryByText('Device or resource busy')
+      within(screen.getByTestId('device-runtime-status-panel')).queryByText(
+        'Device or resource busy'
+      )
     ).not.toBeInTheDocument();
   });
 
@@ -621,8 +655,8 @@ describe('DevicesPage', () => {
       ...registryState,
       error: {
         message: 'scan failed',
-        scope: 'device-access'
-      }
+        scope: 'device-access',
+      },
     });
 
     const discoveryPanel = screen.getByTestId('device-discovery-panel');
@@ -639,7 +673,7 @@ describe('DevicesPage', () => {
   test('removes selected registered device from the list action', () => {
     const stateWithRemoveAction: DeviceRuntimeRegistryState = {
       ...registryState,
-      removeRegisteredDevice: vi.fn()
+      removeRegisteredDevice: vi.fn(),
     };
     renderDevicesPage(stateWithRemoveAction);
 
@@ -648,7 +682,9 @@ describe('DevicesPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '确认移除' }));
 
-    expect(stateWithRemoveAction.removeRegisteredDevice).toHaveBeenCalledWith('rp2040-pico-default');
+    expect(stateWithRemoveAction.removeRegisteredDevice).toHaveBeenCalledWith(
+      'rp2040-pico-default'
+    );
   });
 
   test('shows friendly referenced-device removal error with rules navigation action', () => {
@@ -658,18 +694,23 @@ describe('DevicesPage', () => {
         ...registryState,
         error: {
           code: 'device-referenced-by-output-rule',
-          message: 'device rp2040-pico-default is used by output rule agent-running-device-channel-output',
+          message:
+            'device rp2040-pico-default is used by output rule agent-running-device-channel-output',
           deviceId: 'rp2040-pico-default',
-          ruleId: 'agent-running-device-channel-output'
-        }
+          ruleId: 'agent-running-device-channel-output',
+        },
       },
       discoveryState,
       openRules
     );
 
     const deviceListPanel = screen.getByTestId('device-list-panel');
-    expect(within(deviceListPanel).getByText('设备正在被输出规则引用，不能移除。')).toBeInTheDocument();
-    expect(within(deviceListPanel).getByText('引用规则：agent-running-device-channel-output')).toBeInTheDocument();
+    expect(
+      within(deviceListPanel).getByText('设备正在被输出规则引用，不能移除。')
+    ).toBeInTheDocument();
+    expect(
+      within(deviceListPanel).getByText('引用规则：agent-running-device-channel-output')
+    ).toBeInTheDocument();
     expect(
       within(screen.getByTestId('device-runtime-status-panel')).queryByText(
         '设备正在被输出规则引用，不能移除。'
@@ -688,11 +729,12 @@ describe('DevicesPage', () => {
         ...registryState,
         error: {
           code: 'device-channel-referenced-by-output-rule',
-          message: 'device channel pin.gp2 is used by output rule agent-running-device-channel-output',
+          message:
+            'device channel pin.gp2 is used by output rule agent-running-device-channel-output',
           channelId: 'pin.gp2',
           ruleId: 'agent-running-device-channel-output',
-          scope: 'runtime'
-        } as never
+          scope: 'runtime',
+        } as never,
       },
       discoveryState,
       openRules
@@ -700,10 +742,16 @@ describe('DevicesPage', () => {
 
     const deviceListPanel = screen.getByTestId('device-list-panel');
     const channelPanel = screen.getByTestId('device-channel-panel');
-    expect(within(deviceListPanel).queryByText('设备正在被输出规则引用，不能移除。')).not.toBeInTheDocument();
-    expect(within(channelPanel).getByText('通道正在被输出规则引用，不能切换为输入。')).toBeInTheDocument();
+    expect(
+      within(deviceListPanel).queryByText('设备正在被输出规则引用，不能移除。')
+    ).not.toBeInTheDocument();
+    expect(
+      within(channelPanel).getByText('通道正在被输出规则引用，不能切换为输入。')
+    ).toBeInTheDocument();
     expect(within(channelPanel).getByText('通道：pin.gp2')).toBeInTheDocument();
-    expect(within(channelPanel).getByText('引用规则：agent-running-device-channel-output')).toBeInTheDocument();
+    expect(
+      within(channelPanel).getByText('引用规则：agent-running-device-channel-output')
+    ).toBeInTheDocument();
 
     fireEvent.click(within(channelPanel).getByRole('button', { name: '前往 AI 事件映射' }));
 
@@ -720,17 +768,17 @@ describe('DevicesPage', () => {
           transport: {
             kind: 'serial',
             serialPort: '/dev/cu.usbmodem1101',
-            baudRate: 115200
+            baudRate: 115200,
           },
           discoveryStatus: 'matched',
           handshakeInfo: null,
           deviceUid: 'rp2040-pico:0011223344556677',
           matchedDeviceId: 'rp2040-pico-lab',
-          error: null
-        }
+          error: null,
+        },
       ],
       identifyCandidate: vi.fn(),
-      registerCandidate: vi.fn()
+      registerCandidate: vi.fn(),
     });
 
     expect(screen.getByText('已匹配设备：rp2040-pico-lab')).toBeInTheDocument();
@@ -752,7 +800,7 @@ describe('DevicesPage', () => {
       'rp2040-pico-default',
       expect.arrayContaining([
         expect.objectContaining({ id: 'pin.gp2' }),
-        expect.objectContaining({ id: 'pin.gp28' })
+        expect.objectContaining({ id: 'pin.gp28' }),
       ])
     );
   });
@@ -769,9 +817,9 @@ describe('DevicesPage', () => {
           ...registryState.states[0],
           deviceId: 'desk-pro-micro',
           boardId: 'sparkfun-pro-micro-32u4',
-          channels: [firstProMicroChannel!]
-        }
-      ]
+          channels: [firstProMicroChannel!],
+        },
+      ],
     };
 
     renderDevicesPage(proMicroState);
@@ -785,7 +833,7 @@ describe('DevicesPage', () => {
   test('refreshes configured channel capabilities from the selected board catalog', () => {
     const stateWithOldChannelCapabilities: DeviceRuntimeRegistryState = {
       ...registryState,
-      updateDeviceChannels: vi.fn()
+      updateDeviceChannels: vi.fn(),
     };
     renderDevicesPage(stateWithOldChannelCapabilities);
 
@@ -796,8 +844,14 @@ describe('DevicesPage', () => {
       [
         expect.objectContaining({
           id: 'pin.gp2',
-          supportedActions: expect.arrayContaining(['activate', 'deactivate', 'blink', 'breathe', 'pulse'])
-        })
+          supportedActions: expect.arrayContaining([
+            'activate',
+            'deactivate',
+            'blink',
+            'breathe',
+            'pulse',
+          ]),
+        }),
       ]
     );
   });
@@ -805,7 +859,7 @@ describe('DevicesPage', () => {
   test('requires confirmation before switching a Pico GPIO channel to input mode', () => {
     const stateWithModeSwitch: DeviceRuntimeRegistryState = {
       ...registryState,
-      updateDeviceChannels: vi.fn()
+      updateDeviceChannels: vi.fn(),
     };
     renderDevicesPage(stateWithModeSwitch);
 
@@ -816,22 +870,19 @@ describe('DevicesPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '确认切换' }));
 
-    expect(stateWithModeSwitch.updateDeviceChannels).toHaveBeenCalledWith(
-      'rp2040-pico-default',
-      [
-        expect.objectContaining({
-          id: 'pin.gp2',
-          kind: 'button-input',
-          direction: 'input',
-          input: expect.objectContaining({
-            control: 'pin.gp2',
-            inputKind: 'gpio',
-            fixed: false
-          }),
-          supportedActions: []
-        })
-      ]
-    );
+    expect(stateWithModeSwitch.updateDeviceChannels).toHaveBeenCalledWith('rp2040-pico-default', [
+      expect.objectContaining({
+        id: 'pin.gp2',
+        kind: 'button-input',
+        direction: 'input',
+        input: expect.objectContaining({
+          control: 'pin.gp2',
+          inputKind: 'gpio',
+          fixed: false,
+        }),
+        supportedActions: [],
+      }),
+    ]);
   });
 
   test('allows Pico OLED GPIO channels to switch to input mode', () => {
@@ -849,58 +900,52 @@ describe('DevicesPage', () => {
           ...registryState.states[0],
           deviceId: 'pico-oled-096',
           boardId: 'rp2040-pico-oled-096',
-          channels: [picoOled096Gp2!]
+          channels: [picoOled096Gp2!],
         },
         {
           ...registryState.states[1],
           deviceId: 'pico-oled-091',
           boardId: 'rp2040-pico-oled-091',
-          channels: [picoOled091Gp22!]
-        }
-      ]
+          channels: [picoOled091Gp22!],
+        },
+      ],
     };
     renderDevicesPage(stateWithPicoOledDevices);
 
     fireEvent.click(screen.getByRole('button', { name: '切为输入' }));
     fireEvent.click(screen.getByRole('button', { name: '确认切换' }));
 
-    expect(stateWithPicoOledDevices.updateDeviceChannels).toHaveBeenCalledWith(
-      'pico-oled-096',
-      [
-        expect.objectContaining({
-          id: 'pin.gp2',
-          kind: 'button-input',
-          direction: 'input',
-          input: expect.objectContaining({
-            control: 'pin.gp2',
-            inputKind: 'gpio',
-            fixed: false
-          }),
-          supportedActions: []
-        })
-      ]
-    );
+    expect(stateWithPicoOledDevices.updateDeviceChannels).toHaveBeenCalledWith('pico-oled-096', [
+      expect.objectContaining({
+        id: 'pin.gp2',
+        kind: 'button-input',
+        direction: 'input',
+        input: expect.objectContaining({
+          control: 'pin.gp2',
+          inputKind: 'gpio',
+          fixed: false,
+        }),
+        supportedActions: [],
+      }),
+    ]);
 
     fireEvent.click(screen.getByRole('button', { name: 'pico-oled-091 rp2040-pico-oled-091' }));
     fireEvent.click(screen.getByRole('button', { name: '切为输入' }));
     fireEvent.click(screen.getByRole('button', { name: '确认切换' }));
 
-    expect(stateWithPicoOledDevices.updateDeviceChannels).toHaveBeenCalledWith(
-      'pico-oled-091',
-      [
-        expect.objectContaining({
-          id: 'pin.gp22',
-          kind: 'button-input',
-          direction: 'input',
-          input: expect.objectContaining({
-            control: 'pin.gp22',
-            inputKind: 'gpio',
-            fixed: false
-          }),
-          supportedActions: []
-        })
-      ]
-    );
+    expect(stateWithPicoOledDevices.updateDeviceChannels).toHaveBeenCalledWith('pico-oled-091', [
+      expect.objectContaining({
+        id: 'pin.gp22',
+        kind: 'button-input',
+        direction: 'input',
+        input: expect.objectContaining({
+          control: 'pin.gp22',
+          inputKind: 'gpio',
+          fixed: false,
+        }),
+        supportedActions: [],
+      }),
+    ]);
   });
 
   test('clears pending GPIO mode switch when the channel disappears before confirmation', () => {
@@ -910,23 +955,20 @@ describe('DevicesPage', () => {
       states: [
         {
           ...registryState.states[0],
-          channels: [
-            registryState.states[0].channels[0],
-            registryState.states[1].channels[0]
-          ]
+          channels: [registryState.states[0].channels[0], registryState.states[1].channels[0]],
         },
-        registryState.states[1]
-      ]
+        registryState.states[1],
+      ],
     };
     const stateWithoutGp2: DeviceRuntimeRegistryState = {
       ...stateWithTwoChannels,
       states: [
         {
           ...stateWithTwoChannels.states[0],
-          channels: [registryState.states[1].channels[0]]
+          channels: [registryState.states[1].channels[0]],
         },
-        registryState.states[1]
-      ]
+        registryState.states[1],
+      ],
     };
     const { rerender } = renderDevicesPage(stateWithTwoChannels);
 
@@ -954,23 +996,19 @@ describe('DevicesPage', () => {
       states: [
         {
           ...registryState.states[0],
-          channels: [
-            registryState.states[0].channels[0],
-            registryState.states[1].channels[0]
-          ]
+          channels: [registryState.states[0].channels[0], registryState.states[1].channels[0]],
         },
-        registryState.states[1]
+        registryState.states[1],
       ],
-      updateDeviceChannels: vi.fn()
+      updateDeviceChannels: vi.fn(),
     };
     renderDevicesPage(stateWithTwoChannels);
 
     fireEvent.click(screen.getByRole('button', { name: '删除 GP2' }));
 
-    expect(stateWithTwoChannels.updateDeviceChannels).toHaveBeenCalledWith(
-      'rp2040-pico-default',
-      [expect.objectContaining({ id: 'pin.gp28' })]
-    );
+    expect(stateWithTwoChannels.updateDeviceChannels).toHaveBeenCalledWith('rp2040-pico-default', [
+      expect.objectContaining({ id: 'pin.gp28' }),
+    ]);
   });
 
   test('opens hardware guide from a device channel', () => {
@@ -981,7 +1019,9 @@ describe('DevicesPage', () => {
     expect(screen.getByRole('dialog', { name: '数字输出连接助手' })).toBeInTheDocument();
     expect(screen.getByText('适合普通 LED、继电器输入和低压数字触发模块。')).toBeInTheDocument();
     expect(screen.getByText('GPIO 输出逻辑电平：3.3V。')).toBeInTheDocument();
-    expect(screen.getByText('普通 LED 推荐串联 330Ω - 1kΩ；默认优先选 470Ω 或 1kΩ。')).toBeInTheDocument();
+    expect(
+      screen.getByText('普通 LED 推荐串联 330Ω - 1kΩ；默认优先选 470Ω 或 1kΩ。')
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '官方引脚图' })).toHaveAttribute(
       'href',
       'https://www.raspberrypi.com/documentation/microcontrollers/pico-series.html#non-wireless-board-layout'
@@ -994,7 +1034,10 @@ describe('DevicesPage', () => {
       'href',
       'https://pip-assets.raspberrypi.com/categories/814-rp2040/documents/RP-008371-DS-1-rp2040-datasheet.pdf'
     );
-    expect(screen.getByTestId('rp2040-pico-physical-pin-4')).toHaveAttribute('data-highlighted', 'true');
+    expect(screen.getByTestId('rp2040-pico-physical-pin-4')).toHaveAttribute(
+      'data-highlighted',
+      'true'
+    );
   });
 
   test('shows Wio fixed input channel and opens shortcut binding dialog', () => {
@@ -1009,9 +1052,9 @@ describe('DevicesPage', () => {
           trigger: 'press',
           action: {
             type: 'keyboard-shortcut',
-            shortcut: { keys: ['Command', 'Enter'] }
-          }
-        }
+            shortcut: { keys: ['Command', 'Enter'] },
+          },
+        },
       ],
       refreshInputBindings: vi.fn(),
       saveInputBindings: vi.fn(),
@@ -1034,11 +1077,11 @@ describe('DevicesPage', () => {
               addressableLed: null,
               input: { control: 'button.a', inputKind: 'button', fixed: true },
               supportedActions: [],
-              hardwareGuideId: null
-            }
-          ]
-        }
-      ]
+              hardwareGuideId: null,
+            },
+          ],
+        },
+      ],
     };
 
     renderDevicesPage(wioState);
@@ -1063,9 +1106,9 @@ describe('DevicesPage', () => {
           trigger: 'press',
           action: {
             type: 'keyboard-shortcut',
-            shortcut: { keys: ['Command', 'Enter'] }
-          }
-        }
+            shortcut: { keys: ['Command', 'Enter'] },
+          },
+        },
       ],
       states: [
         {
@@ -1086,11 +1129,11 @@ describe('DevicesPage', () => {
               addressableLed: null,
               input: { control: 'button.a', inputKind: 'button', fixed: true },
               supportedActions: [],
-              hardwareGuideId: null
-            }
-          ]
-        }
-      ]
+              hardwareGuideId: null,
+            },
+          ],
+        },
+      ],
     };
 
     renderDevicesPage(wioState);
@@ -1126,9 +1169,9 @@ describe('DevicesPage', () => {
           trigger: 'press',
           action: {
             type: 'keyboard-shortcut',
-            shortcut: { keys: ['Command', 'Enter'] }
-          }
-        }
+            shortcut: { keys: ['Command', 'Enter'] },
+          },
+        },
       ],
       states: [
         {
@@ -1149,11 +1192,11 @@ describe('DevicesPage', () => {
               addressableLed: null,
               input: { control: 'button.a', inputKind: 'button', fixed: true },
               supportedActions: [],
-              hardwareGuideId: null
-            }
-          ]
-        }
-      ]
+              hardwareGuideId: null,
+            },
+          ],
+        },
+      ],
     };
 
     renderDevicesPage(wioState);
@@ -1162,7 +1205,9 @@ describe('DevicesPage', () => {
     const panel = screen.getByTestId('device-input-test-panel');
     expect(within(panel).getAllByText('已禁用').length).toBeGreaterThanOrEqual(1);
     expect(within(panel).getByText(/当前按钮功能已禁用/)).toBeInTheDocument();
-    expect(within(panel).queryByText('当前输入通道还没有配置快捷键，请先在设备通道中配置输入动作。')).not.toBeInTheDocument();
+    expect(
+      within(panel).queryByText('当前输入通道还没有配置快捷键，请先在设备通道中配置输入动作。')
+    ).not.toBeInTheDocument();
     expect(within(panel).queryByTestId('shortcut-keyboard-panel')).not.toBeInTheDocument();
   });
 
@@ -1178,9 +1223,9 @@ describe('DevicesPage', () => {
           trigger: 'press',
           action: {
             type: 'keyboard-shortcut',
-            shortcut: { keys: ['Command', 'Enter'] }
-          }
-        }
+            shortcut: { keys: ['Command', 'Enter'] },
+          },
+        },
       ],
       states: [
         {
@@ -1202,11 +1247,11 @@ describe('DevicesPage', () => {
               addressableLed: null,
               input: { control: 'button.a', inputKind: 'button', fixed: true },
               supportedActions: [],
-              hardwareGuideId: null
-            }
-          ]
-        }
-      ]
+              hardwareGuideId: null,
+            },
+          ],
+        },
+      ],
     };
 
     renderDevicesPage(wioState);
@@ -1222,8 +1267,8 @@ describe('DevicesPage', () => {
           control: 'button.a',
           action: 'press',
           seq: 18,
-          receivedAt: '2026-07-17T14:00:00+08:00'
-        }
+          receivedAt: '2026-07-17T14:00:00+08:00',
+        },
       });
     });
 
@@ -1243,7 +1288,7 @@ describe('DevicesPage', () => {
   test('shows skipped status for disconnected test actions', () => {
     renderDevicesPage({
       ...registryState,
-      actionStatus: 'skipped'
+      actionStatus: 'skipped',
     });
 
     expect(screen.getByText('设备未连接，测试动作已跳过。')).toBeInTheDocument();
@@ -1261,13 +1306,13 @@ describe('DevicesPage', () => {
             boardId: 'rp2040-pico',
             deviceUid: 'rp2040-pico:0011223344556677',
             firmwareVersion: '0.2.0',
-            protocolVersion: 2
+            protocolVersion: 2,
           },
           bundledFirmwareVersion: '0.2.1',
           firmwareStatus: 'update-available',
-          firmwareCheckError: null
-        }
-      ]
+          firmwareCheckError: null,
+        },
+      ],
     } as unknown as DeviceRuntimeRegistryState;
     renderDevicesPage(stateWithOutdatedFirmware);
 
@@ -1290,12 +1335,12 @@ describe('DevicesPage', () => {
           channels: [
             {
               ...registryState.states[0].channels[0],
-              supportedActions: ['activate', 'deactivate', 'blink', 'breathe', 'pulse']
-            }
-          ]
-        }
+              supportedActions: ['activate', 'deactivate', 'blink', 'breathe', 'pulse'],
+            },
+          ],
+        },
       ],
-      sendTestAction: vi.fn()
+      sendTestAction: vi.fn(),
     };
     renderDevicesPage(connectedState);
 
@@ -1307,7 +1352,7 @@ describe('DevicesPage', () => {
       expect.objectContaining({
         action: 'breathe',
         durationMs: 5000,
-        intervalMs: 1200
+        intervalMs: 1200,
       })
     );
   });
@@ -1334,15 +1379,15 @@ describe('DevicesPage', () => {
                 pin: 19,
                 activeLevel: 'high',
                 defaultFrequencyHz: 2000,
-                supportsTone: true
+                supportsTone: true,
               },
               addressableLed: null,
               supportedActions: ['beep', 'tone', 'pattern', 'clear'],
-              hardwareGuideId: 'buzzer'
-            }
-          ]
-        }
-      ]
+              hardwareGuideId: 'buzzer',
+            },
+          ],
+        },
+      ],
     };
     renderDevicesPage(connectedState);
 
@@ -1358,7 +1403,7 @@ describe('DevicesPage', () => {
         deviceId: 'rp2040-pico-default',
         channelId: 'buzzer.gp19',
         action: 'pattern',
-        pattern: 'success'
+        pattern: 'success',
       })
     );
   });
@@ -1373,9 +1418,9 @@ describe('DevicesPage', () => {
           ...registryState.states[0],
           deviceId: 'desk-pico-oled',
           status: 'connected',
-          boardId: 'rp2040-pico-oled-096'
-        }
-      ]
+          boardId: 'rp2040-pico-oled-096',
+        },
+      ],
     };
 
     renderDevicesPage(picoOledState);
@@ -1410,9 +1455,9 @@ describe('DevicesPage', () => {
           ...registryState.states[0],
           deviceId: 'desk-pico-oled-091',
           status: 'connected',
-          boardId: 'rp2040-pico-oled-091'
-        }
-      ]
+          boardId: 'rp2040-pico-oled-091',
+        },
+      ],
     };
 
     renderDevicesPage(picoOledState);
@@ -1437,9 +1482,9 @@ describe('DevicesPage', () => {
           ...registryState.states[0],
           deviceId: 'desk-pico-oled',
           status: 'connected',
-          boardId: 'rp2040-pico-oled-096'
-        }
-      ]
+          boardId: 'rp2040-pico-oled-096',
+        },
+      ],
     };
 
     renderDevicesPage(picoOledState);
@@ -1454,7 +1499,7 @@ describe('DevicesPage', () => {
         action: 'display-face',
         faceTemplate: 'idle-sleep',
         faceIntensity: 'standard',
-        durationMs: 10000
+        durationMs: 10000,
       })
     );
   });
@@ -1469,9 +1514,9 @@ describe('DevicesPage', () => {
           ...registryState.states[0],
           deviceId: 'desk-wio',
           status: 'connected',
-          boardId: 'seeed-wio-terminal'
-        }
-      ]
+          boardId: 'seeed-wio-terminal',
+        },
+      ],
     };
 
     renderDevicesPage(wioState);
@@ -1496,9 +1541,9 @@ describe('DevicesPage', () => {
           ...registryState.states[0],
           deviceId: 'desk-wio',
           status: 'connected',
-          boardId: 'seeed-wio-terminal'
-        }
-      ]
+          boardId: 'seeed-wio-terminal',
+        },
+      ],
     };
 
     renderDevicesPage(wioState);
@@ -1519,14 +1564,16 @@ describe('DevicesPage', () => {
           ...registryState.states[0],
           deviceId: 'desk-wio',
           status: 'connected',
-          boardId: 'seeed-wio-terminal'
-        }
-      ]
+          boardId: 'seeed-wio-terminal',
+        },
+      ],
     };
 
     renderDevicesPage(wioState);
 
-    expect(screen.queryByText('当前屏幕暂不支持中文，请使用英文、数字或常用符号。')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('当前屏幕暂不支持中文，请使用英文、数字或常用符号。')
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '测试事件覆盖页' })).not.toBeInTheDocument();
     expect(sendExtensionAction).not.toHaveBeenCalled();
   });
@@ -1552,10 +1599,10 @@ describe('DevicesPage', () => {
           transport: {
             kind: 'serial',
             serialPort: '/dev/cu.usbserial-14110',
-            baudRate: 115200
-          }
-        }
-      ]
+            baudRate: 115200,
+          },
+        },
+      ],
     };
 
     renderDevicesPage(nanoState);
@@ -1591,6 +1638,298 @@ describe('DevicesPage', () => {
 
     expect(screen.getByRole('button', { name: /设备屏幕自定义表情管理/ })).toBeDisabled();
   });
+
+  test('installs a compatible custom face group to the selected Wio device', async () => {
+    const group = customFaceGroup320x240();
+    const nextRuntime = {
+      ...wioRuntimeState(),
+      customFaceStatus: {
+        state: 'installed' as const,
+        installed: {
+          profileCode: 3,
+          groupId: group.groupId,
+          groupRuntimeHash: 'abcdef',
+          defaultFaceId: group.defaultFaceId,
+          faceCount: 1,
+          encodedBytes: 2048,
+        },
+        errorCode: null,
+      },
+    };
+    const upsertDeviceState = vi.fn();
+    getCustomFaceGroupsMock.mockResolvedValue([
+      {
+        groupId: group.groupId,
+        name: group.name,
+        displayProfileId: group.displayProfileId,
+        revision: 1,
+        defaultFaceId: group.defaultFaceId,
+        faceCount: 1,
+        libraryHash: 'hash-1',
+      },
+    ]);
+    getCustomFaceGroupMock.mockResolvedValue(group);
+    installCustomFaceGroupToDeviceMock.mockResolvedValue(nextRuntime);
+
+    renderDevicesPage({
+      ...registryState,
+      states: [wioRuntimeState()],
+      upsertDeviceState,
+    });
+
+    expect(await screen.findByText('Wio group')).toBeInTheDocument();
+    const extensionTitle = screen.getByText('设备扩展能力');
+    const installTitle = screen.getByText('自定义表情下发');
+    expect(extensionTitle.compareDocumentPosition(installTitle)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(screen.getByRole('combobox', { name: '表情组' }).tagName).toBe('BUTTON');
+    fireEvent.click(screen.getByRole('button', { name: '安装到当前设备' }));
+
+    await waitFor(() =>
+      expect(installCustomFaceGroupToDeviceMock).toHaveBeenCalledWith('desk-wio', group.groupId)
+    );
+    expect(upsertDeviceState).toHaveBeenCalledWith(nextRuntime);
+  });
+
+  test('renders localized custom face deployment preflight reasons', async () => {
+    const group = customFaceGroup128x32();
+    getCustomFaceGroupsMock.mockResolvedValue([
+      {
+        groupId: group.groupId,
+        name: group.name,
+        displayProfileId: group.displayProfileId,
+        revision: 1,
+        defaultFaceId: group.defaultFaceId,
+        faceCount: 1,
+        libraryHash: 'hash-small',
+      },
+    ]);
+    getCustomFaceGroupMock.mockResolvedValue(group);
+
+    renderDevicesPage({
+      ...registryState,
+      states: [wioRuntimeState()],
+    });
+
+    expect(await screen.findByText('Small group')).toBeInTheDocument();
+    expect(screen.queryByText(/display-size-mismatch/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/profile-code-mismatch/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/custom-face-size-mismatch/)).not.toBeInTheDocument();
+    expect(screen.getByText(/设备屏幕分辨率与表情组不一致/)).toBeInTheDocument();
+    expect(screen.getByText(/固件自定义表情 Profile 与表情组不一致/)).toBeInTheDocument();
+    expect(screen.getByText(/固件自定义表情分辨率与表情组不一致/)).toBeInTheDocument();
+  });
+
+  test('reloads custom face groups from the install panel action', async () => {
+    const group = customFaceGroup320x240();
+    getCustomFaceGroupsMock.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        groupId: group.groupId,
+        name: group.name,
+        displayProfileId: group.displayProfileId,
+        revision: 1,
+        defaultFaceId: group.defaultFaceId,
+        faceCount: 1,
+        libraryHash: 'hash-1',
+      },
+    ]);
+    getCustomFaceGroupMock.mockResolvedValueOnce(group);
+    const groupLoadCallsBeforeRender = getCustomFaceGroupsMock.mock.calls.length;
+
+    renderDevicesPage({
+      ...registryState,
+      states: [wioRuntimeState()],
+    });
+
+    await waitFor(() =>
+      expect(getCustomFaceGroupsMock).toHaveBeenCalledTimes(groupLoadCallsBeforeRender + 1)
+    );
+    expect(screen.queryByText('Wio group')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '刷新表情组列表' }));
+
+    expect(await screen.findByText('Wio group')).toBeInTheDocument();
+    expect(getCustomFaceGroupsMock).toHaveBeenCalledTimes(groupLoadCallsBeforeRender + 2);
+    expect(getCustomFaceGroupMock).toHaveBeenCalledWith(group.groupId);
+  });
+
+  test('hides custom face install panel when display device firmware has no custom face capability', () => {
+    const wioWithoutCustomFace = {
+      ...wioRuntimeState(),
+      firmwareInfo: {
+        ...wioRuntimeState().firmwareInfo,
+        customFace: null,
+      },
+    };
+
+    renderDevicesPage({
+      ...registryState,
+      states: [wioWithoutCustomFace],
+    });
+
+    expect(screen.getByText('设备扩展能力')).toBeInTheDocument();
+    expect(screen.queryByText('自定义表情下发')).not.toBeInTheDocument();
+  });
+
+  test('shows the current custom face active source and switch buttons in the install panel', async () => {
+    getCustomFaceGroupsMock.mockResolvedValue([
+      {
+        groupId: '00000000-0000-4000-8000-000000000201',
+        name: 'Wio group',
+        displayProfileId: 'custom-mono-320x240-v1',
+        revision: 1,
+        defaultFaceId: '00000000-0000-4000-8000-000000000211',
+        faceCount: 1,
+        libraryHash: 'hash-1',
+      },
+    ]);
+    getCustomFaceGroupMock.mockResolvedValue(customFaceGroup320x240());
+
+    renderDevicesPage({
+      ...registryState,
+      states: [
+        {
+          ...wioRuntimeState(),
+          customFaceStatus: {
+            state: 'installed',
+            installed: {
+              profileCode: 3,
+              groupId: '00000000-0000-4000-8000-000000000201',
+              groupRuntimeHash: 'b7b9bc4dd2cf2f56600ac55d8bd68dfe2063c03b1eb4a781b006779675981fc8',
+              defaultFaceId: '00000000-0000-4000-8000-000000000211',
+              faceCount: 1,
+              encodedBytes: 1463,
+            },
+            errorCode: null,
+          },
+          firmwareInfo: {
+            ...wioRuntimeState().firmwareInfo,
+            customFaceActive: {
+              source: 'custom',
+              groupId: '00000000-0000-4000-8000-000000000201',
+            },
+          },
+        },
+      ],
+    });
+
+    expect(await screen.findByText('Wio group')).toBeInTheDocument();
+    expect(screen.getByText('当前激活：自定义')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '切回内置表情' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '激活自定义表情' })).toBeInTheDocument();
+  });
+
+  test('shows custom face test unavailable when the selected device has no installed group', () => {
+    renderDevicesPage({
+      ...registryState,
+      states: [
+        {
+          ...wioRuntimeState(),
+          customFaceStatus: { state: 'empty', installed: null, errorCode: null },
+        },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '自定义表情测试' }));
+
+    expect(screen.getByText('当前设备未安装自定义表情组。')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '测试自定义表情' })).not.toBeInTheDocument();
+  });
+
+  test('blocks custom face test when installed device group is missing locally', async () => {
+    const installed = {
+      profileCode: 3,
+      groupId: '2133e686-77f5-4a29-923b-10d65211ca94',
+      groupRuntimeHash: 'b7b9bc4dd2cf2f56600ac55d8bd68dfe2063c03b1eb4a781b006779675981fc8',
+      defaultFaceId: '00000000-0000-4000-8000-000000000011',
+      faceCount: 1,
+      encodedBytes: 1463,
+    };
+    getCustomFaceGroupsMock.mockResolvedValue([]);
+
+    renderDevicesPage({
+      ...registryState,
+      states: [
+        {
+          ...wioRuntimeState(),
+          customFaceStatus: { state: 'installed', installed, errorCode: null },
+        },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '自定义表情测试' }));
+
+    expect(
+      await screen.findByText(/设备已安装自定义表情组，但本机未找到对应组数据/)
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: '刷新表情组列表' }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: '测试自定义表情' })).not.toBeInTheDocument();
+  });
+
+  test('sends installed custom face from the display test panel', async () => {
+    const group = customFaceGroup320x240();
+    const secondFace = {
+      ...group.faces[0],
+      faceId: '00000000-0000-4000-8000-000000000022',
+      name: 'Blink',
+      frames: [{ durationMs: 200, packedPixels: [1, ...Array(9599).fill(0)] }],
+    };
+    const installed = {
+      profileCode: 3,
+      groupId: group.groupId,
+      groupRuntimeHash: 'b7b9bc4dd2cf2f56600ac55d8bd68dfe2063c03b1eb4a781b006779675981fc8',
+      defaultFaceId: group.defaultFaceId,
+      faceCount: 2,
+      encodedBytes: 2048,
+    };
+    const sendExtensionAction = vi.fn();
+    getCustomFaceGroupsMock.mockResolvedValue([
+      {
+        groupId: group.groupId,
+        name: group.name,
+        displayProfileId: group.displayProfileId,
+        revision: 1,
+        defaultFaceId: group.defaultFaceId,
+        faceCount: 2,
+        libraryHash: 'hash-1',
+      },
+    ]);
+    getCustomFaceGroupMock.mockResolvedValue({
+      ...group,
+      faces: [group.faces[0], secondFace],
+    });
+
+    renderDevicesPage({
+      ...registryState,
+      sendExtensionAction,
+      states: [
+        {
+          ...wioRuntimeState(),
+          customFaceStatus: { state: 'installed', installed, errorCode: null },
+        },
+      ],
+    });
+
+    expect(await screen.findByText('Wio group')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '自定义表情测试' }));
+    fireEvent.click(screen.getByRole('combobox', { name: '自定义表情' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'Blink' }));
+    fireEvent.click(screen.getByRole('button', { name: '测试自定义表情' }));
+
+    expect(sendExtensionAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deviceId: 'desk-wio',
+        action: 'display-face',
+        faceTemplate: 'idle-sleep',
+        faceIntensity: 'standard',
+        customFaceGroupId: group.groupId,
+        customFaceId: secondFace.faceId,
+        durationMs: 5000,
+      })
+    );
+    expect(screen.getByRole('img', { name: '自定义表情预览' })).toBeInTheDocument();
+  });
 });
 
 function renderDevicesPage(
@@ -1614,4 +1953,74 @@ function renderDevicesPage(
       />
     </I18nProvider>
   );
+}
+
+function wioRuntimeState() {
+  return {
+    ...registryState.states[0],
+    deviceId: 'desk-wio',
+    status: 'connected' as const,
+    boardId: 'seeed-wio-terminal',
+    firmwareInfo: {
+      boardId: 'seeed-wio-terminal',
+      deviceUid: 'seeed-wio-terminal:0011223344556677',
+      firmwareVersion: '0.2.1',
+      protocolVersion: 2,
+      customFace: {
+        protocolVersion: 1,
+        profileCode: 3,
+        pixelWidth: 320,
+        pixelHeight: 240,
+        maxFaces: 15,
+        maxFramesPerFace: 10,
+        maxGroupBytes: 393216,
+        chunkBytes: 512,
+        incrementalUpdate: true,
+      },
+      customFaceError: null,
+    },
+    customFaceActive: {
+      source: 'builtin' as const,
+      groupId: null,
+    },
+    customFaceStatus: { state: 'empty' as const, installed: null, errorCode: null },
+  };
+}
+
+function customFaceGroup320x240() {
+  return {
+    schemaVersion: 1,
+    groupId: '00000000-0000-4000-8000-000000000201',
+    name: 'Wio group',
+    displayProfileId: 'custom-mono-320x240-v1',
+    revision: 1,
+    defaultFaceId: '00000000-0000-4000-8000-000000000211',
+    faces: [
+      {
+        faceId: '00000000-0000-4000-8000-000000000211',
+        name: 'Idle',
+        color: { red: 255, green: 255, blue: 255 },
+        frames: [{ durationMs: 200, packedPixels: Array(9600).fill(0) }],
+      },
+    ],
+  };
+}
+
+function customFaceGroup128x32() {
+  return {
+    schemaVersion: 1,
+    groupId: '00000000-0000-4000-8000-000000000301',
+    name: 'Small group',
+    displayProfileId: 'custom-mono-128x32-v1',
+    revision: 1,
+    defaultFaceId: '00000000-0000-4000-8000-000000000311',
+    faces: [
+      {
+        faceId: '00000000-0000-4000-8000-000000000311',
+        name: 'Idle',
+        color: { red: 255, green: 255, blue: 255 },
+        frames: [{ durationMs: 200, packedPixels: Array(512).fill(0) }],
+      },
+    ],
+  };
 }

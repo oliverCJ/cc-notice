@@ -1,10 +1,7 @@
 import { type PointerEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { getPixel } from '@/domain/customFaces/editor/raster';
 import { useI18n } from '@/i18n';
-import {
-  logicalPointFromViewportClientPoint,
-  type LogicalViewport,
-} from './CustomFaceViewport';
+import { logicalPointFromViewportClientPoint, type LogicalViewport } from './CustomFaceViewport';
 
 type Point = [number, number];
 
@@ -53,7 +50,13 @@ export function CustomFaceMagnifier({
   const t = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const panelRef = useRef<HTMLElement>(null);
-  const dragRef = useRef<{ pointerId: number; clientX: number; clientY: number; left: number; top: number } | null>(null);
+  const dragRef = useRef<{
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    left: number;
+    top: number;
+  } | null>(null);
   const [position, setPosition] = useState({ left: 12, top: 12 });
 
   useEffect(() => {
@@ -61,22 +64,8 @@ export function CustomFaceMagnifier({
     if (!context) return;
     context.imageSmoothingEnabled = false;
     context.clearRect(0, 0, viewport.width, viewport.height);
-    drawViewportPacked(
-      context,
-      onionPixels,
-      canvasWidth,
-      canvasHeight,
-      viewport,
-      ONION_COLOR,
-    );
-    drawViewportPacked(
-      context,
-      pixels,
-      canvasWidth,
-      canvasHeight,
-      viewport,
-      DRAW_COLOR,
-    );
+    drawViewportPacked(context, onionPixels, canvasWidth, canvasHeight, viewport, ONION_COLOR);
+    drawViewportPacked(context, pixels, canvasWidth, canvasHeight, viewport, DRAW_COLOR);
   }, [canvasHeight, canvasWidth, onionPixels, pixels, viewport]);
 
   useEffect(() => {
@@ -100,11 +89,22 @@ export function CustomFaceMagnifier({
     if (event.target instanceof Element && event.target.closest('button')) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    dragRef.current = { pointerId: event.pointerId, clientX: event.clientX, clientY: event.clientY, left: position.left, top: position.top };
+    dragRef.current = {
+      pointerId: event.pointerId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      left: position.left,
+      top: position.top,
+    };
   };
   const handleDragMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    if (
+      !drag ||
+      drag.pointerId !== event.pointerId ||
+      !event.currentTarget.hasPointerCapture(event.pointerId)
+    )
+      return;
     const panel = panelRef.current;
     const parent = panel?.parentElement;
     if (!panel || !parent) return;
@@ -118,7 +118,8 @@ export function CustomFaceMagnifier({
   const handleDragEnd = (event: React.PointerEvent<HTMLDivElement>) => {
     if (dragRef.current?.pointerId !== event.pointerId) return;
     dragRef.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
   const coordinate = (event: PointerEvent<HTMLCanvasElement>) => {
@@ -130,20 +131,33 @@ export function CustomFaceMagnifier({
       event.clientY,
       canvasWidth,
       canvasHeight,
-      viewport,
+      viewport
     );
   };
 
   return (
-    <section ref={panelRef} className="absolute z-20 max-w-[calc(100%-1.5rem)] border border-primary/70 bg-background/95 p-2 shadow-xl backdrop-blur" style={{ left: `${position.left}px`, top: `${position.top}px` }} aria-label={t('customFaceEditor.magnifier.panelLabel')}>
-      <div className="mb-2 flex cursor-move flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground" onPointerDown={handleDragStart} onPointerMove={handleDragMove} onPointerUp={handleDragEnd} onPointerCancel={handleDragEnd}>
+    <section
+      ref={panelRef}
+      className="absolute z-20 max-w-[calc(100%-1.5rem)] border border-primary/70 bg-background/95 p-2 shadow-xl backdrop-blur"
+      style={{ left: `${position.left}px`, top: `${position.top}px` }}
+      aria-label={t('customFaceEditor.magnifier.panelLabel')}
+    >
+      <div
+        className="mb-2 flex cursor-move flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground"
+        onPointerDown={handleDragStart}
+        onPointerMove={handleDragMove}
+        onPointerUp={handleDragEnd}
+        onPointerCancel={handleDragEnd}
+      >
         <span>{t('customFaceEditor.magnifier.title', { scale })}</span>
-        <span data-testid="custom-face-magnifier-range">{t('customFaceEditor.magnifier.range', {
-          startX: viewport.originX,
-          startY: viewport.originY,
-          endX: viewport.originX + viewport.width - 1,
-          endY: viewport.originY + viewport.height - 1,
-        })}</span>
+        <span data-testid="custom-face-magnifier-range">
+          {t('customFaceEditor.magnifier.range', {
+            startX: viewport.originX,
+            startY: viewport.originY,
+            endX: viewport.originX + viewport.width - 1,
+            endY: viewport.originY + viewport.height - 1,
+          })}
+        </span>
         <div className="flex items-center gap-2">
           <span>{t(`customFaceEditor.magnifier.mode.${mode}`)}</span>
           <button
@@ -155,7 +169,15 @@ export function CustomFaceMagnifier({
           >
             {t(`customFaceEditor.magnifier.modeAction.${mode}`)}
           </button>
-          <button type="button" aria-label={t('customFaceEditor.magnifier.closePanel')} title={t('customFaceEditor.magnifier.closePanel')} className="border border-border px-2 py-1 text-foreground" onClick={onClose}>×</button>
+          <button
+            type="button"
+            aria-label={t('customFaceEditor.magnifier.closePanel')}
+            title={t('customFaceEditor.magnifier.closePanel')}
+            className="border border-border px-2 py-1 text-foreground"
+            onClick={onClose}
+          >
+            ×
+          </button>
         </div>
       </div>
       <div
@@ -198,11 +220,26 @@ export function CustomFaceMagnifier({
 }
 
 function PixelGrid({ scale }: { scale: number }) {
-  return <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ backgroundImage: 'linear-gradient(to right, rgba(130, 165, 178, 0.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(130, 165, 178, 0.28) 1px, transparent 1px)', backgroundSize: `${scale}px ${scale}px` }} />;
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0"
+      style={{
+        backgroundImage:
+          'linear-gradient(to right, rgba(130, 165, 178, 0.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(130, 165, 178, 0.28) 1px, transparent 1px)',
+        backgroundSize: `${scale}px ${scale}px`,
+      }}
+    />
+  );
 }
 
 function isPointInViewport(point: Point, viewport: LogicalViewport) {
-  return point[0] >= viewport.originX && point[0] < viewport.originX + viewport.width && point[1] >= viewport.originY && point[1] < viewport.originY + viewport.height;
+  return (
+    point[0] >= viewport.originX &&
+    point[0] < viewport.originX + viewport.width &&
+    point[1] >= viewport.originY &&
+    point[1] < viewport.originY + viewport.height
+  );
 }
 
 function drawViewportPacked(
@@ -211,19 +248,22 @@ function drawViewportPacked(
   canvasWidth: number,
   canvasHeight: number,
   viewport: LogicalViewport,
-  color: string,
+  color: string
 ) {
   if (!packedPixels) return;
   context.fillStyle = color;
   // 局部画布仅投影全图像素，避免产生第二份可编辑 framebuffer。
   for (let localY = 0; localY < viewport.height; localY += 1) {
     for (let localX = 0; localX < viewport.width; localX += 1) {
-      if (!getPixel(
-        packedPixels,
-        { width: canvasWidth, height: canvasHeight },
-        viewport.originX + localX,
-        viewport.originY + localY,
-      )) continue;
+      if (
+        !getPixel(
+          packedPixels,
+          { width: canvasWidth, height: canvasHeight },
+          viewport.originX + localX,
+          viewport.originY + localY
+        )
+      )
+        continue;
       context.fillRect(localX, localY, 1, 1);
     }
   }

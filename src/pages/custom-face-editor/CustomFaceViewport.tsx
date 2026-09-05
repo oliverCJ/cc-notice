@@ -18,10 +18,40 @@ type Props = {
   onScreenPointerCancel?: (event: PointerEvent<HTMLDivElement>) => void;
 };
 
-export function CustomFaceViewport({ width, height, scale, guides, onGuidesChange, children, className, screenStyle, screenTestId, onScreenPointerDown, onScreenPointerMove, onScreenPointerUp, onScreenPointerCancel }: Props) {
+export function CustomFaceViewport({
+  width,
+  height,
+  scale,
+  guides,
+  onGuidesChange,
+  children,
+  className,
+  screenStyle,
+  screenTestId,
+  onScreenPointerDown,
+  onScreenPointerMove,
+  onScreenPointerUp,
+  onScreenPointerCancel,
+}: Props) {
   return (
-    <CustomFaceRulers width={width} height={height} scale={scale} guides={guides} onGuidesChange={onGuidesChange}>
-      <div data-testid={screenTestId ?? 'custom-face-viewport-screen'} className={className ?? 'relative shrink-0 overflow-hidden bg-black outline outline-1 outline-border'} style={{ width: `${width * scale}px`, height: `${height * scale}px`, ...screenStyle }} onPointerDown={onScreenPointerDown} onPointerMove={onScreenPointerMove} onPointerUp={onScreenPointerUp} onPointerCancel={onScreenPointerCancel}>
+    <CustomFaceRulers
+      width={width}
+      height={height}
+      scale={scale}
+      guides={guides}
+      onGuidesChange={onGuidesChange}
+    >
+      <div
+        data-testid={screenTestId ?? 'custom-face-viewport-screen'}
+        className={
+          className ?? 'relative shrink-0 overflow-hidden bg-black outline outline-1 outline-border'
+        }
+        style={{ width: `${width * scale}px`, height: `${height * scale}px`, ...screenStyle }}
+        onPointerDown={onScreenPointerDown}
+        onPointerMove={onScreenPointerMove}
+        onPointerUp={onScreenPointerUp}
+        onPointerCancel={onScreenPointerCancel}
+      >
         {children}
         <PixelGrid scale={scale} />
       </div>
@@ -36,11 +66,17 @@ export type LogicalViewport = {
   height: number;
 };
 
-export function logicalPointFromClientPoint(rect: DOMRect, clientX: number, clientY: number, width: number, height: number): [number, number] {
+export function logicalPointFromClientPoint(
+  rect: DOMRect,
+  clientX: number,
+  clientY: number,
+  width: number,
+  height: number
+): [number, number] {
   if (rect.width <= 0 || rect.height <= 0 || width <= 0 || height <= 0) return [0, 0];
   return [
     Math.min(width - 1, Math.max(0, Math.floor(((clientX - rect.left) / rect.width) * width))),
-    Math.min(height - 1, Math.max(0, Math.floor(((clientY - rect.top) / rect.height) * height)))
+    Math.min(height - 1, Math.max(0, Math.floor(((clientY - rect.top) / rect.height) * height))),
   ];
 }
 
@@ -49,7 +85,7 @@ export function magnifierViewport(
   canvasWidth: number,
   canvasHeight: number,
   maxWidth: number,
-  maxHeight: number,
+  maxHeight: number
 ): LogicalViewport {
   const width = Math.max(1, Math.min(canvasWidth, maxWidth));
   const height = Math.max(1, Math.min(canvasHeight, maxHeight));
@@ -65,7 +101,7 @@ export function moveMagnifierViewportOrigin(
   viewport: LogicalViewport,
   delta: [number, number],
   canvasWidth: number,
-  canvasHeight: number,
+  canvasHeight: number
 ): LogicalViewport {
   const maxOriginX = Math.max(0, canvasWidth - viewport.width);
   const maxOriginY = Math.max(0, canvasHeight - viewport.height);
@@ -84,14 +120,14 @@ export function logicalPointFromViewportClientPoint(
   clientY: number,
   canvasWidth: number,
   canvasHeight: number,
-  viewport: LogicalViewport,
+  viewport: LogicalViewport
 ): [number, number] {
   const [x, y] = logicalPointFromClientPoint(
     rect,
     clientX,
     clientY,
     viewport.width,
-    viewport.height,
+    viewport.height
   );
   return [
     Math.min(canvasWidth - 1, Math.max(0, viewport.originX + x)),
@@ -101,5 +137,15 @@ export function logicalPointFromViewportClientPoint(
 
 export function PixelGrid({ scale }: { scale: number }) {
   const t = useI18n();
-  return <div aria-label={t('customFaceEditor.canvasOverlay.pixelGrid')} className="pointer-events-none absolute inset-0" style={{ backgroundImage: 'linear-gradient(to right, rgba(130, 165, 178, 0.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(130, 165, 178, 0.28) 1px, transparent 1px)', backgroundSize: `${scale}px ${scale}px` }} />;
+  return (
+    <div
+      aria-label={t('customFaceEditor.canvasOverlay.pixelGrid')}
+      className="pointer-events-none absolute inset-0"
+      style={{
+        backgroundImage:
+          'linear-gradient(to right, rgba(130, 165, 178, 0.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(130, 165, 178, 0.28) 1px, transparent 1px)',
+        backgroundSize: `${scale}px ${scale}px`,
+      }}
+    />
+  );
 }

@@ -1,16 +1,20 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { beforeEach, expect, test, vi } from 'vitest';
+import { I18nProvider } from '@/i18n';
 import { CustomFaceImagePixelizerWindow } from './CustomFaceImagePixelizerWindow';
 
 const createPackedPixels = (width: number, height: number, activeByteIndex = 0) =>
-  Array.from({ length: width * Math.ceil(height / 8) }, (_, index) => (index === activeByteIndex ? 1 : 0));
+  Array.from({ length: width * Math.ceil(height / 8) }, (_, index) =>
+    index === activeByteIndex ? 1 : 0
+  );
 
-const waitForDebouncedPixelize = () => act(async () => {
-  await new Promise((resolve) => {
-    window.setTimeout(resolve, 260);
+const waitForDebouncedPixelize = () =>
+  act(async () => {
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 260);
+    });
   });
-});
 
 const prepareSourceMock = vi.hoisted(() => vi.fn());
 const pixelizeSourceMock = vi.hoisted(() => vi.fn());
@@ -21,9 +25,10 @@ const emitMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const listenMock = vi.hoisted(() => vi.fn());
 const windowApiMock = vi.hoisted(() => ({
   onCloseRequested: vi.fn(),
-  unlisten: vi.fn()
+  unlisten: vi.fn(),
 }));
-let imagePixelizerOpenRequestHandler: ((event: { payload: { width: number; height: number } }) => void) | undefined;
+let imagePixelizerOpenRequestHandler:
+  ((event: { payload: { width: number; height: number } }) => void) | undefined;
 
 vi.mock('@/api/tauriApi', async () => {
   const actual = await vi.importActual<typeof import('@/api/tauriApi')>('@/api/tauriApi');
@@ -33,17 +38,17 @@ vi.mock('@/api/tauriApi', async () => {
     pixelizeCustomFaceImageSource: pixelizeSourceMock,
     releaseCustomFaceImagePixelizerSource: releaseSourceMock,
     applyCustomFaceImageImport: applyMock,
-    closeCustomFaceImagePixelizer: closePixelizerMock
+    closeCustomFaceImagePixelizer: closePixelizerMock,
   };
 });
 
 vi.mock('@tauri-apps/api/event', () => ({
   emit: emitMock,
-  listen: listenMock
+  listen: listenMock,
 }));
 
 vi.mock('@tauri-apps/api/window', () => ({
-  getCurrentWindow: () => ({ onCloseRequested: windowApiMock.onCloseRequested })
+  getCurrentWindow: () => ({ onCloseRequested: windowApiMock.onCloseRequested }),
 }));
 
 beforeEach(() => {
@@ -51,7 +56,10 @@ beforeEach(() => {
   vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
     callback(new Blob([new Uint8Array([4, 5, 6])], { type: 'image/png' }));
   });
-  Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:text-source') });
+  Object.defineProperty(URL, 'createObjectURL', {
+    configurable: true,
+    value: vi.fn(() => 'blob:text-source'),
+  });
   Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
   prepareSourceMock.mockReset();
   pixelizeSourceMock.mockReset();
@@ -70,9 +78,18 @@ beforeEach(() => {
     return vi.fn();
   });
   window.history.replaceState({}, '', '/custom-face-image-pixelizer?width=128&height=32');
-  Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', { configurable: true, value: vi.fn() });
-  Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', { configurable: true, value: vi.fn(() => true) });
-  Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', { configurable: true, value: vi.fn() });
+  Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', {
+    configurable: true,
+    value: vi.fn(),
+  });
+  Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', {
+    configurable: true,
+    value: vi.fn(() => true),
+  });
+  Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', {
+    configurable: true,
+    value: vi.fn(),
+  });
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
     clearRect: vi.fn(),
     fillRect: vi.fn(),
@@ -82,7 +99,9 @@ beforeEach(() => {
     moveTo: vi.fn(),
     lineTo: vi.fn(),
     stroke: vi.fn(),
-    createImageData: vi.fn((width: number, height: number) => ({ data: new Uint8ClampedArray(width * height * 4) })),
+    createImageData: vi.fn((width: number, height: number) => ({
+      data: new Uint8ClampedArray(width * height * 4),
+    })),
     putImageData: vi.fn(),
     imageSmoothingEnabled: false,
     fillStyle: '',
@@ -90,7 +109,7 @@ beforeEach(() => {
     font: '',
     textAlign: 'left',
     textBaseline: 'top',
-    lineWidth: 1
+    lineWidth: 1,
   } as unknown as CanvasRenderingContext2D);
 });
 
@@ -118,7 +137,22 @@ test('updates the canvas size when the backend reopens the existing window with 
 test('keeps color count disabled while monochrome is selected', () => {
   render(<CustomFaceImagePixelizerWindow />);
 
-  expect(screen.getByRole('spinbutton', { name: '颜色数量数值' })).toBeDisabled();
+  expect(screen.getByRole('textbox', { name: '颜色数量数值' })).toBeDisabled();
+});
+
+test('renders source and conversion mode choices from the active language', () => {
+  render(
+    <I18nProvider language="en-US">
+      <CustomFaceImagePixelizerWindow />
+    </I18nProvider>
+  );
+
+  expect(screen.getByRole('button', { name: 'Image' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Text' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Monochrome' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Color' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '黑白' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '多色' })).not.toBeInTheDocument();
 });
 
 test('loads an image, supports monochrome and color preview modes, and applies pixels back to the editor', async () => {
@@ -127,7 +161,7 @@ test('loads an image, supports monochrome and color preview modes, and applies p
     sourceWidth: 8,
     sourceHeight: 8,
     workingWidth: 8,
-    workingHeight: 8
+    workingHeight: 8,
   });
   pixelizeSourceMock.mockResolvedValue({
     width: 128,
@@ -135,7 +169,7 @@ test('loads an image, supports monochrome and color preview modes, and applies p
     packedPixels: createPackedPixels(128, 32),
     previewPixels: new Array(128 * 32 * 4).fill(255),
     sourceWidth: 8,
-    sourceHeight: 8
+    sourceHeight: 8,
   });
 
   render(<CustomFaceImagePixelizerWindow />);
@@ -147,27 +181,37 @@ test('loads an image, supports monochrome and color preview modes, and applies p
   expect(prepareSourceMock).toHaveBeenCalledWith({
     profileWidth: 128,
     profileHeight: 32,
-    imageBytes: [1, 2, 3]
+    imageBytes: [1, 2, 3],
   });
   await waitFor(() => expect(pixelizeSourceMock).toHaveBeenCalledOnce());
-  expect(pixelizeSourceMock).toHaveBeenLastCalledWith(expect.objectContaining({
-    sourceId: 'source-1',
-    options: expect.objectContaining({ mode: 'mono', dither: false, scale: 1, offsetX: 0, offsetY: 0 })
-  }));
+  expect(pixelizeSourceMock).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      sourceId: 'source-1',
+      options: expect.objectContaining({
+        mode: 'mono',
+        dither: false,
+        scale: 1,
+        offsetX: 0,
+        offsetY: 0,
+      }),
+    })
+  );
   expect(screen.getAllByTestId('custom-face-pixel-preview-canvas')).toHaveLength(1);
 
   fireEvent.click(screen.getByRole('button', { name: '多色' }));
   await waitFor(() => expect(pixelizeSourceMock).toHaveBeenCalledTimes(2));
-  expect(pixelizeSourceMock).toHaveBeenLastCalledWith(expect.objectContaining({
-    sourceId: 'source-1',
-    options: expect.objectContaining({ mode: 'color' })
-  }));
+  expect(pixelizeSourceMock).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      sourceId: 'source-1',
+      options: expect.objectContaining({ mode: 'color' }),
+    })
+  );
 
   fireEvent.click(screen.getByRole('button', { name: '应用' }));
   expect(applyMock).toHaveBeenCalledWith({
     packedPixels: createPackedPixels(128, 32),
     sourceWidth: 128,
-    sourceHeight: 32
+    sourceHeight: 32,
   });
 });
 
@@ -177,7 +221,7 @@ test('loads an image under react strict mode without leaving the workspace busy'
     sourceWidth: 8,
     sourceHeight: 8,
     workingWidth: 8,
-    workingHeight: 8
+    workingHeight: 8,
   });
   pixelizeSourceMock.mockResolvedValue({
     width: 128,
@@ -185,7 +229,7 @@ test('loads an image under react strict mode without leaving the workspace busy'
     packedPixels: createPackedPixels(128, 32),
     previewPixels: new Array(128 * 32 * 4).fill(255),
     sourceWidth: 8,
-    sourceHeight: 8
+    sourceHeight: 8,
   });
 
   render(
@@ -209,7 +253,7 @@ test('passes transform adjustments to the pixelizer and can reset them', async (
     sourceWidth: 8,
     sourceHeight: 8,
     workingWidth: 8,
-    workingHeight: 8
+    workingHeight: 8,
   });
   pixelizeSourceMock.mockResolvedValue({
     width: 128,
@@ -217,7 +261,7 @@ test('passes transform adjustments to the pixelizer and can reset them', async (
     packedPixels: createPackedPixels(128, 32),
     previewPixels: new Array(128 * 32 * 4).fill(255),
     sourceWidth: 8,
-    sourceHeight: 8
+    sourceHeight: 8,
   });
 
   render(<CustomFaceImagePixelizerWindow />);
@@ -230,19 +274,31 @@ test('passes transform adjustments to the pixelizer and can reset them', async (
   fireEvent.change(screen.getByRole('slider', { name: '旋转' }), { target: { value: '45' } });
   fireEvent.change(screen.getByRole('slider', { name: '水平位置' }), { target: { value: '8' } });
   fireEvent.change(screen.getByRole('slider', { name: '垂直位置' }), { target: { value: '-4' } });
-  await waitFor(() => expect(pixelizeSourceMock).toHaveBeenLastCalledWith(expect.objectContaining({
-    options: expect.objectContaining({ scale: 1.5, rotationDeg: 45, offsetX: 8, offsetY: -4 })
-  })));
+  await waitFor(() =>
+    expect(pixelizeSourceMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({ scale: 1.5, rotationDeg: 45, offsetX: 8, offsetY: -4 }),
+      })
+    )
+  );
 
   fireEvent.click(screen.getByRole('button', { name: '居中' }));
-  await waitFor(() => expect(pixelizeSourceMock).toHaveBeenLastCalledWith(expect.objectContaining({
-    options: expect.objectContaining({ scale: 1.5, rotationDeg: 45, offsetX: 0, offsetY: 0 })
-  })));
+  await waitFor(() =>
+    expect(pixelizeSourceMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({ scale: 1.5, rotationDeg: 45, offsetX: 0, offsetY: 0 }),
+      })
+    )
+  );
 
   fireEvent.click(screen.getByRole('button', { name: '还原图像位置' }));
-  await waitFor(() => expect(pixelizeSourceMock).toHaveBeenLastCalledWith(expect.objectContaining({
-    options: expect.objectContaining({ scale: 1, rotationDeg: 0, offsetX: 0, offsetY: 0 })
-  })));
+  await waitFor(() =>
+    expect(pixelizeSourceMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({ scale: 1, rotationDeg: 0, offsetX: 0, offsetY: 0 }),
+      })
+    )
+  );
 });
 
 test('debounces rapid parameter changes before pixelizing again', async () => {
@@ -251,7 +307,7 @@ test('debounces rapid parameter changes before pixelizing again', async () => {
     sourceWidth: 8,
     sourceHeight: 8,
     workingWidth: 8,
-    workingHeight: 8
+    workingHeight: 8,
   });
   pixelizeSourceMock.mockResolvedValue({
     width: 128,
@@ -259,7 +315,7 @@ test('debounces rapid parameter changes before pixelizing again', async () => {
     packedPixels: createPackedPixels(128, 32),
     previewPixels: new Array(128 * 32 * 4).fill(255),
     sourceWidth: 8,
-    sourceHeight: 8
+    sourceHeight: 8,
   });
 
   render(<CustomFaceImagePixelizerWindow />);
@@ -276,9 +332,11 @@ test('debounces rapid parameter changes before pixelizing again', async () => {
   await waitForDebouncedPixelize();
 
   await waitFor(() => expect(pixelizeSourceMock).toHaveBeenCalledTimes(2));
-  expect(pixelizeSourceMock).toHaveBeenLastCalledWith(expect.objectContaining({
-    options: expect.objectContaining({ scale: 1.3 })
-  }));
+  expect(pixelizeSourceMock).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      options: expect.objectContaining({ scale: 1.3 }),
+    })
+  );
 });
 
 test('pixelizes once after object drag ends instead of on every pointer move', async () => {
@@ -287,7 +345,7 @@ test('pixelizes once after object drag ends instead of on every pointer move', a
     sourceWidth: 8,
     sourceHeight: 8,
     workingWidth: 8,
-    workingHeight: 8
+    workingHeight: 8,
   });
   pixelizeSourceMock.mockResolvedValue({
     width: 128,
@@ -295,7 +353,7 @@ test('pixelizes once after object drag ends instead of on every pointer move', a
     packedPixels: createPackedPixels(128, 32),
     previewPixels: new Array(128 * 32 * 4).fill(255),
     sourceWidth: 8,
-    sourceHeight: 8
+    sourceHeight: 8,
   });
 
   render(<CustomFaceImagePixelizerWindow />);
@@ -325,7 +383,7 @@ test('drags the converted pixel result on the target canvas without rendering a 
     sourceWidth: 1024,
     sourceHeight: 768,
     workingWidth: 128,
-    workingHeight: 96
+    workingHeight: 96,
   });
   pixelizeSourceMock.mockResolvedValue({
     width: 128,
@@ -333,19 +391,26 @@ test('drags the converted pixel result on the target canvas without rendering a 
     packedPixels: createPackedPixels(128, 32),
     previewPixels: new Array(128 * 32 * 4).fill(255),
     sourceWidth: 1024,
-    sourceHeight: 768
+    sourceHeight: 768,
   });
 
   render(<CustomFaceImagePixelizerWindow />);
   const input = screen.getByTestId('custom-face-image-input') as HTMLInputElement;
   const file = new File([new Uint8Array([1, 2, 3])], 'sample.png', { type: 'image/png' });
   fireEvent.change(input, { target: { files: [file] } });
-  await waitFor(() => expect(screen.getByTestId('custom-face-pixel-preview-canvas')).toBeInTheDocument());
+  await waitFor(() =>
+    expect(screen.getByTestId('custom-face-pixel-preview-canvas')).toBeInTheDocument()
+  );
 
-  expect(screen.getByTestId('image-pixelizer-source-thumb')).toHaveStyle({ width: '96px', height: '96px' });
+  expect(screen.getByTestId('image-pixelizer-source-thumb')).toHaveStyle({
+    width: '96px',
+    height: '96px',
+  });
   expect(screen.getByTestId('image-pixelizer-source-thumb')).not.toHaveClass('overflow-hidden');
   expect(screen.queryByTestId('image-pixelizer-object')).not.toBeInTheDocument();
-  expect(screen.getByTestId('custom-face-pixel-preview-canvas').parentElement).not.toHaveClass('opacity-20');
+  expect(screen.getByTestId('custom-face-pixel-preview-canvas').parentElement).not.toHaveClass(
+    'opacity-20'
+  );
   const initialCall = pixelizeSourceMock.mock.calls[pixelizeSourceMock.mock.calls.length - 1];
   const initialOptions = initialCall?.[0].options;
 
@@ -376,7 +441,7 @@ test('allows moving the source image thumbnail without changing pixelizer option
     sourceWidth: 1024,
     sourceHeight: 768,
     workingWidth: 128,
-    workingHeight: 96
+    workingHeight: 96,
   });
   pixelizeSourceMock.mockResolvedValue({
     width: 128,
@@ -384,7 +449,7 @@ test('allows moving the source image thumbnail without changing pixelizer option
     packedPixels: createPackedPixels(128, 32),
     previewPixels: new Array(128 * 32 * 4).fill(255),
     sourceWidth: 1024,
-    sourceHeight: 768
+    sourceHeight: 768,
   });
 
   render(<CustomFaceImagePixelizerWindow />);
@@ -413,7 +478,7 @@ test('stretches the converted pixel preview across the full target canvas viewpo
     sourceWidth: 512,
     sourceHeight: 512,
     workingWidth: 128,
-    workingHeight: 128
+    workingHeight: 128,
   });
   pixelizeSourceMock.mockResolvedValue({
     width: 128,
@@ -421,7 +486,7 @@ test('stretches the converted pixel preview across the full target canvas viewpo
     packedPixels: createPackedPixels(128, 128),
     previewPixels: new Array(128 * 128 * 4).fill(255),
     sourceWidth: 512,
-    sourceHeight: 512
+    sourceHeight: 512,
   });
 
   render(<CustomFaceImagePixelizerWindow />);
@@ -438,10 +503,15 @@ test('stretches the converted pixel preview across the full target canvas viewpo
 test('shows parameter hints on hover', () => {
   render(<CustomFaceImagePixelizerWindow />);
 
-  fireEvent.mouseEnter(screen.getByRole('button', { name: '黑白模式输出可直接应用的像素，多色模式用于测试预览和参数效果。' }), {
-    clientX: 10,
-    clientY: 20
-  });
+  fireEvent.mouseEnter(
+    screen.getByRole('button', {
+      name: '黑白模式输出可直接应用的像素，多色模式用于测试预览和参数效果。 说明',
+    }),
+    {
+      clientX: 10,
+      clientY: 20,
+    }
+  );
 
   expect(screen.getByRole('tooltip')).toHaveTextContent('黑白模式输出可直接应用的像素');
 });
@@ -452,7 +522,7 @@ test('clears the current image draft without applying pixels', async () => {
     sourceWidth: 8,
     sourceHeight: 8,
     workingWidth: 8,
-    workingHeight: 8
+    workingHeight: 8,
   });
   pixelizeSourceMock.mockResolvedValue({
     width: 128,
@@ -460,7 +530,7 @@ test('clears the current image draft without applying pixels', async () => {
     packedPixels: createPackedPixels(128, 32),
     previewPixels: new Array(128 * 32 * 4).fill(255),
     sourceWidth: 8,
-    sourceHeight: 8
+    sourceHeight: 8,
   });
 
   render(<CustomFaceImagePixelizerWindow />);
@@ -484,7 +554,7 @@ test('closes the image pixelizer through the backend command', async () => {
     sourceWidth: 8,
     sourceHeight: 8,
     workingWidth: 8,
-    workingHeight: 8
+    workingHeight: 8,
   });
   pixelizeSourceMock.mockResolvedValue({
     width: 128,
@@ -492,7 +562,7 @@ test('closes the image pixelizer through the backend command', async () => {
     packedPixels: createPackedPixels(128, 32),
     previewPixels: new Array(128 * 32 * 4).fill(255),
     sourceWidth: 8,
-    sourceHeight: 8
+    sourceHeight: 8,
   });
 
   render(<CustomFaceImagePixelizerWindow />);
@@ -513,7 +583,7 @@ test('accepts pasted image files as input', async () => {
     sourceWidth: 8,
     sourceHeight: 8,
     workingWidth: 8,
-    workingHeight: 8
+    workingHeight: 8,
   });
   pixelizeSourceMock.mockResolvedValue({
     width: 128,
@@ -521,15 +591,15 @@ test('accepts pasted image files as input', async () => {
     packedPixels: createPackedPixels(128, 32),
     previewPixels: new Array(128 * 32 * 4).fill(255),
     sourceWidth: 8,
-    sourceHeight: 8
+    sourceHeight: 8,
   });
 
   render(<CustomFaceImagePixelizerWindow />);
   const file = new File([new Uint8Array([9, 8, 7])], 'pasted.png', { type: 'image/png' });
   fireEvent.paste(window, {
     clipboardData: {
-      files: [file]
-    }
+      files: [file],
+    },
   });
 
   await waitFor(() => expect(prepareSourceMock).toHaveBeenCalledOnce());
@@ -537,16 +607,20 @@ test('accepts pasted image files as input', async () => {
 });
 
 test('releases a prepared source that resolves after the window unmounts', async () => {
-  let resolvePrepare: ((value: {
-    sourceId: string;
-    sourceWidth: number;
-    sourceHeight: number;
-    workingWidth: number;
-    workingHeight: number;
-  }) => void) | undefined;
-  prepareSourceMock.mockReturnValue(new Promise((resolve) => {
-    resolvePrepare = resolve;
-  }));
+  let resolvePrepare:
+    | ((value: {
+        sourceId: string;
+        sourceWidth: number;
+        sourceHeight: number;
+        workingWidth: number;
+        workingHeight: number;
+      }) => void)
+    | undefined;
+  prepareSourceMock.mockReturnValue(
+    new Promise((resolve) => {
+      resolvePrepare = resolve;
+    })
+  );
 
   const { unmount } = render(<CustomFaceImagePixelizerWindow />);
   const input = screen.getByTestId('custom-face-image-input') as HTMLInputElement;
@@ -561,7 +635,7 @@ test('releases a prepared source that resolves after the window unmounts', async
       sourceWidth: 8,
       sourceHeight: 8,
       workingWidth: 8,
-      workingHeight: 8
+      workingHeight: 8,
     });
   });
 
@@ -575,7 +649,7 @@ test('switches to text mode, renders text source, and applies the converted pixe
     sourceWidth: 64,
     sourceHeight: 32,
     workingWidth: 64,
-    workingHeight: 32
+    workingHeight: 32,
   });
   pixelizeSourceMock.mockResolvedValue({
     width: 128,
@@ -583,24 +657,28 @@ test('switches to text mode, renders text source, and applies the converted pixe
     packedPixels: createPackedPixels(128, 32),
     previewPixels: new Array(128 * 32 * 4).fill(255),
     sourceWidth: 64,
-    sourceHeight: 32
+    sourceHeight: 32,
   });
 
   render(<CustomFaceImagePixelizerWindow />);
   fireEvent.click(screen.getByRole('button', { name: '文字' }));
-  fireEvent.change(screen.getByRole('textbox', { name: '文字内容' }), { target: { value: 'Hi\n通知' } });
+  fireEvent.change(screen.getByRole('textbox', { name: '文字内容' }), {
+    target: { value: 'Hi\n通知' },
+  });
 
-  await waitFor(() => expect(prepareSourceMock).toHaveBeenCalledWith({
-    profileWidth: 128,
-    profileHeight: 32,
-    imageBytes: [4, 5, 6]
-  }));
+  await waitFor(() =>
+    expect(prepareSourceMock).toHaveBeenCalledWith({
+      profileWidth: 128,
+      profileHeight: 32,
+      imageBytes: [4, 5, 6],
+    })
+  );
   await waitFor(() => expect(pixelizeSourceMock).toHaveBeenCalled());
   fireEvent.click(screen.getByRole('button', { name: '应用' }));
   expect(applyMock).toHaveBeenCalledWith({
     packedPixels: createPackedPixels(128, 32),
     sourceWidth: 128,
-    sourceHeight: 32
+    sourceHeight: 32,
   });
 });
 
@@ -619,7 +697,7 @@ test('shows letter spacing control in text mode and regenerates the text source 
     sourceWidth: 64,
     sourceHeight: 32,
     workingWidth: 64,
-    workingHeight: 32
+    workingHeight: 32,
   });
   pixelizeSourceMock.mockResolvedValue({
     width: 128,
@@ -627,7 +705,7 @@ test('shows letter spacing control in text mode and regenerates the text source 
     packedPixels: createPackedPixels(128, 32),
     previewPixels: new Array(128 * 32 * 4).fill(255),
     sourceWidth: 64,
-    sourceHeight: 32
+    sourceHeight: 32,
   });
 
   render(<CustomFaceImagePixelizerWindow />);
@@ -638,7 +716,7 @@ test('shows letter spacing control in text mode and regenerates the text source 
   fireEvent.change(screen.getByRole('slider', { name: '字间距' }), { target: { value: '0.5' } });
 
   await waitFor(() => expect(prepareSourceMock).toHaveBeenCalledTimes(2));
-  expect(screen.getByRole('spinbutton', { name: '字间距数值' })).toHaveValue(0.5);
+  expect(screen.getByRole('textbox', { name: '字间距数值' })).toHaveValue('0.5');
 });
 
 test('locks text mode to monochrome conversion', async () => {
@@ -648,7 +726,7 @@ test('locks text mode to monochrome conversion', async () => {
   fireEvent.click(screen.getByRole('button', { name: '文字' }));
 
   expect(screen.getByRole('button', { name: '多色' })).toBeDisabled();
-  expect(screen.getByRole('spinbutton', { name: '颜色数量数值' })).toBeDisabled();
+  expect(screen.getByRole('textbox', { name: '颜色数量数值' })).toBeDisabled();
   expect(screen.getByRole('button', { name: '黑白' })).toHaveClass('border-primary');
 });
 
@@ -658,7 +736,7 @@ test('clears text input when clearing the text workspace', async () => {
     sourceWidth: 64,
     sourceHeight: 32,
     workingWidth: 64,
-    workingHeight: 32
+    workingHeight: 32,
   });
   pixelizeSourceMock.mockResolvedValue({
     width: 128,
@@ -666,12 +744,14 @@ test('clears text input when clearing the text workspace', async () => {
     packedPixels: createPackedPixels(128, 32),
     previewPixels: new Array(128 * 32 * 4).fill(255),
     sourceWidth: 64,
-    sourceHeight: 32
+    sourceHeight: 32,
   });
 
   render(<CustomFaceImagePixelizerWindow />);
   fireEvent.click(screen.getByRole('button', { name: '文字' }));
-  fireEvent.change(screen.getByRole('textbox', { name: '文字内容' }), { target: { value: 'Keep me' } });
+  fireEvent.change(screen.getByRole('textbox', { name: '文字内容' }), {
+    target: { value: 'Keep me' },
+  });
   await waitFor(() => expect(prepareSourceMock).toHaveBeenCalled());
 
   fireEvent.click(screen.getByRole('button', { name: '清空画布' }));
@@ -683,7 +763,9 @@ test('clears text input when clearing the text workspace', async () => {
 test('restores text layout controls without clearing text on reset all', async () => {
   render(<CustomFaceImagePixelizerWindow />);
   fireEvent.click(screen.getByRole('button', { name: '文字' }));
-  fireEvent.change(screen.getByRole('textbox', { name: '文字内容' }), { target: { value: 'Keep me' } });
+  fireEvent.change(screen.getByRole('textbox', { name: '文字内容' }), {
+    target: { value: 'Keep me' },
+  });
   fireEvent.change(screen.getByRole('slider', { name: '字号' }), { target: { value: '48' } });
 
   fireEvent.click(screen.getByRole('button', { name: '还原设置' }));

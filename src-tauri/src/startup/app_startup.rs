@@ -363,6 +363,8 @@ pub fn run() {
             commands::custom_faces::export_custom_face_group,
             commands::custom_faces::preview_custom_face_group_import,
             commands::custom_faces::import_custom_face_group,
+            commands::custom_faces::install_custom_face_group_to_device,
+            commands::custom_faces::set_custom_face_active_source,
             commands::custom_faces::preview_custom_face_item_import,
             commands::custom_faces::export_custom_face_item,
             commands::custom_faces::export_custom_face_gif,

@@ -1,6 +1,9 @@
 use crate::adapters::boards::BoardCatalogRegistry;
 use crate::core::boards::StableUidPolicy;
-use crate::core::device::{DeviceFirmwareInfo, DeviceTransportConfig};
+use crate::core::device::{
+    DeviceCustomFaceActiveSource, DeviceCustomFaceActiveState, DeviceFirmwareInfo,
+    DeviceTransportConfig,
+};
 use crate::core::protocol::DeviceInfoAck;
 use crate::core::protocol::ProtocolCommandV2;
 use crate::infrastructure::transports::transport::DeviceTransport;
@@ -264,6 +267,25 @@ mod tests {
         );
         assert_eq!("rp2040-pico-oled-091:0011223344556677", info.device_uid);
     }
+
+    #[test]
+    fn parses_device_info_custom_face_active_source() {
+        let ack = DeviceInfoAck::parse(
+            r#"{"ok":true,"v":2,"type":"device_info","board_id":"seeed-wio-terminal","device_uid":"seeed-wio-terminal:0011223344556677","firmware_version":"0.2.1","protocol_version":2,"custom_face":{"protocol_version":1,"profile_code":3,"pixel_width":320,"pixel_height":240,"max_faces":15,"max_frames_per_face":10,"max_group_bytes":393216,"chunk_bytes":512,"incremental_update":true},"custom_face_active":{"source":"custom","group_id":"00000000-0000-4000-8000-000000000201"}}"#,
+        )
+        .unwrap();
+
+        let info = firmware_info_from_ack(ack, &DeviceTransportConfig::serial("/dev/test", 115200))
+            .unwrap();
+
+        assert_eq!(
+            Some(crate::core::device::DeviceCustomFaceActiveState {
+                source: crate::core::device::DeviceCustomFaceActiveSource::Custom,
+                group_id: Some("00000000-0000-4000-8000-000000000201".to_string()),
+            }),
+            info.custom_face_active
+        );
+    }
 }
 
 pub fn firmware_info_from_ack(
@@ -305,6 +327,21 @@ pub fn firmware_info_from_ack(
         },
         None => (None, None),
     };
+    let custom_face_active = match ack.custom_face_active.as_ref() {
+        Some(value) => match parse_custom_face_active_state(value) {
+            Ok(state) => Some(state),
+            Err(error) => {
+                tracing::warn!(
+                    board_id = %board_id,
+                    device_uid = %device_uid,
+                    error,
+                    "ignored invalid custom face active state from device_info"
+                );
+                None
+            }
+        },
+        None => None,
+    };
     Ok(DeviceFirmwareInfo {
         board_id,
         device_uid,
@@ -314,7 +351,45 @@ pub fn firmware_info_from_ack(
         protocol_version,
         custom_face,
         custom_face_error,
+        custom_face_active,
     })
+}
+
+fn parse_custom_face_active_state(
+    value: &serde_json::Value,
+) -> Result<DeviceCustomFaceActiveState, String> {
+    let source = value
+        .get("source")
+        .and_then(|item| item.as_str())
+        .ok_or_else(|| "device_info custom_face_active missing source".to_string())?;
+    let source = match source {
+        "builtin" => DeviceCustomFaceActiveSource::Builtin,
+        "custom" => DeviceCustomFaceActiveSource::Custom,
+        other => {
+            return Err(format!(
+                "device_info custom_face_active invalid source: {other}"
+            ));
+        }
+    };
+    let group_id = value
+        .get("group_id")
+        .and_then(|item| item.as_str())
+        .map(str::to_string);
+    match source {
+        DeviceCustomFaceActiveSource::Builtin => Ok(DeviceCustomFaceActiveState {
+            source,
+            group_id: None,
+        }),
+        DeviceCustomFaceActiveSource::Custom => {
+            let group_id = group_id.ok_or_else(|| {
+                "device_info custom_face_active missing group_id".to_string()
+            })?;
+            Ok(DeviceCustomFaceActiveState {
+                source,
+                group_id: Some(group_id),
+            })
+        }
+    }
 }
 
 fn device_uid_or_limited_fallback(

@@ -397,7 +397,7 @@ mod tests {
         face.frames[0].duration_ms = 50;
         let service = CustomFaceLibraryService::new(root.clone());
         let result = service
-            .export_face_gif(&face, "custom-mono-128x32-v1", &path, 1)
+            .export_face_gif(&face, "custom-mono-128x32-v1", &path, 1, false, false, &[])
             .unwrap();
         assert_eq!(result.frame_delays_ms, vec![50]);
         assert_eq!(result.total_duration_ms, 50);
@@ -416,7 +416,15 @@ mod tests {
         let path = root.join("ready.gif");
         let service = CustomFaceLibraryService::new(root.clone());
         let result = service
-            .export_face_gif(&test_face(), "custom-mono-128x32-v1", &path, 1)
+            .export_face_gif(
+                &test_face(),
+                "custom-mono-128x32-v1",
+                &path,
+                1,
+                false,
+                false,
+                &[],
+            )
             .unwrap();
         assert_eq!(result.frame_delays_ms, vec![210]);
         assert_eq!(result.total_duration_ms, 210);
@@ -440,7 +448,15 @@ mod tests {
         let path = root.join("ready-2x.gif");
         let service = CustomFaceLibraryService::new(root.clone());
         service
-            .export_face_gif(&test_face(), "custom-mono-128x32-v1", &path, 2)
+            .export_face_gif(
+                &test_face(),
+                "custom-mono-128x32-v1",
+                &path,
+                2,
+                false,
+                false,
+                &[],
+            )
             .unwrap();
 
         let mut options = DecodeOptions::new();
@@ -465,7 +481,10 @@ mod tests {
                 &test_face(),
                 "custom-mono-128x32-v1",
                 Path::new("/tmp/ignored.gif"),
-                5
+                9,
+                false,
+                false,
+                &[],
             ),
             Err(CustomFaceLibraryError::InvalidGifExport(_))
         ));
@@ -482,7 +501,7 @@ mod tests {
         let service = CustomFaceLibraryService::new(root.clone());
         let face = multi_frame_face();
         let result = service
-            .export_face_gif(&face, "custom-mono-128x64-v1", &path, 1)
+            .export_face_gif(&face, "custom-mono-128x64-v1", &path, 1, false, false, &[])
             .unwrap();
         assert_eq!(result.frame_delays_ms, vec![600, 600, 600, 200, 500]);
 
@@ -502,7 +521,7 @@ mod tests {
             assert!(frame.palette.is_none());
             assert_eq!(
                 frame.buffer.as_ref(),
-                pixel_art_frame_scaled(&source.packed_pixels, 128, 64, 1, 8_192)
+                pixel_art_frame_scaled(&source.packed_pixels, 128, 64, 1, 8_192, 1, 0)
                     .unwrap()
                     .as_slice()
             );
