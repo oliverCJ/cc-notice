@@ -5,6 +5,7 @@ import { InternalEventOverviewInspector } from './InternalEventOverviewInspector
 import { OutputRuleInspector } from './OutputRuleInspector';
 import { ToolHookMappingInspector } from './ToolHookMappingInspector';
 import { LinkWorkflowSelectedNode, LinkWorkflowViewModel } from './types';
+import { CustomFaceLibraryEntries } from '@/domain/customFaces/library';
 
 type LinkWorkflowInspectorProps = {
   selectedNode: LinkWorkflowSelectedNode;
@@ -12,6 +13,9 @@ type LinkWorkflowInspectorProps = {
   profile: NoticeProfile;
   deviceOptions: DeviceSelectOption[];
   desktopNoticeInstances?: DesktopNoticeInstance[];
+  customFaceLibrary?: CustomFaceLibraryEntries | null;
+  customFaceLibraryLoading?: boolean;
+  onReloadCustomFaceLibrary?: () => void;
   onOpenAiMapping?: () => void;
   onOpenOutputRules?: () => void;
   onSaveProfile: (profile: NoticeProfile) => void;
@@ -23,6 +27,9 @@ export function LinkWorkflowInspector({
   profile,
   deviceOptions,
   desktopNoticeInstances = [],
+  customFaceLibrary,
+  customFaceLibraryLoading = false,
+  onReloadCustomFaceLibrary,
   onOpenAiMapping,
   onOpenOutputRules,
   onSaveProfile
@@ -47,6 +54,9 @@ export function LinkWorkflowInspector({
       profile={profile}
       deviceOptions={deviceOptions}
       desktopNoticeInstances={desktopNoticeInstances}
+      customFaceLibrary={customFaceLibrary}
+      customFaceLibraryLoading={customFaceLibraryLoading}
+      onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
       onOpenOutputRules={onOpenOutputRules}
       onSaveProfile={onSaveProfile}
     />

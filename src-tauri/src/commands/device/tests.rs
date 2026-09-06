@@ -654,6 +654,8 @@ fn add_profile_device_channel_rule(state: &AppState, rule_id: &str, channel_id: 
                     pattern: None,
                     display_face_template_id: None,
                     display_face_intensity: None,
+                    custom_face_group_id: None,
+                    custom_face_id: None,
                     display_template_id: None,
                     display_accent: None,
                     display_icon: None,

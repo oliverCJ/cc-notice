@@ -513,6 +513,79 @@ describe('LinkWorkflowCanvas', () => {
     expect(screen.getByRole('dialog', { name: /system-notification 输出设置/ })).toBeInTheDocument();
   });
 
+  test('shows custom face refresh in the visual workflow output rule dialog', () => {
+    const reloadCustomFaceLibrary = vi.fn();
+    const profile = {
+      ...profileFixture(),
+      hardwareRules: [outputRuleFixture('agent.started', 'device-channel')]
+    };
+    render(
+      <I18nProvider language="zh-CN">
+        <LinkWorkflowCanvas
+          profile={profile}
+          viewModel={{
+            ...multiToolViewModel(),
+            outputOverview: {
+              outputTypes: ['device-channel'],
+              configuredOutputCount: 1,
+              needsConfigCount: 0,
+              status: 'configured'
+            },
+            hardwareRules: profile.hardwareRules
+          }}
+          deviceOptions={[
+            {
+              value: 'desk-wio',
+              label: 'Desk Wio',
+              boardId: 'seeed-wio-terminal',
+              deviceExtensions: {
+                display: {
+                  status: true,
+                  face: true,
+                  faceStyleVersion: 'no-brow-warm-v1',
+                  faceTemplates: ['working-focus'],
+                  clear: true,
+                  pixelWidth: 320,
+                  pixelHeight: 240,
+                  faceRendererProfile: 'wio-320x240-v1',
+                  statuses: ['notice', 'working', 'success', 'warning', 'error'],
+                  titleMaxChars: 39,
+                  messageMaxChars: 95
+                },
+                buzzer: null,
+                inputs: null
+              },
+              channels: [
+                {
+                  value: 'display',
+                  label: '屏幕',
+                  kind: 'display',
+                  supportedActions: ['display-face'],
+                  hardwareGuideId: null
+                }
+              ]
+            }
+          ]}
+          customFaceLibrary={{
+            groups: [],
+            groupById: {}
+          }}
+          customFaceLibraryLoading={false}
+          onReloadCustomFaceLibrary={reloadCustomFaceLibrary}
+          onOpenHookSettings={vi.fn()}
+          onSaveProfile={vi.fn()}
+        />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /输出规则/ }));
+    fireEvent.click(screen.getByRole('button', { name: /编辑 device-channel/ }));
+
+    expect(screen.getByRole('button', { name: '刷新自定义表情列表' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '刷新自定义表情列表' }));
+    expect(reloadCustomFaceLibrary).toHaveBeenCalledTimes(1);
+  });
+
   test('hides legacy standalone display output from output inspector', () => {
     const profile = {
       ...profileFixture(),

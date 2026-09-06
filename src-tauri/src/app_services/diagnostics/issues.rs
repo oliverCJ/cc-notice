@@ -79,6 +79,7 @@ pub fn build_issues(
             "referenced-offline" => "device.referencedOffline",
             "heartbeat-issue" => "device.heartbeatIssue",
             "firmware-issue" => "device.firmwareIssue",
+            "device-custom-face-output-mismatch" => "device.runtimeIssue",
             _ => "device.runtimeIssue",
         };
         issues.push(

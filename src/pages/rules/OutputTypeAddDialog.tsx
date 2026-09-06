@@ -29,6 +29,7 @@ import {
   defaultDeviceOptions,
   DeviceSelectOption
 } from './deviceChannelOptions';
+import { CustomFaceLibraryEntries } from '@/domain/customFaces/library';
 import {
   createDefaultOutputForType,
   deviceChannelParameterConstraints,
@@ -45,6 +46,9 @@ type OutputTypeAddDialogProps = {
   existingRules: HardwareRule[];
   deviceOptions?: DeviceSelectOption[];
   desktopNoticeInstances?: DesktopNoticeInstance[];
+  customFaceLibrary?: CustomFaceLibraryEntries | null;
+  customFaceLibraryLoading?: boolean;
+  onReloadCustomFaceLibrary?: () => void;
   onCancel: () => void;
   onAdd: (internalEvent: string, outputType: HardwareOutputType, output: HardwareOutput) => void;
 };
@@ -54,6 +58,9 @@ export function OutputTypeAddDialog({
   existingRules,
   deviceOptions: providedDeviceOptions,
   desktopNoticeInstances = [],
+  customFaceLibrary,
+  customFaceLibraryLoading = false,
+  onReloadCustomFaceLibrary,
   onCancel,
   onAdd
 }: OutputTypeAddDialogProps) {
@@ -161,6 +168,9 @@ export function OutputTypeAddDialog({
                     internalEvent={`${internalEvent}-add`}
                     output={draftOutput}
                     deviceOptions={allowBoardCapabilityFallback ? undefined : deviceOptions}
+                    customFaceLibrary={customFaceLibrary}
+                    customFaceLibraryLoading={customFaceLibraryLoading}
+                    onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
                     onChange={setDraftOutput}
                   />
                 </div>

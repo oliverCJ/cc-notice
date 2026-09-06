@@ -4,10 +4,11 @@ import {
   DeviceChannelRuleAction,
   DeviceDisplayCapabilities,
 } from '../../api/tauriApi';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { DisplayFacePreview } from '@/components/display/DisplayFacePreview';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -40,12 +41,24 @@ import {
 } from '@/domain/display/displayFaceTemplates';
 import { validateAsciiDisplayTemplate } from './displayTemplateValidation';
 import { DeferredNumberInput } from './DeferredNumberInput';
+import {
+  CustomFaceLibraryEntries,
+  filterCustomFaceGroupSummariesForDisplay,
+  resolveCustomFaceGroupFaceCount
+} from '@/domain/customFaces/library';
+import { CustomFaceAnimatedPreview } from '../custom-face-editor/CustomFaceAnimatedPreview';
+import { defaultDisplayFaceTemplateId } from '@/domain/display/displayFaceTemplates';
+import { editorProfileFromId } from '@/domain/customFaces/editor/profile';
+import { RefreshCw } from 'lucide-react';
 
 type DeviceChannelActionParameterFieldsProps = {
   action?: DeviceChannelActionType | null;
   actionDomId: string;
   value: DeviceChannelRuleAction;
   displayCapabilities?: DeviceDisplayCapabilities | null;
+  customFaceLibrary?: CustomFaceLibraryEntries | null;
+  customFaceLibraryLoading?: boolean;
+  onReloadCustomFaceLibrary?: () => void;
   onChange: (patch: Partial<DeviceChannelRuleAction>) => void;
 };
 
@@ -54,6 +67,9 @@ export function DeviceChannelActionParameterFields({
   actionDomId,
   value,
   displayCapabilities,
+  customFaceLibrary,
+  customFaceLibraryLoading = false,
+  onReloadCustomFaceLibrary,
   onChange
 }: DeviceChannelActionParameterFieldsProps) {
   const t = useI18n();
@@ -74,11 +90,27 @@ export function DeviceChannelActionParameterFields({
     value.displayMessageMaxChars,
     displayMessageConstraint
   );
-  const displayFaceTemplateIds = DISPLAY_FACE_TEMPLATE_IDS.filter((templateId) =>
-    displayCapabilities?.faceTemplates?.length
-      ? displayCapabilities.faceTemplates.includes(templateId)
-      : true
-  );
+  const customFaceGroups = useMemo(() => {
+    if (action !== 'display-face' || !customFaceLibrary) {
+      return [];
+    }
+    return filterCustomFaceGroupSummariesForDisplay(customFaceLibrary.groups, {
+      display: displayCapabilities ?? null
+    });
+  }, [action, customFaceLibrary, displayCapabilities]);
+  const selectedCustomFaceGroupId =
+    value.customFaceGroupId?.trim() ?? customFaceGroups[0]?.groupId ?? '';
+  const selectedCustomFaceGroup =
+    selectedCustomFaceGroupId && customFaceLibrary?.groupById[selectedCustomFaceGroupId]
+      ? customFaceLibrary.groupById[selectedCustomFaceGroupId]
+      : null;
+  const selectedCustomFace =
+    selectedCustomFaceGroup?.faces.find((face) => face.faceId === value.customFaceId) ??
+    selectedCustomFaceGroup?.faces.find((face) => face.faceId === selectedCustomFaceGroup.defaultFaceId) ??
+    selectedCustomFaceGroup?.faces[0] ??
+    null;
+  const customFaceSource =
+    value.customFaceGroupId?.trim() && value.customFaceId?.trim() ? 'custom' : 'builtin';
 
   useEffect(() => {
     if (action !== 'display-status') {
@@ -109,6 +141,13 @@ export function DeviceChannelActionParameterFields({
     }
     onChange({ displayFaceIntensity: 'standard' });
   }, [action, onChange, value.displayFaceIntensity]);
+
+  useEffect(() => {
+    if (action !== 'display-face' || value.displayFaceTemplateId?.trim()) {
+      return;
+    }
+    onChange({ displayFaceTemplateId: defaultDisplayFaceTemplateId });
+  }, [action, onChange, value.displayFaceTemplateId]);
 
   if (!action) {
     return null;
@@ -274,36 +313,211 @@ export function DeviceChannelActionParameterFields({
       ) : null}
 
       {action === 'display-face' ? (
-        <div className="grid gap-3 md:col-span-2 md:grid-cols-2 xl:col-span-3">
+        <div className="grid gap-3 md:col-span-2 xl:col-span-3">
           <div className="space-y-2">
-            <Label htmlFor={`device-display-face-template-${actionDomId}`}>
-              {t('rules.displayFace.template')}
-            </Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor={`device-display-face-source-${actionDomId}`}>
+                {t('rules.displayFace.source')}
+              </Label>
+              {onReloadCustomFaceLibrary ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={customFaceLibraryLoading}
+                  title={t('rules.displayFace.reloadCustomFaces')}
+                  aria-label={t('rules.displayFace.reloadCustomFaces')}
+                  onClick={onReloadCustomFaceLibrary}
+                >
+                  <RefreshCw className={`mr-2 h-4 w-4 ${customFaceLibraryLoading ? 'animate-spin' : ''}`} />
+                  {t('rules.displayFace.reloadCustomFaces')}
+                </Button>
+              ) : null}
+            </div>
             <Select
-              value={value.displayFaceTemplateId ?? 'idle-sleep'}
-              onValueChange={(displayFaceTemplateId) =>
-                onChange({ displayFaceTemplateId })
-              }
+              value={customFaceSource}
+              onValueChange={(source) => {
+                if (source === 'custom') {
+                  const nextGroupId = selectedCustomFaceGroupId || customFaceGroups[0]?.groupId || '';
+                  const nextGroup =
+                    nextGroupId && customFaceLibrary?.groupById[nextGroupId]
+                      ? customFaceLibrary.groupById[nextGroupId]
+                      : null;
+                  const nextFaceId =
+                    nextGroup?.faces.find((face) => face.faceId === value.customFaceId)?.faceId ??
+                    nextGroup?.defaultFaceId ??
+                    nextGroup?.faces[0]?.faceId ??
+                    '';
+                  onChange({
+                    displayFaceTemplateId: value.displayFaceTemplateId ?? defaultDisplayFaceTemplateId,
+                    displayFaceIntensity: value.displayFaceIntensity ?? 'standard',
+                    customFaceGroupId: nextGroupId || null,
+                    customFaceId: nextFaceId || null
+                  });
+                  return;
+                }
+                onChange({
+                  displayFaceTemplateId: defaultDisplayFaceTemplateId,
+                  displayFaceIntensity: 'standard',
+                  customFaceGroupId: null,
+                  customFaceId: null
+                });
+              }}
             >
-              <SelectTrigger id={`device-display-face-template-${actionDomId}`}>
+              <SelectTrigger id={`device-display-face-source-${actionDomId}`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {displayFaceTemplateIds.map((templateId) => (
-                  <SelectItem key={templateId} value={templateId}>
-                    {t(displayFaceTemplateLabelKey(templateId))}
-                  </SelectItem>
-                ))}
+                <SelectItem value="builtin">{t('rules.displayFace.sourceBuiltin')}</SelectItem>
+                <SelectItem
+                  value="custom"
+                  disabled={!customFaceGroups.length && !value.customFaceGroupId?.trim()}
+                >
+                  {t('rules.displayFace.sourceCustom')}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className="flex min-w-0 items-center justify-center">
-            <DisplayFacePreview
-              className="w-full"
-              displayCapabilities={displayCapabilities}
-              templateId={value.displayFaceTemplateId}
-            />
-          </div>
+
+          {customFaceSource === 'builtin' ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor={`device-display-face-template-${actionDomId}`}>
+                  {t('rules.displayFace.template')}
+                </Label>
+                <Select
+                  value={value.displayFaceTemplateId ?? defaultDisplayFaceTemplateId}
+                  onValueChange={(displayFaceTemplateId) =>
+                    onChange({ displayFaceTemplateId })
+                  }
+                >
+                  <SelectTrigger id={`device-display-face-template-${actionDomId}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DISPLAY_FACE_TEMPLATE_IDS.filter((templateId) =>
+                      displayCapabilities?.faceTemplates?.length
+                        ? displayCapabilities.faceTemplates.includes(templateId)
+                        : true
+                    ).map((templateId) => (
+                      <SelectItem key={templateId} value={templateId}>
+                        {t(displayFaceTemplateLabelKey(templateId))}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex min-w-0 items-center justify-center">
+                <DisplayFacePreview
+                  className="w-full"
+                  displayCapabilities={displayCapabilities}
+                  templateId={value.displayFaceTemplateId}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor={`device-display-face-group-${actionDomId}`}>
+                  {t('rules.displayFace.customGroup')}
+                </Label>
+                <Select
+                  value={selectedCustomFaceGroupId}
+                  onValueChange={(groupId) => {
+                    const nextGroup = customFaceLibrary?.groupById[groupId] ?? null;
+                    const nextFaceId =
+                      nextGroup?.faces.find((face) => face.faceId === nextGroup.defaultFaceId)?.faceId ??
+                      nextGroup?.faces[0]?.faceId ??
+                      '';
+                    onChange({
+                      displayFaceTemplateId: value.displayFaceTemplateId ?? defaultDisplayFaceTemplateId,
+                      displayFaceIntensity: value.displayFaceIntensity ?? 'standard',
+                      customFaceGroupId: groupId,
+                      customFaceId: nextFaceId || null
+                    });
+                  }}
+                  disabled={!customFaceGroups.length}
+                >
+                  <SelectTrigger id={`device-display-face-group-${actionDomId}`}>
+                    <SelectValue placeholder={t('rules.displayFace.customGroupPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customFaceGroups.map((group) => (
+                      <SelectItem key={group.groupId} value={group.groupId}>
+                        {group.name} · {t('rules.displayFace.customFaceCount', { count: resolveCustomFaceGroupFaceCount(group) })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor={`device-display-face-custom-${actionDomId}`}>
+                  {t('rules.displayFace.customFace')}
+                </Label>
+                <Select
+                  value={selectedCustomFace?.faceId ?? ''}
+                  onValueChange={(faceId) =>
+                    onChange({
+                      displayFaceTemplateId: value.displayFaceTemplateId ?? defaultDisplayFaceTemplateId,
+                      displayFaceIntensity: value.displayFaceIntensity ?? 'standard',
+                      customFaceGroupId: selectedCustomFaceGroupId || null,
+                      customFaceId: faceId || null
+                    })
+                  }
+                  disabled={!selectedCustomFaceGroup?.faces.length}
+                >
+                  <SelectTrigger id={`device-display-face-custom-${actionDomId}`}>
+                    <SelectValue placeholder={t('rules.displayFace.customFacePlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(selectedCustomFaceGroup?.faces ?? []).map((face) => (
+                      <SelectItem key={face.faceId} value={face.faceId}>
+                        {face.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {customFaceSource === 'custom' ? (
+            selectedCustomFace && selectedCustomFaceGroup ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  {t('rules.displayFace.customPreview')}
+                </p>
+                <div className="flex min-w-0 items-center justify-center">
+                  {(() => {
+                    const profile = editorProfileFromId(selectedCustomFaceGroup.displayProfileId);
+                    if (!profile) {
+                      return (
+                        <p className="text-xs text-muted-foreground">
+                          {t('rules.displayFace.customPreviewUnavailable')}
+                        </p>
+                      );
+                    }
+                    return (
+                      <CustomFaceAnimatedPreview
+                        width={profile.width}
+                        height={profile.height}
+                        frames={selectedCustomFace.frames}
+                        ariaLabel={t('rules.displayFace.customPreview', {
+                          name: selectedCustomFace.name
+                        })}
+                        className="w-full max-w-[280px]"
+                      />
+                    );
+                  })()}
+                </div>
+              </div>
+            ) : (
+                <p className="text-xs text-muted-foreground">
+                  {t('rules.displayFace.customPreviewUnavailable')}
+                </p>
+            )
+          ) : null}
         </div>
       ) : null}
 

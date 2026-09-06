@@ -11,6 +11,7 @@ import { getBoardAvailableChannels } from '@/domain/boards/boardCatalog';
 const getCustomFaceGroupsMock = vi.hoisted(() => vi.fn());
 const getCustomFaceGroupMock = vi.hoisted(() => vi.fn());
 const installCustomFaceGroupToDeviceMock = vi.hoisted(() => vi.fn());
+const setCustomFaceActiveSourceMock = vi.hoisted(() => vi.fn());
 const openDeviceTransportMonitorWindowMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@/api/tauriApi', async () => {
@@ -20,6 +21,7 @@ vi.mock('@/api/tauriApi', async () => {
     getCustomFaceGroups: getCustomFaceGroupsMock,
     getCustomFaceGroup: getCustomFaceGroupMock,
     installCustomFaceGroupToDevice: installCustomFaceGroupToDeviceMock,
+    setCustomFaceActiveSource: setCustomFaceActiveSourceMock,
     openDeviceTransportMonitorWindow: openDeviceTransportMonitorWindowMock,
   };
 });
@@ -199,6 +201,7 @@ describe('DevicesPage', () => {
     getCustomFaceGroupsMock.mockResolvedValue([]);
     getCustomFaceGroupMock.mockResolvedValue(null);
     installCustomFaceGroupToDeviceMock.mockReset();
+    setCustomFaceActiveSourceMock.mockReset();
     openDeviceTransportMonitorWindowMock.mockResolvedValue(undefined);
   });
 
@@ -1692,6 +1695,48 @@ describe('DevicesPage', () => {
     expect(upsertDeviceState).toHaveBeenCalledWith(nextRuntime);
   });
 
+  test('defaults the install panel selection to the first group compatible with the selected device', async () => {
+    const smallGroup = customFaceGroup128x32();
+    const wioGroup = customFaceGroup320x240();
+    getCustomFaceGroupsMock.mockResolvedValue([
+      {
+        groupId: smallGroup.groupId,
+        name: smallGroup.name,
+        displayProfileId: smallGroup.displayProfileId,
+        revision: 1,
+        defaultFaceId: smallGroup.defaultFaceId,
+        faceCount: 1,
+        libraryHash: 'hash-small',
+      },
+      {
+        groupId: wioGroup.groupId,
+        name: wioGroup.name,
+        displayProfileId: wioGroup.displayProfileId,
+        revision: 1,
+        defaultFaceId: wioGroup.defaultFaceId,
+        faceCount: 1,
+        libraryHash: 'hash-wio',
+      },
+    ]);
+    getCustomFaceGroupMock.mockImplementation(async (groupId: string) => {
+      if (groupId === smallGroup.groupId) {
+        return smallGroup;
+      }
+      if (groupId === wioGroup.groupId) {
+        return wioGroup;
+      }
+      throw new Error(`unexpected group: ${groupId}`);
+    });
+
+    renderDevicesPage({
+      ...registryState,
+      states: [wioRuntimeState()],
+    });
+
+    const groupSelect = await screen.findByRole('combobox', { name: '表情组' });
+    await waitFor(() => expect(groupSelect).toHaveTextContent('Wio group'));
+  });
+
   test('renders localized custom face deployment preflight reasons', async () => {
     const group = customFaceGroup128x32();
     getCustomFaceGroupsMock.mockResolvedValue([
@@ -1709,14 +1754,39 @@ describe('DevicesPage', () => {
 
     renderDevicesPage({
       ...registryState,
-      states: [wioRuntimeState()],
+      states: [
+        {
+          ...registryState.states[1],
+          deviceId: 'desk-pico-oled-091',
+          deviceUid: registryState.states[1].deviceUid ?? 'desk-pico-oled-091-uid',
+          status: 'connected',
+          boardId: 'rp2040-pico-oled-091',
+          firmwareInfo: {
+            ...registryState.states[1].firmwareInfo,
+            deviceUid: registryState.states[1].firmwareInfo?.deviceUid ?? 'desk-pico-oled-091-uid',
+            firmwareVersion: registryState.states[1].firmwareInfo?.firmwareVersion ?? '0.2.1',
+            protocolVersion: registryState.states[1].firmwareInfo?.protocolVersion ?? 2,
+            boardId: 'rp2040-pico-oled-091',
+            customFace: {
+              protocolVersion: 1,
+              profileCode: 3,
+              pixelWidth: 320,
+              pixelHeight: 240,
+              maxFaces: 15,
+              maxFramesPerFace: 10,
+              maxGroupBytes: 393216,
+              chunkBytes: 512,
+              incrementalUpdate: true,
+            },
+          },
+        },
+      ],
     });
 
     expect(await screen.findByText('Small group')).toBeInTheDocument();
     expect(screen.queryByText(/display-size-mismatch/)).not.toBeInTheDocument();
     expect(screen.queryByText(/profile-code-mismatch/)).not.toBeInTheDocument();
     expect(screen.queryByText(/custom-face-size-mismatch/)).not.toBeInTheDocument();
-    expect(screen.getByText(/设备屏幕分辨率与表情组不一致/)).toBeInTheDocument();
     expect(screen.getByText(/固件自定义表情 Profile 与表情组不一致/)).toBeInTheDocument();
     expect(screen.getByText(/固件自定义表情分辨率与表情组不一致/)).toBeInTheDocument();
   });
@@ -1752,6 +1822,39 @@ describe('DevicesPage', () => {
     expect(await screen.findByText('Wio group')).toBeInTheDocument();
     expect(getCustomFaceGroupsMock).toHaveBeenCalledTimes(groupLoadCallsBeforeRender + 2);
     expect(getCustomFaceGroupMock).toHaveBeenCalledWith(group.groupId);
+  });
+
+  test('clears the previous custom face install list when reload returns no groups', async () => {
+    const group = customFaceGroup320x240();
+    getCustomFaceGroupsMock.mockResolvedValueOnce([
+      {
+        groupId: group.groupId,
+        name: group.name,
+        displayProfileId: group.displayProfileId,
+        revision: 1,
+        defaultFaceId: group.defaultFaceId,
+        faceCount: 1,
+        libraryHash: 'hash-1',
+      },
+    ]);
+    getCustomFaceGroupMock.mockResolvedValueOnce(group);
+    getCustomFaceGroupsMock.mockResolvedValueOnce([]);
+    const groupLoadCallsBeforeRender = getCustomFaceGroupsMock.mock.calls.length;
+
+    renderDevicesPage({
+      ...registryState,
+      states: [wioRuntimeState()],
+    });
+
+    await waitFor(() =>
+      expect(getCustomFaceGroupsMock).toHaveBeenCalledTimes(groupLoadCallsBeforeRender + 1)
+    );
+    expect(screen.getByText('Wio group')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '刷新表情组列表' }));
+
+    await waitFor(() => expect(screen.queryByText('Wio group')).not.toBeInTheDocument());
+    expect(getCustomFaceGroupsMock).toHaveBeenCalledTimes(groupLoadCallsBeforeRender + 2);
   });
 
   test('hides custom face install panel when display device firmware has no custom face capability', () => {
@@ -1818,6 +1921,52 @@ describe('DevicesPage', () => {
     expect(screen.getByText('当前激活：自定义')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '切回内置表情' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '激活自定义表情' })).toBeInTheDocument();
+  });
+
+  test('shows activation failure separately from install failure', async () => {
+    const group = customFaceGroup320x240();
+    getCustomFaceGroupsMock.mockResolvedValue([
+      {
+        groupId: group.groupId,
+        name: group.name,
+        displayProfileId: group.displayProfileId,
+        revision: 1,
+        defaultFaceId: group.defaultFaceId,
+        faceCount: 1,
+        libraryHash: 'hash-1',
+      },
+    ]);
+    getCustomFaceGroupMock.mockResolvedValue(group);
+    setCustomFaceActiveSourceMock.mockRejectedValue(new Error('device rejected activation'));
+
+    renderDevicesPage({
+      ...registryState,
+      states: [
+        {
+          ...wioRuntimeState(),
+          customFaceStatus: {
+            state: 'installed',
+            installed: {
+              profileCode: 3,
+              groupId: group.groupId,
+              groupRuntimeHash: 'b7b9bc4dd2cf2f56600ac55d8bd68dfe2063c03b1eb4a781b006779675981fc8',
+              defaultFaceId: group.defaultFaceId,
+              faceCount: 1,
+              encodedBytes: 1463,
+            },
+            errorCode: null,
+          },
+        },
+      ],
+    });
+
+    expect(await screen.findByText('Wio group')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '激活自定义表情' }));
+
+    expect(
+      await screen.findByText(/激活源切换失败：device rejected activation/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/下发失败：device rejected activation/)).not.toBeInTheDocument();
   });
 
   test('shows custom face test unavailable when the selected device has no installed group', () => {

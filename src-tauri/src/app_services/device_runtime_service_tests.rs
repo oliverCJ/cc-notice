@@ -6,9 +6,9 @@ use crate::app_services::device_io_worker::{
 };
 use crate::core::device::{
     ActiveLevel, DeviceChannel, DeviceChannelAction, DeviceChannelActionType,
-    DeviceConnectionStatus, DeviceCustomFaceCapabilities, DeviceCustomFaceErrorCode,
-    DeviceCustomFaceActiveSource, DeviceCustomFaceStatusState, DeviceExtensionAction,
-    DeviceExtensionActionType,
+    DeviceConnectionStatus, DeviceCustomFaceActiveSource, DeviceCustomFaceCapabilities,
+    DeviceCustomFaceErrorCode, DeviceCustomFaceStatus, DeviceCustomFaceStatusState,
+    DeviceExtensionAction, DeviceExtensionActionType, DeviceInstalledCustomFaceGroup,
     DeviceFirmwareInfo, DeviceFirmwareStatus, DeviceHeartbeatStatus, DeviceInstance,
     DeviceOperationKind, DeviceRuntimeErrorCode, DeviceTransportConfig,
 };
@@ -193,6 +193,84 @@ fn connected_transport_reports_failed_when_action_ack_is_error() {
         result.error
     );
     assert_eq!(DeviceConnectionStatus::Connected, service.state().status);
+}
+
+#[test]
+fn custom_display_face_is_rejected_when_active_source_is_builtin() {
+    let device = test_device("desk-wio");
+    let transport = MockDeviceTransport::with_received_lines(vec![]);
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(transport));
+    service.state.firmware_info = Some(firmware_info_with_wio_custom_face_active());
+    service.state.custom_face_status = installed_custom_face_status("2133e686-77f5-4a29-923b-10d65211ca94");
+
+    let action = test_custom_display_face_action("desk-wio");
+    let result = service.send_extension_action(&action);
+
+    assert_eq!("failed", result.status);
+    assert_eq!(
+        Some(DeviceRuntimeErrorCode::DeviceCustomFaceOutputMismatch),
+        result.error_code
+    );
+    assert!(result.error.is_some());
+    assert!(service.sent_lines().is_empty());
+}
+
+#[test]
+fn custom_display_face_is_rejected_when_installed_group_mismatches_rule_group() {
+    let device = test_device("desk-wio");
+    let transport = MockDeviceTransport::with_received_lines(vec![]);
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(transport));
+    let mut firmware_info = firmware_info_with_wio_custom_face_active();
+    firmware_info.custom_face_active = Some(crate::core::device::DeviceCustomFaceActiveState {
+        source: DeviceCustomFaceActiveSource::Custom,
+        group_id: Some("2133e686-77f5-4a29-923b-10d65211ca94".to_string()),
+    });
+    service.state.firmware_info = Some(firmware_info);
+    service.state.custom_face_status =
+        installed_custom_face_status("2133e686-77f5-4a29-923b-10d65211ca94");
+
+    let mut action = test_custom_display_face_action("desk-wio");
+    action.custom_face_group_id = Some("10000000-0000-4000-8000-000000000001".to_string());
+    let result = service.send_extension_action(&action);
+
+    assert_eq!("failed", result.status);
+    assert_eq!(
+        Some(DeviceRuntimeErrorCode::DeviceCustomFaceOutputMismatch),
+        result.error_code
+    );
+    assert!(service.sent_lines().is_empty());
+}
+
+#[test]
+fn custom_display_face_is_sent_when_active_source_and_installed_group_match() {
+    let device = test_device("desk-wio");
+    let transport = MockDeviceTransport::with_received_lines(vec![
+        r#"{"ok":true,"v":2,"type":"display_face"}"#.to_string(),
+    ]);
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(transport));
+    let mut firmware_info = firmware_info_with_wio_custom_face_active();
+    firmware_info.custom_face_active = Some(crate::core::device::DeviceCustomFaceActiveState {
+        source: DeviceCustomFaceActiveSource::Custom,
+        group_id: Some("2133e686-77f5-4a29-923b-10d65211ca94".to_string()),
+    });
+    service.state.firmware_info = Some(firmware_info);
+    service.state.custom_face_status =
+        installed_custom_face_status("2133e686-77f5-4a29-923b-10d65211ca94");
+
+    let action = test_custom_display_face_action("desk-wio");
+    let result = service.send_extension_action(&action);
+
+    assert_eq!("sent", result.status);
+    assert_eq!(None, result.error);
+    assert_eq!(
+        vec![
+            "{\"v\":2,\"type\":\"display_face\",\"face\":\"idle-sleep\",\"intensity\":\"standard\",\"group_id\":\"2133e686-77f5-4a29-923b-10d65211ca94\",\"face_id\":\"face-1\",\"duration_ms\":5000}\n"
+        ],
+        service.sent_lines()
+    );
 }
 
 #[test]
@@ -1203,5 +1281,43 @@ fn test_display_lines_action(device_id: &str) -> DeviceExtensionAction {
         pattern: None,
         control: None,
         active: None,
+    }
+}
+
+fn test_custom_display_face_action(device_id: &str) -> DeviceExtensionAction {
+    DeviceExtensionAction {
+        device_id: device_id.to_string(),
+        channel_id: None,
+        action: DeviceExtensionActionType::DisplayFace,
+        status: None,
+        title: None,
+        message: None,
+        icon: None,
+        lines: None,
+        face_template: Some("idle-sleep".to_string()),
+        face_intensity: Some("standard".to_string()),
+        custom_face_group_id: Some("2133e686-77f5-4a29-923b-10d65211ca94".to_string()),
+        custom_face_id: Some("face-1".to_string()),
+        duration_ms: Some(5000),
+        pattern: None,
+        control: None,
+        active: None,
+    }
+}
+
+fn installed_custom_face_status(group_id: &str) -> crate::core::device::DeviceCustomFaceStatus {
+    crate::core::device::DeviceCustomFaceStatus {
+        state: DeviceCustomFaceStatusState::Installed,
+        installed: Some(DeviceInstalledCustomFaceGroup {
+            profile_code: 3,
+            group_id: group_id.to_string(),
+            group_runtime_hash: "b7b9bc4dd2cf2f56600ac55d8bd68dfe2063c03b1eb4a781b006779675981fc8"
+                .to_string(),
+            default_face_id: "face-1".to_string(),
+            face_count: 2,
+            encoded_bytes: 1463,
+        }),
+        error_code: None,
+        last_confirmed_at: None,
     }
 }

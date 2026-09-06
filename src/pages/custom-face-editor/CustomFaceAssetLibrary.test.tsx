@@ -19,10 +19,14 @@ describe('CustomFaceAssetLibrary', () => {
             name: '素材 A',
             scope: 'group',
             groupId: 'group-a',
+            profileId: 'custom-mono-128x32-v1',
             width: 2,
             height: 2,
             packedPixels: [1],
             tags: [],
+            source: 'local',
+            createdAt: '2026-09-05T00:00:00Z',
+            updatedAt: '2026-09-05T00:00:00Z',
           },
         ]}
         />

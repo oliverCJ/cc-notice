@@ -10,8 +10,6 @@ import {
   DeviceChannel,
   DeviceRuntimeState,
   DeviceTransportConfig,
-  getCustomFaceGroup,
-  getCustomFaceGroups,
   installCustomFaceGroupToDevice,
   setCustomFaceActiveSource,
   openDeviceTransportMonitorWindow,
@@ -20,11 +18,15 @@ import {
   getBoardAvailableChannels,
   getBoardConnectionResourceMode,
 } from '@/domain/boards/boardCatalog';
-import { getBoardDeviceExtensions } from '@/domain/boards/boardCatalog';
 import {
   checkCustomFaceDeployment,
   type CustomFaceDeploymentReason,
 } from '@/domain/customFaces/deployment';
+import {
+  filterCustomFaceGroupSummariesForDisplay,
+  loadCustomFaceLibraryEntries,
+} from '@/domain/customFaces/library';
+import { resolveDeviceDisplayCapabilities } from '@/domain/devices/deviceDisplayCapabilities';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -74,6 +76,7 @@ export function DevicesPage({
   const [customFaceGroupsLoading, setCustomFaceGroupsLoading] = useState(false);
   const [customFaceInstalling, setCustomFaceInstalling] = useState(false);
   const [customFaceInstallError, setCustomFaceInstallError] = useState<string | null>(null);
+  const [customFaceActivationError, setCustomFaceActivationError] = useState<string | null>(null);
   const [customFaceLoadError, setCustomFaceLoadError] = useState<string | null>(null);
   const { refreshInputBindings } = registry;
 
@@ -83,7 +86,7 @@ export function DevicesPage({
 
   useEffect(() => {
     let disposed = false;
-    void loadCustomFaceGroupEntries()
+    void loadCustomFaceLibraryEntries()
       .then(({ groups, groupById }) => {
         if (disposed) {
           return;
@@ -121,11 +124,21 @@ export function DevicesPage({
       null,
     [registry.states, selectedDeviceId]
   );
+  const selectedDeviceDisplay = resolveDeviceDisplayCapabilities(
+    selectedState?.boardId ?? null,
+    selectedState
+  );
+  const visibleCustomFaceGroups = useMemo(
+    () =>
+      filterCustomFaceGroupSummariesForDisplay(customFaceGroups, {
+        display: selectedDeviceDisplay,
+      }),
+    [customFaceGroups, selectedDeviceDisplay]
+  );
   const connectionCandidates = useMemo(
     () => connectionCandidatesForDevice(selectedState, registry.states, discovery.candidates),
     [discovery.candidates, registry.states, selectedState]
   );
-  const selectedDeviceDisplay = getBoardDeviceExtensions(selectedState?.boardId ?? '')?.display;
   const shouldShowCustomFaceInstall =
     Boolean(selectedDeviceDisplay?.face) && Boolean(selectedState?.firmwareInfo?.customFace);
   const selectedChannels = selectedState?.channels ?? [];
@@ -135,6 +148,15 @@ export function DevicesPage({
       (channel) => !configuredChannelIds.has(channel.id)
     );
   }, [selectedChannels, selectedState?.boardId]);
+
+  useEffect(() => {
+    setSelectedCustomFaceGroupId((current) => {
+      if (current && visibleCustomFaceGroups.some((group) => group.groupId === current)) {
+        return current;
+      }
+      return visibleCustomFaceGroups[0]?.groupId || '';
+    });
+  }, [visibleCustomFaceGroups]);
 
   function addChannelDraft(channel: DeviceChannel) {
     if (!selectedState?.deviceId) {
@@ -250,6 +272,7 @@ export function DevicesPage({
     }
     setCustomFaceInstalling(true);
     setCustomFaceInstallError(null);
+    setCustomFaceActivationError(null);
     try {
       const nextState = await installCustomFaceGroupToDevice(
         selectedState.deviceId,
@@ -267,7 +290,7 @@ export function DevicesPage({
     setCustomFaceGroupsLoading(true);
     setCustomFaceLoadError(null);
     try {
-      const { groups, groupById } = await loadCustomFaceGroupEntries();
+      const { groups, groupById } = await loadCustomFaceLibraryEntries();
       applyLoadedCustomFaceGroups(groups, groupById);
     } catch (error) {
       console.warn('failed to reload custom face groups for device install', error);
@@ -281,11 +304,12 @@ export function DevicesPage({
     if (!selectedState?.deviceId) {
       return;
     }
+    setCustomFaceActivationError(null);
     try {
       const nextState = await setCustomFaceActiveSource(selectedState.deviceId, 'builtin', null);
       registry.upsertDeviceState(nextState);
     } catch (error) {
-      setCustomFaceInstallError(error instanceof Error ? error.message : String(error));
+      setCustomFaceActivationError(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -294,11 +318,12 @@ export function DevicesPage({
       return;
     }
     const groupId = selectedState.customFaceStatus.installed.groupId;
+    setCustomFaceActivationError(null);
     try {
       const nextState = await setCustomFaceActiveSource(selectedState.deviceId, 'custom', groupId);
       registry.upsertDeviceState(nextState);
     } catch (error) {
-      setCustomFaceInstallError(error instanceof Error ? error.message : String(error));
+      setCustomFaceActivationError(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -395,6 +420,7 @@ export function DevicesPage({
                 installing={customFaceInstalling}
                 loadError={customFaceLoadError}
                 installError={customFaceInstallError}
+                activationError={customFaceActivationError}
                 onSelectedGroupIdChange={setSelectedCustomFaceGroupId}
                 onReload={reloadCustomFaceGroups}
                 onInstall={installSelectedCustomFaceGroup}
@@ -418,6 +444,7 @@ type CustomFaceInstallPanelProps = {
   installing: boolean;
   loadError: string | null;
   installError: string | null;
+  activationError: string | null;
   onSelectedGroupIdChange: (groupId: string) => void;
   onReload: () => void;
   onInstall: () => void;
@@ -434,6 +461,7 @@ function CustomFaceInstallPanel({
   installing,
   loadError,
   installError,
+  activationError,
   onSelectedGroupIdChange,
   onReload,
   onInstall,
@@ -442,8 +470,11 @@ function CustomFaceInstallPanel({
 }: CustomFaceInstallPanelProps) {
   const t = useI18n();
   const selectedGroup = selectedGroupId ? groupById[selectedGroupId] : null;
-  const display = getBoardDeviceExtensions(selectedState?.boardId ?? '')?.display ?? null;
+  const display = resolveDeviceDisplayCapabilities(selectedState?.boardId ?? null, selectedState);
   const customFaceCapability = selectedState?.firmwareInfo?.customFace ?? null;
+  const visibleGroups = filterCustomFaceGroupSummariesForDisplay(groups, {
+    display,
+  });
   const deployment = selectedGroup
     ? checkCustomFaceDeployment(selectedGroup, {
         display,
@@ -455,6 +486,10 @@ function CustomFaceInstallPanel({
     installing || !connected || !selectedGroup || deployment?.allowed !== true;
   const installed = selectedState?.customFaceStatus?.installed;
   const activeSource = selectedState?.firmwareInfo?.customFaceActive?.source ?? 'builtin';
+  const activeSourceLabel =
+    activeSource === 'custom'
+      ? t('devices.customFaces.activeSourceCustom')
+      : t('devices.customFaces.activeSourceBuiltin');
   const preflightReasons = deployment?.reasons
     .map((reason) => customFaceDeploymentReasonText(reason, t))
     .join(t('devices.customFaces.preflightReasonSeparator'));
@@ -476,7 +511,9 @@ function CustomFaceInstallPanel({
             </p>
           ) : null}
           <p className="text-xs text-muted-foreground">
-            {activeSource === 'custom' ? '当前激活：自定义' : '当前激活：内置'}
+            {t('devices.customFaces.activeSourceLabel', {
+              source: activeSourceLabel,
+            })}
           </p>
         </div>
         <div className="flex min-w-[280px] flex-col gap-2 sm:flex-row sm:items-end">
@@ -486,13 +523,13 @@ function CustomFaceInstallPanel({
               <Select
                 value={selectedGroupId}
                 onValueChange={onSelectedGroupIdChange}
-                disabled={groups.length === 0 || installing}
+                disabled={visibleGroups.length === 0 || installing}
               >
                 <SelectTrigger aria-label={t('devices.customFaces.groupLabel')}>
                   <SelectValue placeholder={t('devices.customFaces.noGroups')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {groups.map((group) => (
+                  {visibleGroups.map((group) => (
                     <SelectItem key={group.groupId} value={group.groupId}>
                       {group.name}
                     </SelectItem>
@@ -525,7 +562,7 @@ function CustomFaceInstallPanel({
           disabled={!connected || installing}
           onClick={onActivateBuiltin}
         >
-          切回内置表情
+          {t('devices.customFaces.activateBuiltin')}
         </Button>
         <Button
           type="button"
@@ -534,7 +571,7 @@ function CustomFaceInstallPanel({
           disabled={!connected || installing || !installed}
           onClick={onActivateCustom}
         >
-          激活自定义表情
+          {t('devices.customFaces.activateCustom')}
         </Button>
       </div>
       {deployment && !deployment.allowed ? (
@@ -554,23 +591,17 @@ function CustomFaceInstallPanel({
           {t('devices.customFaces.installFailed', { error: installError })}
         </p>
       ) : null}
+      {activationError ? (
+        <p className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {t('devices.customFaces.activationFailed', { error: activationError })}
+        </p>
+      ) : null}
     </section>
   );
 }
 
 function customFaceDeploymentReasonText(reason: CustomFaceDeploymentReason, t: Translator) {
   return t(`devices.customFaces.preflightReasons.${reason}`);
-}
-
-async function loadCustomFaceGroupEntries() {
-  const groups = await getCustomFaceGroups();
-  if (!Array.isArray(groups) || groups.length === 0) {
-    return { groups: [], groupById: {} };
-  }
-  const entries = await Promise.all(
-    groups.map(async (group) => [group.groupId, await getCustomFaceGroup(group.groupId)] as const)
-  );
-  return { groups, groupById: Object.fromEntries(entries) };
 }
 
 export function connectionCandidatesForDevice(

@@ -9,12 +9,16 @@ import { DeviceSelectOption } from '../deviceChannelOptions';
 import { HardwareRuleDetailDialog } from '../HardwareRuleDetailDialog';
 import { LinkWorkflowViewModel } from './types';
 import { useOutputRuleInspectorController } from './useOutputRuleInspectorController';
+import { CustomFaceLibraryEntries } from '@/domain/customFaces/library';
 
 type OutputRuleInspectorProps = {
   viewModel: LinkWorkflowViewModel;
   profile: NoticeProfile;
   deviceOptions: DeviceSelectOption[];
   desktopNoticeInstances?: DesktopNoticeInstance[];
+  customFaceLibrary?: CustomFaceLibraryEntries | null;
+  customFaceLibraryLoading?: boolean;
+  onReloadCustomFaceLibrary?: () => void;
   onOpenOutputRules?: () => void;
   onSaveProfile: (profile: NoticeProfile) => void;
 };
@@ -24,6 +28,9 @@ export function OutputRuleInspector({
   profile,
   deviceOptions,
   desktopNoticeInstances = [],
+  customFaceLibrary,
+  customFaceLibraryLoading = false,
+  onReloadCustomFaceLibrary,
   onOpenOutputRules,
   onSaveProfile
 }: OutputRuleInspectorProps) {
@@ -167,6 +174,9 @@ export function OutputRuleInspector({
             rule={controller.editingRule}
             deviceOptions={deviceOptions}
             desktopNoticeInstances={desktopNoticeInstances}
+            customFaceLibrary={customFaceLibrary}
+            customFaceLibraryLoading={customFaceLibraryLoading}
+            onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
             open={true}
             onCancel={() => controller.setEditingRule(null)}
             onSave={controller.saveRule}
@@ -178,6 +188,9 @@ export function OutputRuleInspector({
             rule={controller.draftAddingRule}
             deviceOptions={deviceOptions}
             desktopNoticeInstances={desktopNoticeInstances}
+            customFaceLibrary={customFaceLibrary}
+            customFaceLibraryLoading={customFaceLibraryLoading}
+            onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
             open={true}
             onCancel={() => controller.setDraftAddingRule(null)}
             onSave={controller.saveNewRule}

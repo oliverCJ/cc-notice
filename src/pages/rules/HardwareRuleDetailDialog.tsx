@@ -26,11 +26,15 @@ import {
   findDuplicateActionTargets,
   MAX_DEVICE_CHANNEL_ACTION_GROUPS
 } from './DeviceChannelActionGroupFields';
+import { CustomFaceLibraryEntries } from '@/domain/customFaces/library';
 
 type HardwareRuleDetailDialogProps = {
   rule: HardwareRule;
   deviceOptions?: DeviceSelectOption[];
   desktopNoticeInstances?: DesktopNoticeInstance[];
+  customFaceLibrary?: CustomFaceLibraryEntries | null;
+  customFaceLibraryLoading?: boolean;
+  onReloadCustomFaceLibrary?: () => void;
   open: boolean;
   onCancel: () => void;
   onSave: (rule: HardwareRule) => void;
@@ -40,6 +44,9 @@ export function HardwareRuleDetailDialog({
   rule,
   deviceOptions,
   desktopNoticeInstances = [],
+  customFaceLibrary,
+  customFaceLibraryLoading = false,
+  onReloadCustomFaceLibrary,
   open,
   onCancel,
   onSave
@@ -89,6 +96,9 @@ export function HardwareRuleDetailDialog({
               internalEvent={draftRule.internalEvent}
               output={draftRule.output}
               deviceOptions={deviceOptions}
+              customFaceLibrary={customFaceLibrary}
+              customFaceLibraryLoading={customFaceLibraryLoading}
+              onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
               onChange={(output) => setDraftRule((current) => ({ ...current, output }))}
             />
           ) : draftRule.output.type === 'display' ? (

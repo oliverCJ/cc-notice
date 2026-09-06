@@ -32,6 +32,7 @@ import {
   defaultDisplayFaceTemplateId,
   displayFaceTemplateLabelKey,
 } from '@/domain/display/displayFaceTemplates';
+import { resolveDeviceDisplayCapabilities } from '@/domain/devices/deviceDisplayCapabilities';
 import { DeviceActionStatus } from '@/hooks/useDeviceRuntimeRegistry';
 import { useI18n } from '@/i18n';
 
@@ -57,7 +58,10 @@ export function DeviceExtensionPanel({
 }: DeviceExtensionPanelProps) {
   const t = useI18n();
   const boardExtensions = getBoardDeviceExtensions(selectedState?.boardId ?? '');
-  const displayCapabilities = boardExtensions?.display ?? null;
+  const displayCapabilities = resolveDeviceDisplayCapabilities(
+    selectedState?.boardId ?? null,
+    selectedState
+  );
   const buzzerPatterns = boardExtensions?.buzzer?.patterns ?? [];
   const [selectedFaceTemplateId, setSelectedFaceTemplateId] = useState<string>(
     defaultDisplayFaceTemplateId

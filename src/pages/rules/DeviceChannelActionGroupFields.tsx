@@ -12,6 +12,7 @@ import {
 } from './deviceChannelOptions';
 import { defaultParametersForDeviceChannelAction } from './ruleProfileUtils';
 import { DeviceChannelActionFields } from './DeviceChannelActionFields';
+import { CustomFaceLibraryEntries } from '@/domain/customFaces/library';
 
 export const MAX_DEVICE_CHANNEL_ACTION_GROUPS = 10;
 
@@ -21,6 +22,9 @@ type DeviceChannelActionGroupFieldsProps = {
   deviceOptions?: DeviceSelectOption[];
   channelOptions?: ChannelSelectOption[];
   lockIdentityFields?: boolean;
+  customFaceLibrary?: CustomFaceLibraryEntries | null;
+  customFaceLibraryLoading?: boolean;
+  onReloadCustomFaceLibrary?: () => void;
   onChange: (output: HardwareOutput) => void;
 };
 
@@ -30,6 +34,9 @@ export function DeviceChannelActionGroupFields({
   deviceOptions,
   channelOptions = defaultChannelOptions,
   lockIdentityFields = false,
+  customFaceLibrary,
+  customFaceLibraryLoading = false,
+  onReloadCustomFaceLibrary,
   onChange
 }: DeviceChannelActionGroupFieldsProps) {
   const t = useI18n();
@@ -107,6 +114,9 @@ export function DeviceChannelActionGroupFields({
             deviceOptions={deviceOptions}
             channelOptions={channelOptions}
             lockIdentityFields={lockIdentityFields}
+            customFaceLibrary={customFaceLibrary}
+            customFaceLibraryLoading={customFaceLibraryLoading}
+            onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
             onChange={(nextAction) => updateAction(index, nextAction)}
             onRemove={() => removeAction(index)}
           />

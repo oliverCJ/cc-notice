@@ -17,12 +17,16 @@ import { LinkWorkflowSelectedNode, LinkWorkflowViewModel } from './types';
 import { WorkflowJoinLines } from './WorkflowJoinLines';
 import { WorkflowOverviewNode } from './WorkflowOverviewNode';
 import { WorkflowToolNode } from './WorkflowToolNode';
+import { CustomFaceLibraryEntries } from '@/domain/customFaces/library';
 
 type LinkWorkflowCanvasProps = {
   profile: NoticeProfile;
   viewModel: LinkWorkflowViewModel;
   deviceOptions: DeviceSelectOption[];
   desktopNoticeInstances?: DesktopNoticeInstance[];
+  customFaceLibrary?: CustomFaceLibraryEntries | null;
+  customFaceLibraryLoading?: boolean;
+  onReloadCustomFaceLibrary?: () => void;
   onOpenHookSettings: () => void;
   onOpenAiMapping?: () => void;
   onOpenOutputRules?: () => void;
@@ -34,6 +38,9 @@ export function LinkWorkflowCanvas({
   viewModel,
   deviceOptions,
   desktopNoticeInstances = [],
+  customFaceLibrary,
+  customFaceLibraryLoading = false,
+  onReloadCustomFaceLibrary,
   onSaveProfile,
   onOpenHookSettings,
   onOpenAiMapping,
@@ -139,6 +146,9 @@ export function LinkWorkflowCanvas({
                     profile={profile}
                     deviceOptions={deviceOptions}
                     desktopNoticeInstances={desktopNoticeInstances}
+                    customFaceLibrary={customFaceLibrary}
+                    customFaceLibraryLoading={customFaceLibraryLoading}
+                    onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
                     onOpenAiMapping={onOpenAiMapping}
                     onOpenOutputRules={onOpenOutputRules ? openOutputRules : undefined}
                     onSaveProfile={onSaveProfile}

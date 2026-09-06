@@ -2,27 +2,29 @@ import {
   EnabledHookEvent,
   HookEventDefinition,
   InternalEventDefinition,
-  NoticeProfile
+  NoticeProfile,
 } from '../../api/tauriApi';
+import type { DeviceInstance, DeviceRuntimeState } from '../../api/tauriApi';
 import type { DesktopNoticeInstance } from '@/domain/desktopNotice';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AiEventMappingPanel } from './AiEventMappingPanel';
 import { HardwareRulePanel } from './HardwareRulePanel';
-import { useDeviceRuntimeRegistry } from '@/hooks/useDeviceRuntimeRegistry';
-import { getBoardDeviceExtensions } from '@/domain/boards/boardCatalog';
-import { toChannelSelectOption } from './deviceChannelOptions';
 import { useI18n } from '@/i18n';
-import {
-  buildLinkWorkflowViewModel,
-  LinkWorkflowCanvas
-} from './link-workflow';
+import { buildLinkWorkflowViewModel, LinkWorkflowCanvas } from './link-workflow';
+import { CustomFaceLibraryEntries } from '@/domain/customFaces/library';
+import { buildRuleDeviceOptions } from './ruleDeviceOptions';
 
 type RuleConfigurationTabsProps = {
   enabledHookEvents: EnabledHookEvent[];
   hookCatalog: HookEventDefinition[];
   internalEvents: InternalEventDefinition[];
   desktopNoticeInstances: DesktopNoticeInstance[];
+  configuredDevices: DeviceInstance[];
+  deviceRuntimeStates: DeviceRuntimeState[];
+  customFaceLibrary?: CustomFaceLibraryEntries | null;
+  customFaceLibraryLoading?: boolean;
+  onReloadCustomFaceLibrary?: () => void;
   profile: NoticeProfile;
   onOpenHookSettings: () => void;
   onSaveProfile: (profile: NoticeProfile) => void;
@@ -33,33 +35,24 @@ export function RuleConfigurationTabs({
   hookCatalog,
   internalEvents,
   desktopNoticeInstances,
+  configuredDevices,
+  deviceRuntimeStates,
+  customFaceLibrary,
+  customFaceLibraryLoading = false,
+  onReloadCustomFaceLibrary,
   profile,
   onOpenHookSettings,
-  onSaveProfile
+  onSaveProfile,
 }: RuleConfigurationTabsProps) {
   const t = useI18n();
-  const deviceRegistry = useDeviceRuntimeRegistry();
   const [activeTab, setActiveTab] = useState('visual-workflow');
-
-  useEffect(() => {
-    deviceRegistry.refreshStates();
-  }, [deviceRegistry.refreshStates]);
-
-  const deviceOptions = deviceRegistry.states
-    .filter((state) => Boolean(state.deviceId))
-    .map((state) => ({
-      value: state.deviceId ?? '',
-      label: state.deviceId ?? '',
-      boardId: state.boardId,
-      deviceExtensions: state.boardId ? getBoardDeviceExtensions(state.boardId) : null,
-      channels: state.channels.map((channel) => toChannelSelectOption(channel, state.boardId))
-    }));
+  const deviceOptions = buildRuleDeviceOptions(configuredDevices, deviceRuntimeStates);
   const linkWorkflowViewModel = buildLinkWorkflowViewModel({
     profile,
     hookCatalog,
     enabledHookEvents,
     internalEvents,
-    deviceOptions
+    deviceOptions,
   });
 
   return (
@@ -76,6 +69,9 @@ export function RuleConfigurationTabs({
           viewModel={linkWorkflowViewModel}
           deviceOptions={deviceOptions}
           desktopNoticeInstances={desktopNoticeInstances}
+          customFaceLibrary={customFaceLibrary}
+          customFaceLibraryLoading={customFaceLibraryLoading}
+          onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
           onOpenHookSettings={onOpenHookSettings}
           onOpenAiMapping={() => setActiveTab('ai-mapping')}
           onOpenOutputRules={() => setActiveTab('hardware-rules')}
@@ -100,6 +96,9 @@ export function RuleConfigurationTabs({
           rules={profile.hardwareRules}
           deviceOptions={deviceOptions}
           desktopNoticeInstances={desktopNoticeInstances}
+          customFaceLibrary={customFaceLibrary}
+          customFaceLibraryLoading={customFaceLibraryLoading}
+          onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
           onChange={(hardwareRules) => onSaveProfile({ ...profile, hardwareRules })}
         />
       </TabsContent>

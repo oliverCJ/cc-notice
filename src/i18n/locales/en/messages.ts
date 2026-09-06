@@ -747,6 +747,8 @@ export const enMessages = {
           'The output rule references a device channel that is not configured.',
         deviceActionUnsupported: 'The selected channel does not support the configured action.',
         deviceCommandUnsupported: 'The current firmware does not support this command.',
+        deviceCustomFaceOutputMismatch:
+          'Custom face active source or installed group does not match the output rule.',
         deviceTransportError:
           'Device transport failed. Check the cable, port usage, or reconnect the device.',
         deviceIdentityLimited:
@@ -788,6 +790,8 @@ export const enMessages = {
         deviceActionTimeout: 'Device action response timed out',
         deviceChannelNotConfigured: 'Device channel is not configured',
         deviceCommandUnsupported: 'The current firmware does not support this command',
+        deviceCustomFaceOutputMismatch:
+          'Custom face active source or installed group does not match the output rule',
         deviceConnectionChanged: 'Device connection changed during the operation',
         deviceInfoTimeout: 'Device info response timed out',
         deviceIoWorkerStopped: 'Device communication worker has stopped',
@@ -1669,6 +1673,11 @@ export const enMessages = {
       install: 'Install to selected device',
       installing: 'Installing...',
       installedGroup: 'Installed: {{groupId}}, {{bytes}} bytes.',
+      activeSourceLabel: 'Active source: {{source}}',
+      activeSourceBuiltin: 'Built-in',
+      activeSourceCustom: 'Custom',
+      activateBuiltin: 'Switch to built-in',
+      activateCustom: 'Activate custom',
       preflightFailed: 'This face group cannot be installed: {{reasons}}',
       preflightReasonSeparator: ', ',
       preflightReasons: {
@@ -1686,6 +1695,7 @@ export const enMessages = {
       },
       reloadFailed: 'Failed to refresh face groups: {{error}}',
       installFailed: 'Install failed: {{error}}',
+      activationFailed: 'Failed to switch active source: {{error}}',
     },
     unknownDevice: 'Unknown Device',
     unknownBoard: 'Unknown Board',
@@ -3276,6 +3286,17 @@ export const enMessages = {
       intensity: 'Expression Intensity',
       previewLabel: 'Pixel screen face preview',
       previewUnavailable: 'This device has no valid screen resolution',
+      source: 'Face Source',
+      sourceBuiltin: 'Builtin Face',
+      sourceCustom: 'Custom Face',
+      reloadCustomFaces: 'Reload custom face list',
+      customGroup: 'Face Group',
+      customGroupPlaceholder: 'Select a face group',
+      customFace: 'Face',
+      customFacePlaceholder: 'Select a face',
+      customFaceCount: '{{count}} faces',
+      customPreview: 'Custom face preview',
+      customPreviewUnavailable: 'No custom face preview is available right now',
       intensityOptions: {
         subtle: 'Subtle',
         standard: 'Standard',
@@ -3299,6 +3320,10 @@ export const enMessages = {
     deviceChannel: {
       defaultRp2040: 'Default RP2040 Pico',
       device: 'Device',
+      connectionStatus: {
+        connected: 'Connected',
+        'offline-config': 'Offline config',
+      },
       channelType: 'Channel Type',
       channel: 'Channel',
       noConfiguredChannels:

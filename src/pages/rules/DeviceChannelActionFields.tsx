@@ -1,7 +1,7 @@
 import {
   DeviceChannelActionType,
   DeviceChannelKind,
-  DeviceChannelRuleAction
+  DeviceChannelRuleAction,
 } from '../../api/tauriApi';
 import { useEffect } from 'react';
 import { HardwareGuideButton } from '@/components/hardware-guides/HardwareGuideButton';
@@ -13,7 +13,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from '@/components/ui/select';
 import { useI18n } from '@/i18n';
 import { AlertCircle, Trash2 } from 'lucide-react';
@@ -23,10 +23,11 @@ import {
   buildChannelKindOptions,
   defaultChannelOptions,
   defaultDeviceOptions,
-  enrichDeviceChannelsForRule
+  enrichDeviceChannelsForRule,
 } from './deviceChannelOptions';
 import { defaultParametersForDeviceChannelAction } from './ruleProfileUtils';
 import { DeviceChannelActionParameterFields } from './DeviceChannelActionParameterFields';
+import { CustomFaceLibraryEntries } from '@/domain/customFaces/library';
 
 type DeviceChannelActionFieldsProps = {
   internalEvent: string;
@@ -37,6 +38,9 @@ type DeviceChannelActionFieldsProps = {
   deviceOptions?: DeviceSelectOption[];
   channelOptions?: ChannelSelectOption[];
   lockIdentityFields?: boolean;
+  customFaceLibrary?: CustomFaceLibraryEntries | null;
+  customFaceLibraryLoading?: boolean;
+  onReloadCustomFaceLibrary?: () => void;
   onChange: (action: DeviceChannelRuleAction) => void;
   onRemove: () => void;
 };
@@ -50,14 +54,18 @@ export function DeviceChannelActionFields({
   deviceOptions,
   channelOptions = defaultChannelOptions,
   lockIdentityFields = false,
+  customFaceLibrary,
+  customFaceLibraryLoading = false,
+  onReloadCustomFaceLibrary,
   onChange,
-  onRemove
+  onRemove,
 }: DeviceChannelActionFieldsProps) {
   const t = useI18n();
   const actionDomId = `${internalEvent}-${action.id}-${index}`;
   const effectiveDeviceOptions = deviceOptions ?? defaultDeviceOptions;
   const allowBoardCapabilityFallback = deviceOptions === undefined;
-  const selectedDeviceId = action.deviceId || effectiveDeviceOptions[0]?.value || 'rp2040-pico-default';
+  const selectedDeviceId =
+    action.deviceId || effectiveDeviceOptions[0]?.value || 'rp2040-pico-default';
   const selectedDevice =
     effectiveDeviceOptions.find((device) => device.value === selectedDeviceId) ??
     effectiveDeviceOptions[0];
@@ -74,7 +82,9 @@ export function DeviceChannelActionFields({
     effectiveChannelOptions[0];
   const selectedKind = selectedChannel?.kind ?? effectiveChannelOptions[0]?.kind;
   const channelKindOptions = buildChannelKindOptions(effectiveChannelOptions);
-  const filteredChannels = effectiveChannelOptions.filter((channel) => channel.kind === selectedKind);
+  const filteredChannels = effectiveChannelOptions.filter(
+    (channel) => channel.kind === selectedKind
+  );
   const actionOptions = selectedChannel?.supportedActions ?? [];
   const selectedAction = resolveAction(action.channelAction, actionOptions);
   const hasChannelOptions = effectiveChannelOptions.length > 0;
@@ -89,14 +99,14 @@ export function DeviceChannelActionFields({
     onChange({
       ...action,
       channelAction: selectedAction,
-      ...defaultParametersForDeviceChannelAction(selectedAction)
+      ...defaultParametersForDeviceChannelAction(selectedAction),
     });
   }, [action, onChange, selectedAction]);
 
   function updateAction(patch: Partial<DeviceChannelRuleAction>) {
     onChange({
       ...action,
-      ...patch
+      ...patch,
     });
   }
 
@@ -107,15 +117,13 @@ export function DeviceChannelActionFields({
     updateAction({
       channelId: nextChannel?.value ?? '',
       channelAction: nextAction,
-      ...defaultParametersIfActionChanged(action.channelAction, nextAction)
+      ...defaultParametersIfActionChanged(action.channelAction, nextAction),
     });
   }
 
   function updateDevice(deviceId: string) {
     const nextDevice = effectiveDeviceOptions.find((device) => device.value === deviceId);
-    const nextDeviceRuleChannels = nextDevice
-      ? enrichDeviceChannelsForRule(nextDevice)
-      : [];
+    const nextDeviceRuleChannels = nextDevice ? enrichDeviceChannelsForRule(nextDevice) : [];
     const nextChannels = nextDeviceRuleChannels.length
       ? nextDeviceRuleChannels
       : allowBoardCapabilityFallback
@@ -127,7 +135,7 @@ export function DeviceChannelActionFields({
       deviceId,
       channelId: nextChannel?.value ?? '',
       channelAction: nextAction,
-      ...defaultParametersIfActionChanged(action.channelAction, nextAction)
+      ...defaultParametersIfActionChanged(action.channelAction, nextAction),
     });
   }
 
@@ -137,14 +145,14 @@ export function DeviceChannelActionFields({
     updateAction({
       channelId,
       channelAction: nextAction,
-      ...defaultParametersIfActionChanged(action.channelAction, nextAction)
+      ...defaultParametersIfActionChanged(action.channelAction, nextAction),
     });
   }
 
   function updateChannelAction(nextAction: DeviceChannelActionType) {
     updateAction({
       channelAction: nextAction,
-      ...defaultParametersForDeviceChannelAction(nextAction)
+      ...defaultParametersForDeviceChannelAction(nextAction),
     });
   }
 
@@ -182,7 +190,16 @@ export function DeviceChannelActionFields({
             <SelectContent>
               {effectiveDeviceOptions.map((device) => (
                 <SelectItem key={device.value} value={device.value}>
-                  {device.label ?? (device.labelKey ? t(device.labelKey) : device.value)}
+                  <span className="inline-flex min-w-0 items-center gap-2">
+                    <span className="truncate">
+                      {device.label ?? (device.labelKey ? t(device.labelKey) : device.value)}
+                    </span>
+                    {device.connectionStatus ? (
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {t(`rules.deviceChannel.connectionStatus.${device.connectionStatus}`)}
+                      </span>
+                    ) : null}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -252,7 +269,7 @@ export function DeviceChannelActionFields({
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 {t('rules.deviceChannel.pinReuseWarning', {
-                  channels: pinReuseWarning.reusedBy
+                  channels: pinReuseWarning.reusedBy,
                 })}
               </AlertDescription>
             </Alert>
@@ -260,9 +277,7 @@ export function DeviceChannelActionFields({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor={`channel-action-${actionDomId}`}>
-            {t('rules.deviceChannel.action')}
-          </Label>
+          <Label htmlFor={`channel-action-${actionDomId}`}>{t('rules.deviceChannel.action')}</Label>
           <Select
             value={selectedAction ?? ''}
             onValueChange={(value) => updateChannelAction(value as DeviceChannelActionType)}
@@ -285,7 +300,13 @@ export function DeviceChannelActionFields({
           action={selectedAction}
           actionDomId={actionDomId}
           value={action}
-          displayCapabilities={selectedDevice?.deviceExtensions?.display}
+          displayCapabilities={
+            selectedDevice?.ruleContext?.displayCapabilities ??
+            selectedDevice?.deviceExtensions?.display
+          }
+          customFaceLibrary={customFaceLibrary}
+          customFaceLibraryLoading={customFaceLibraryLoading}
+          onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
           onChange={updateAction}
         />
       </div>
@@ -361,7 +382,16 @@ function defaultParametersIfActionChanged(
 }
 
 function shouldShowDuration(action: DeviceChannelActionType): boolean {
-  return ['activate', 'blink', 'breathe', 'pulse', 'set-duty', 'beep', 'tone', 'set-color'].includes(action);
+  return [
+    'activate',
+    'blink',
+    'breathe',
+    'pulse',
+    'set-duty',
+    'beep',
+    'tone',
+    'set-color',
+  ].includes(action);
 }
 
 function findPinReuseWarning(

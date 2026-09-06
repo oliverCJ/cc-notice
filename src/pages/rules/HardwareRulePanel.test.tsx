@@ -251,6 +251,52 @@ const displayRule: HardwareRule = {
   enabled: true
 };
 
+const displayFaceRule: HardwareRule = {
+  id: 'agent-completed-display-face-output',
+  internalEvent: 'agent.completed',
+  output: {
+    type: 'device-channel',
+    durationMs: 5000,
+    channelActions: [
+      {
+        id: 'action-1',
+        deviceId: 'desk-wio',
+        channelId: 'display',
+        channelAction: 'display-face',
+        durationMs: 5000,
+        intervalMs: null,
+        dutyPercent: null,
+        frequencyHz: null,
+        color: null,
+        brightnessPercent: null,
+        displayFaceTemplateId: 'working-focus',
+        displayFaceIntensity: 'standard',
+        customFaceGroupId: 'custom-group-a',
+        customFaceId: 'face-a'
+      }
+    ],
+    text: null,
+    notificationLevel: null,
+    notificationTitle: null,
+    notificationBody: null,
+    notificationTitleMaxChars: null,
+    notificationBodyMaxChars: null,
+    notificationThrottleSeconds: null,
+    notificationSound: null,
+    webhookMethod: null,
+    webhookUrl: null,
+    webhookHeaders: null,
+    webhookBody: null,
+    webhookBodyMaxChars: null,
+    soundFilePath: null,
+    soundVolumePercent: null,
+    soundMaxDurationMs: null,
+    soundThrottleSeconds: null
+  },
+  priority: 50,
+  enabled: true
+};
+
 const pwmRuleWithoutDuty: HardwareRule = {
   id: 'agent-completed-pwm-output',
   internalEvent: 'agent.completed',
@@ -285,6 +331,38 @@ const pwmRuleWithoutDuty: HardwareRule = {
   },
   priority: 50,
   enabled: true
+};
+
+const customFaceLibraryFixture = {
+  groups: [
+    {
+      groupId: 'custom-group-a',
+      name: '组A',
+      displayProfileId: 'custom-mono-320x240-v1',
+      revision: 1,
+      defaultFaceId: 'face-a',
+      faceCount: 1,
+      libraryHash: 'hash-a'
+    }
+  ],
+  groupById: {
+    'custom-group-a': {
+      schemaVersion: 1,
+      groupId: 'custom-group-a',
+      name: '组A',
+      displayProfileId: 'custom-mono-320x240-v1',
+      revision: 1,
+      defaultFaceId: 'face-a',
+      faces: [
+        {
+          faceId: 'face-a',
+          name: '默认',
+          color: { red: 255, green: 255, blue: 255 },
+          frames: [{ durationMs: 5000, packedPixels: [] }]
+        }
+      ]
+    }
+  }
 };
 
 describe('HardwareRulePanel', () => {
@@ -626,6 +704,65 @@ describe('HardwareRulePanel', () => {
 
     expect(screen.getByText('设置占空比动作需要填写占空比。')).toBeInTheDocument();
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  test('shows custom face refresh button inside the output rule detail dialog', () => {
+    const onReloadCustomFaceLibrary = vi.fn();
+    render(
+      <HardwareRulePanel
+        aiEventMappings={mappings}
+        rules={[displayFaceRule]}
+        deviceOptions={[
+          {
+            value: 'desk-wio',
+            label: 'Desk Wio',
+            connectionStatus: 'offline-config',
+            boardId: 'seeed-wio-terminal',
+            deviceExtensions: {
+              display: {
+                status: true,
+                face: true,
+                faceStyleVersion: 'no-brow-warm-v1',
+                faceTemplates: ['working-focus'],
+                clear: true,
+                pixelWidth: 320,
+                pixelHeight: 240,
+                faceRendererProfile: 'wio-320x240-v1',
+                statuses: ['notice', 'working', 'success', 'warning', 'error'],
+                titleMaxChars: 39,
+                messageMaxChars: 95
+              },
+              buzzer: null,
+              inputs: null
+            },
+            channels: [
+              {
+                value: 'display',
+                label: '屏幕',
+                kind: 'display',
+                supportedActions: ['display-face'],
+                hardwareGuideId: null
+              }
+            ]
+          }
+        ]}
+        customFaceLibrary={customFaceLibraryFixture}
+        onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
+        onChange={vi.fn()}
+      />
+    );
+
+    const card = screen.getByTestId('hardware-rule-card-agent-completed-display-face-output');
+    fireEvent.click(within(card).getByRole('button', { name: '详细设置' }));
+
+    const detailDialog = screen.getByRole('dialog', { name: 'device-channel 输出设置' });
+    const reloadButton = within(detailDialog).getByRole('button', {
+      name: '刷新自定义表情列表'
+    });
+
+    expect(reloadButton).toBeInTheDocument();
+    fireEvent.click(reloadButton);
+    expect(onReloadCustomFaceLibrary).toHaveBeenCalledTimes(1);
   });
 
   test('saves webhook body when variables are quoted as full json values', () => {

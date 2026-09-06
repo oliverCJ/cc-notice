@@ -17,17 +17,23 @@ describe('CustomFaceGroupLibrary', () => {
             displayProfileId: 'custom-128x32-v1',
             faceCount: 1,
             revision: 1,
+            defaultFaceId: 'face-a',
+            libraryHash: 'hash-a',
           },
         ]}
         previews={{
           'group-a': {
+            schemaVersion: 1,
             groupId: 'group-a',
+            name: '组 A',
             displayProfileId: 'custom-128x32-v1',
+            revision: 1,
             defaultFaceId: 'face-a',
             faces: [
               {
                 faceId: 'face-a',
                 name: '默认',
+                color: { red: 255, green: 255, blue: 255 },
                 frames: [
                   { durationMs: 100, packedPixels: [1] },
                   { durationMs: 100, packedPixels: [2] },

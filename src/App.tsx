@@ -566,12 +566,14 @@ export default function App() {
     devices: null,
     rules: (
       <RulesPage
+        appConfig={appConfig}
         activeProfileId={profileState?.activeProfileId ?? appConfig.activeProfileId}
         error={profileError}
         hookCatalog={hookEventState?.catalog ?? []}
         hookEventSelections={hookEventState?.selected ?? appConfig.hookEventSelections}
         internalEvents={internalEvents}
         desktopNoticeInstances={appConfig.desktopNoticeInstances}
+        deviceRuntimeStates={deviceRegistry.states}
         profile={profileState?.activeProfile ?? null}
         profileError={profileError}
         profiles={profileState?.profiles ?? []}

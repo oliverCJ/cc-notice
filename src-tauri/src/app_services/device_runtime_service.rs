@@ -543,6 +543,18 @@ impl DeviceRuntimeService {
                 Some("device is not connected"),
             ));
         }
+        if action.action == DeviceExtensionActionType::DisplayFace {
+            if let Err((code, error)) = validate_custom_face_display_action(action, &self.state) {
+                self.record_command_error(code, error.clone());
+                return Err(extension_command_result(
+                    action,
+                    "failed",
+                    None,
+                    Some(code),
+                    Some(error.as_str()),
+                ));
+            }
+        }
         let command = match ProtocolCommandV2::from_device_extension_action(action) {
             Ok(command) => command,
             Err(error) => {
@@ -1659,6 +1671,77 @@ fn display_lines_fallback_message(lines: Option<&Vec<String>>) -> Option<String>
         .collect::<Vec<_>>()
         .join(" / ");
     (!message.is_empty()).then_some(message)
+}
+
+fn validate_custom_face_display_action(
+    action: &DeviceExtensionAction,
+    state: &DeviceRuntimeState,
+) -> Result<(), (DeviceRuntimeErrorCode, String)> {
+    if action.action != DeviceExtensionActionType::DisplayFace {
+        return Ok(());
+    }
+    let uses_custom_face = action
+        .custom_face_group_id
+        .as_deref()
+        .map(str::trim)
+        .is_some_and(|value| !value.is_empty())
+        || action
+            .custom_face_id
+            .as_deref()
+            .map(str::trim)
+            .is_some_and(|value| !value.is_empty());
+    if !uses_custom_face {
+        return Ok(());
+    }
+
+    let Some(firmware_info) = state.firmware_info.as_ref() else {
+        return Err(custom_face_output_mismatch_error(
+            "device firmware does not expose custom face activation state",
+        ));
+    };
+    let Some(active) = firmware_info.custom_face_active.as_ref() else {
+        return Err(custom_face_output_mismatch_error(
+            "device custom face active source is unavailable",
+        ));
+    };
+    if active.source != DeviceCustomFaceActiveSource::Custom {
+        return Err(custom_face_output_mismatch_error(
+            "device custom face active source is not custom",
+        ));
+    }
+    let Some(installed) = state.custom_face_status.installed.as_ref() else {
+        return Err(custom_face_output_mismatch_error(
+            "device has no installed custom face group",
+        ));
+    };
+    let Some(requested_group_id) = action.custom_face_group_id.as_deref().map(str::trim) else {
+        return Err(custom_face_output_mismatch_error(
+            "device custom face group is missing",
+        ));
+    };
+    if requested_group_id.is_empty() || action.custom_face_id.as_deref().is_none() {
+        return Err(custom_face_output_mismatch_error(
+            "device custom face binding is incomplete",
+        ));
+    }
+    if requested_group_id != installed.group_id {
+        return Err(custom_face_output_mismatch_error(
+            "device custom face group does not match the installed group",
+        ));
+    }
+    if active.group_id.as_deref() != Some(installed.group_id.as_str()) {
+        return Err(custom_face_output_mismatch_error(
+            "device custom face active group does not match the installed group",
+        ));
+    }
+    Ok(())
+}
+
+fn custom_face_output_mismatch_error(message: &str) -> (DeviceRuntimeErrorCode, String) {
+    (
+        DeviceRuntimeErrorCode::DeviceCustomFaceOutputMismatch,
+        message.to_string(),
+    )
 }
 
 pub(crate) fn input_event_from_ack_line(

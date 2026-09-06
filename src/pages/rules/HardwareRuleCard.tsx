@@ -18,11 +18,15 @@ import { Settings, Trash2 } from 'lucide-react';
 import { HardwareRuleDetailDialog } from './HardwareRuleDetailDialog';
 import { DeviceSelectOption } from './deviceChannelOptions';
 import { Translator, useI18n } from '@/i18n';
+import { CustomFaceLibraryEntries } from '@/domain/customFaces/library';
 
 type HardwareRuleCardProps = {
   rule: HardwareRule;
   deviceOptions?: DeviceSelectOption[];
   desktopNoticeInstances?: DesktopNoticeInstance[];
+  customFaceLibrary?: CustomFaceLibraryEntries | null;
+  customFaceLibraryLoading?: boolean;
+  onReloadCustomFaceLibrary?: () => void;
   canRemove: boolean;
   onUpdate: (ruleId: string, updater: (rule: HardwareRule) => HardwareRule) => void;
   onRemove: (ruleId: string) => void;
@@ -32,6 +36,9 @@ export function HardwareRuleCard({
   rule,
   deviceOptions,
   desktopNoticeInstances = [],
+  customFaceLibrary,
+  customFaceLibraryLoading = false,
+  onReloadCustomFaceLibrary,
   canRemove,
   onUpdate,
   onRemove
@@ -96,6 +103,9 @@ export function HardwareRuleCard({
         rule={rule}
         deviceOptions={deviceOptions}
         desktopNoticeInstances={desktopNoticeInstances}
+        customFaceLibrary={customFaceLibrary}
+        customFaceLibraryLoading={customFaceLibraryLoading}
+        onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
         open={detailOpen}
         onCancel={() => setDetailOpen(false)}
         onSave={(nextRule) => {

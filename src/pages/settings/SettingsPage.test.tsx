@@ -21,7 +21,8 @@ const config = {
     bySource: {}
   },
   hookConfigTargets: [],
-  desktopNoticeInstances: []
+  desktopNoticeInstances: [],
+  devices: []
 };
 
 function deferredPromise<T>() {

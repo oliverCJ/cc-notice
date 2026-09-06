@@ -58,6 +58,8 @@ export function defaultParametersForDeviceChannelAction(
     pattern: action === 'pattern' ? 'notice' : null,
     displayFaceTemplateId: action === 'display-face' ? defaultDisplayFaceTemplateId : null,
     displayFaceIntensity: action === 'display-face' ? 'standard' : null,
+    customFaceGroupId: null,
+    customFaceId: null,
     displayTemplateId: action === 'display-status' ? defaultDisplayTemplateId : null,
     displayAccent: action === 'display-status' ? displayStatusForTemplate(defaultDisplayTemplateId) : null,
     displayIcon: action === 'display-status' ? 'info' : null,
@@ -80,6 +82,7 @@ export type DeviceChannelActionParameterValidationKey =
   | 'rules.outputRules.validationPatternRequired'
   | 'rules.outputRules.validationDisplayFaceTemplateRequired'
   | 'rules.outputRules.validationDisplayFaceTemplateUnsupported'
+  | 'rules.outputRules.validationDisplayFaceSourceConflict'
   | 'rules.outputRules.validationDisplayStatusRequired'
   | 'rules.outputRules.validationDisplayTitleRequired'
   | 'rules.outputRules.validationDisplayMessageRequired'
@@ -96,6 +99,8 @@ export function validateDeviceChannelActionParameters(
     | 'intervalMs'
     | 'pattern'
     | 'displayFaceTemplateId'
+    | 'customFaceGroupId'
+    | 'customFaceId'
     | 'displayStatus'
     | 'displayTitleTemplate'
     | 'displayMessageTemplate'
@@ -125,13 +130,21 @@ export function validateDeviceChannelActionParameters(
         : null;
     case 'pattern':
       return action.pattern?.trim() ? null : 'rules.outputRules.validationPatternRequired';
-    case 'display-face':
-      if (!action.displayFaceTemplateId?.trim()) {
+    case 'display-face': {
+      const hasCustomGroup = Boolean(action.customFaceGroupId?.trim());
+      const hasCustomFace = Boolean(action.customFaceId?.trim());
+      const templateId = action.displayFaceTemplateId?.trim();
+      if (!templateId) {
         return 'rules.outputRules.validationDisplayFaceTemplateRequired';
       }
-      return DISPLAY_FACE_TEMPLATE_IDS.includes(action.displayFaceTemplateId as DisplayFaceTemplateId)
-        ? null
-        : 'rules.outputRules.validationDisplayFaceTemplateUnsupported';
+      if (!DISPLAY_FACE_TEMPLATE_IDS.includes(templateId as DisplayFaceTemplateId)) {
+        return 'rules.outputRules.validationDisplayFaceTemplateUnsupported';
+      }
+      if (hasCustomGroup !== hasCustomFace) {
+        return 'rules.outputRules.validationDisplayFaceSourceConflict';
+      }
+      return null;
+    }
     case 'display-status':
       if (!action.displayStatus?.trim()) {
         return 'rules.outputRules.validationDisplayStatusRequired';

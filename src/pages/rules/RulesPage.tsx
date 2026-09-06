@@ -4,12 +4,14 @@ import {
   HookEventDefinition,
   InternalEventDefinition,
   NoticeProfile,
+  DeviceRuntimeState,
   ProfilePackageDeviceBinding,
   ProfilePackageImportPreview,
   ProfileTemplate,
-  UpdateCustomInternalEventRequest
+  UpdateCustomInternalEventRequest,
 } from '../../api/tauriApi';
 import type { DesktopNoticeInstance } from '@/domain/desktopNotice';
+import { useCallback, useEffect, useState } from 'react';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -17,13 +19,17 @@ import { Separator } from '@/components/ui/separator';
 import { ProfileCreateDialog } from '../settings/ProfileCreateDialog';
 import { ProfileDeleteDialog } from '../settings/ProfileDeleteDialog';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
 import { InternalEventCatalogSection } from './InternalEventCatalogSection';
 import { ProfileManagementSection } from './ProfileManagementSection';
 import { RuleConfigurationTabs } from './RuleConfigurationTabs';
 import { ProfilePackageImportDialog } from './ProfilePackageImportDialog';
 import { selectedHookEventsFromSelections } from '../hook-settings/hookEventSelectionUtils';
 import { useI18n } from '@/i18n';
+import {
+  CustomFaceLibraryEntries,
+  loadCustomFaceLibraryEntries,
+} from '@/domain/customFaces/library';
+import type { AppConfigView } from '@/state/appStore';
 
 type DialogState =
   | { type: 'none' }
@@ -40,6 +46,8 @@ type RulesPageProps = {
   hookEventSelections: { bySource: Record<string, string[]> };
   internalEvents: InternalEventDefinition[];
   desktopNoticeInstances: DesktopNoticeInstance[];
+  deviceRuntimeStates: DeviceRuntimeState[];
+  appConfig: AppConfigView;
   error?: string;
   customInternalEventError?: string;
   onActivateProfile: (profileId: string) => void;
@@ -70,6 +78,8 @@ export function RulesPage({
   hookEventSelections,
   internalEvents,
   desktopNoticeInstances,
+  deviceRuntimeStates,
+  appConfig,
   error,
   customInternalEventError,
   onActivateProfile,
@@ -84,13 +94,15 @@ export function RulesPage({
   onOpenHookSettings,
   onPreviewProfilePackageImport,
   onSaveProfile,
-  onUpdateCustomInternalEvent
+  onUpdateCustomInternalEvent,
 }: RulesPageProps) {
   const t = useI18n();
   const [dialogState, setDialogState] = useState<DialogState>({ type: 'none' });
   const [importPackagePath, setImportPackagePath] = useState('');
   const [importPreview, setImportPreview] = useState<ProfilePackageImportPreview | null>(null);
   const [profilePackageBusy, setProfilePackageBusy] = useState(false);
+  const [customFaceLibrary, setCustomFaceLibrary] = useState<CustomFaceLibraryEntries | null>(null);
+  const [customFaceLibraryLoading, setCustomFaceLibraryLoading] = useState(false);
   const { toast } = useToast();
   const activeProfile = profiles.find((p) => p.id === activeProfileId || p.active);
   const enabledHookEvents: EnabledHookEvent[] = selectedHookEventsFromSelections(
@@ -98,12 +110,44 @@ export function RulesPage({
     hookCatalog
   );
 
+  const reloadCustomFaceLibrary = useCallback(async () => {
+    setCustomFaceLibraryLoading(true);
+    try {
+      const entries = await loadCustomFaceLibraryEntries();
+      setCustomFaceLibrary(entries);
+    } catch (error) {
+      console.warn('failed to load custom face library for rules page', error);
+      setCustomFaceLibrary({ groups: [], groupById: {} });
+    } finally {
+      setCustomFaceLibraryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let disposed = false;
+    void loadCustomFaceLibraryEntries()
+      .then((entries) => {
+        if (!disposed) {
+          setCustomFaceLibrary(entries);
+        }
+      })
+      .catch((error) => {
+        console.warn('failed to load custom face library for rules page', error);
+        if (!disposed) {
+          setCustomFaceLibrary({ groups: [], groupById: {} });
+        }
+      });
+    return () => {
+      disposed = true;
+    };
+  }, []);
+
   function handleCreateProfile(profileName: string, template?: ProfileTemplate) {
     onCreateProfile('', profileName, template);
     setDialogState({ type: 'none' });
     toast({
       title: t('rules.toast.createTitle'),
-      description: t('rules.toast.createDescription', { name: profileName })
+      description: t('rules.toast.createDescription', { name: profileName }),
     });
   }
 
@@ -113,7 +157,7 @@ export function RulesPage({
     setDialogState({ type: 'none' });
     toast({
       title: t('rules.toast.duplicateTitle'),
-      description: t('rules.toast.createDescription', { name: profileName })
+      description: t('rules.toast.createDescription', { name: profileName }),
     });
   }
 
@@ -122,7 +166,7 @@ export function RulesPage({
     onActivateProfile(profileId);
     toast({
       title: t('rules.toast.activateTitle'),
-      description: t('rules.toast.activateDescription', { name: targetProfile?.name ?? profileId })
+      description: t('rules.toast.activateDescription', { name: targetProfile?.name ?? profileId }),
     });
   }
 
@@ -132,7 +176,7 @@ export function RulesPage({
     setDialogState({ type: 'none' });
     toast({
       title: t('rules.toast.deleteTitle'),
-      description: t('rules.toast.deleteDescription', { name: dialogState.profileName })
+      description: t('rules.toast.deleteDescription', { name: dialogState.profileName }),
     });
   }
 
@@ -142,19 +186,19 @@ export function RulesPage({
     try {
       const selectedPath = await save({
         defaultPath: `cc-notice-profile-${safeProfileFilePart(activeProfile.id)}.json`,
-        filters: [{ name: 'CC Notice Profile', extensions: ['json'] }]
+        filters: [{ name: 'CC Notice Profile', extensions: ['json'] }],
       });
       if (!selectedPath) return;
       await onExportProfilePackage(selectedPath);
       toast({
         title: t('rules.profilePackage.exportSuccessTitle'),
-        description: t('rules.profilePackage.exportSuccessDescription')
+        description: t('rules.profilePackage.exportSuccessDescription'),
       });
     } catch (error) {
       toast({
         title: t('rules.profilePackage.exportFailedTitle'),
         description: error instanceof Error ? error.message : String(error),
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setProfilePackageBusy(false);
@@ -167,7 +211,7 @@ export function RulesPage({
       const selectedPath = await open({
         multiple: false,
         directory: false,
-        filters: [{ name: 'CC Notice Profile', extensions: ['json'] }]
+        filters: [{ name: 'CC Notice Profile', extensions: ['json'] }],
       });
       if (!selectedPath || Array.isArray(selectedPath)) return;
       const preview = await onPreviewProfilePackageImport(selectedPath);
@@ -177,7 +221,7 @@ export function RulesPage({
       toast({
         title: t('rules.profilePackage.previewFailedTitle'),
         description: error instanceof Error ? error.message : String(error),
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setProfilePackageBusy(false);
@@ -197,13 +241,13 @@ export function RulesPage({
       setImportPreview(null);
       toast({
         title: t('rules.profilePackage.importSuccessTitle'),
-        description: t('rules.profilePackage.importSuccessDescription', { name: importedName })
+        description: t('rules.profilePackage.importSuccessDescription', { name: importedName }),
       });
     } catch (error) {
       toast({
         title: t('rules.profilePackage.importFailedTitle'),
         description: error instanceof Error ? error.message : String(error),
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setProfilePackageBusy(false);
@@ -238,7 +282,7 @@ export function RulesPage({
           setDialogState({
             type: 'delete',
             profileId,
-            profileName
+            profileName,
           })
         }
         onDuplicateActiveProfile={() =>
@@ -246,14 +290,14 @@ export function RulesPage({
           setDialogState({
             type: 'duplicate',
             sourceProfileId: activeProfile.id,
-            sourceProfileName: activeProfile.name
+            sourceProfileName: activeProfile.name,
           })
         }
         onDuplicateProfile={(profileId, profileName) =>
           setDialogState({
             type: 'duplicate',
             sourceProfileId: profileId,
-            sourceProfileName: profileName
+            sourceProfileName: profileName,
           })
         }
         onExportProfilePackage={handleExportCurrentProfilePackage}
@@ -272,6 +316,11 @@ export function RulesPage({
         hookCatalog={hookCatalog}
         internalEvents={internalEvents}
         desktopNoticeInstances={desktopNoticeInstances}
+        configuredDevices={appConfig.devices}
+        deviceRuntimeStates={deviceRuntimeStates}
+        customFaceLibrary={customFaceLibrary}
+        customFaceLibraryLoading={customFaceLibraryLoading}
+        onReloadCustomFaceLibrary={reloadCustomFaceLibrary}
         profile={profile}
         onOpenHookSettings={onOpenHookSettings}
         onSaveProfile={onSaveProfile}

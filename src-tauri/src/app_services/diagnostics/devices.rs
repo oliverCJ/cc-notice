@@ -383,6 +383,7 @@ fn health_issue_from_error_code(code: DeviceRuntimeErrorCode) -> &'static str {
         DeviceRuntimeErrorCode::DeviceNotConnected => "deviceNotConnected",
         DeviceRuntimeErrorCode::DeviceChannelNotConfigured => "deviceChannelNotConfigured",
         DeviceRuntimeErrorCode::DeviceChannelActionUnsupported => "deviceActionUnsupported",
+        DeviceRuntimeErrorCode::DeviceCustomFaceOutputMismatch => "deviceCustomFaceOutputMismatch",
         DeviceRuntimeErrorCode::DeviceProtocolUnsupportedCommand => "deviceCommandUnsupported",
         DeviceRuntimeErrorCode::DeviceProtocolInvalidResponse => "deviceProtocolInvalidResponse",
         DeviceRuntimeErrorCode::DeviceOperationCancelled => "deviceOperationCancelled",
@@ -499,6 +500,7 @@ fn reason_from_error_code(code: DeviceRuntimeErrorCode) -> &'static str {
         DeviceRuntimeErrorCode::DeviceNotConnected => "device-not-connected",
         DeviceRuntimeErrorCode::DeviceChannelNotConfigured => "device-channel-not-configured",
         DeviceRuntimeErrorCode::DeviceChannelActionUnsupported => "device-action-unsupported",
+        DeviceRuntimeErrorCode::DeviceCustomFaceOutputMismatch => "device-custom-face-output-mismatch",
         DeviceRuntimeErrorCode::DeviceProtocolUnsupportedCommand => "device-command-unsupported",
         DeviceRuntimeErrorCode::DeviceTransportBusy
         | DeviceRuntimeErrorCode::DeviceTransportPermissionDenied

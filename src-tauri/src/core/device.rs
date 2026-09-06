@@ -523,6 +523,7 @@ pub enum DeviceChannelActionType {
     Tone,
     Pattern,
     DisplayStatus,
+    #[serde(alias = "displayFace", alias = "display_face")]
     DisplayFace,
     SetColor,
 }
@@ -746,6 +747,7 @@ pub enum DeviceRuntimeErrorCode {
     DeviceNotConnected,
     DeviceChannelNotConfigured,
     DeviceChannelActionUnsupported,
+    DeviceCustomFaceOutputMismatch,
     DeviceIoWorkerStopped,
     DeviceActionTimeout,
     DeviceInfoTimeout,

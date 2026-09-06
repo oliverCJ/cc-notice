@@ -1,6 +1,7 @@
 import { HardwareOutput } from '../../api/tauriApi';
 import { ChannelSelectOption, DeviceSelectOption, defaultChannelOptions } from './deviceChannelOptions';
 import { DeviceChannelActionGroupFields } from './DeviceChannelActionGroupFields';
+import { CustomFaceLibraryEntries } from '@/domain/customFaces/library';
 
 type DeviceChannelOutputFieldsProps = {
   internalEvent: string;
@@ -8,6 +9,9 @@ type DeviceChannelOutputFieldsProps = {
   deviceOptions?: DeviceSelectOption[];
   channelOptions?: ChannelSelectOption[];
   lockIdentityFields?: boolean;
+  customFaceLibrary?: CustomFaceLibraryEntries | null;
+  customFaceLibraryLoading?: boolean;
+  onReloadCustomFaceLibrary?: () => void;
   onChange: (output: HardwareOutput) => void;
 };
 
@@ -17,6 +21,9 @@ export function DeviceChannelOutputFields({
   deviceOptions,
   channelOptions = defaultChannelOptions,
   lockIdentityFields = false,
+  customFaceLibrary,
+  customFaceLibraryLoading = false,
+  onReloadCustomFaceLibrary,
   onChange
 }: DeviceChannelOutputFieldsProps) {
   return (
@@ -26,6 +33,9 @@ export function DeviceChannelOutputFields({
       deviceOptions={deviceOptions}
       channelOptions={channelOptions}
       lockIdentityFields={lockIdentityFields}
+      customFaceLibrary={customFaceLibrary}
+      customFaceLibraryLoading={customFaceLibraryLoading}
+      onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
       onChange={onChange}
     />
   );

@@ -7,7 +7,7 @@ import {
   getProfileState,
   HookEventFrontendState,
   InternalEventDefinition,
-  ProfileFrontendState
+  ProfileFrontendState,
 } from '@/api/tauriApi';
 import { AppConfigView, LocalHookServerStatusView } from '@/state/appStore';
 
@@ -18,15 +18,16 @@ const defaultAppConfig: AppConfigView = {
     closeBehavior: 'hide-to-tray',
     startupMode: 'normal',
     launchAtLogin: false,
-    hideWindowOnLoginLaunch: true
+    hideWindowOnLoginLaunch: true,
   },
   arduinoCliPath: null,
   activeProfileId: 'daily-coding',
   hookEventSelections: {
-    bySource: {}
+    bySource: {},
   },
   hookConfigTargets: [],
-  desktopNoticeInstances: []
+  desktopNoticeInstances: [],
+  devices: [],
 };
 
 const defaultHookServerStatus: LocalHookServerStatusView = {
@@ -34,7 +35,7 @@ const defaultHookServerStatus: LocalHookServerStatusView = {
   port: 17321,
   bindAddress: '127.0.0.1:17321',
   eventUrl: 'http://127.0.0.1:17321/api/v1/events',
-  healthUrl: 'http://127.0.0.1:17321/health'
+  healthUrl: 'http://127.0.0.1:17321/health',
 };
 
 export function useAppBootstrap() {
@@ -47,14 +48,13 @@ export function useAppBootstrap() {
 
   async function refreshAppSettings() {
     try {
-      const [config, status, hookState, nextProfileState, nextInternalEvents] =
-        await Promise.all([
-          getAppConfig(),
-          getLocalHookServerStatus(),
-          getHookEventState(),
-          getProfileState(),
-          getInternalEventCatalog()
-        ]);
+      const [config, status, hookState, nextProfileState, nextInternalEvents] = await Promise.all([
+        getAppConfig(),
+        getLocalHookServerStatus(),
+        getHookEventState(),
+        getProfileState(),
+        getInternalEventCatalog(),
+      ]);
       setAppConfig(config);
       setHookEventState(hookState);
       setProfileState(nextProfileState);
@@ -65,12 +65,12 @@ export function useAppBootstrap() {
         bindAddress: status.bindAddress,
         eventUrl: status.eventUrl,
         healthUrl: status.healthUrl,
-        error: status.error ?? undefined
+        error: status.error ?? undefined,
       });
     } catch (error) {
       setHookServerStatus({
         ...defaultHookServerStatus,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -85,6 +85,6 @@ export function useAppBootstrap() {
     setAppConfig,
     setHookEventState,
     setInternalEvents,
-    setProfileState
+    setProfileState,
   };
 }

@@ -364,6 +364,57 @@ fn device_channel_display_face_action_builds_display_face_extension_action() {
 }
 
 #[test]
+fn device_channel_custom_display_face_action_builds_display_face_extension_action() {
+    let mut action = device_channel_action(
+        "a1",
+        "desk-wio",
+        "display",
+        DeviceChannelActionType::DisplayFace,
+    );
+    action.duration_ms = Some(5000);
+    action.display_face_template_id = None;
+    action.display_face_intensity = None;
+    action.custom_face_group_id = Some("2133e686-77f5-4a29-923b-10d65211ca94".to_string());
+    action.custom_face_id = Some("face-1".to_string());
+
+    let profile = profile_with_rules(vec![HardwareRule {
+        id: "agent-completed-device-custom-display-face-output".to_string(),
+        internal_event: "agent.completed".to_string(),
+        priority: 80,
+        enabled: true,
+        output: HardwareOutput {
+            channel_actions: vec![action],
+            ..output_with_type(HardwareOutputType::DeviceChannel)
+        },
+    }]);
+
+    let device_board_ids =
+        HashMap::from([("desk-wio".to_string(), "seeed-wio-terminal".to_string())]);
+    let plan = OutputPlanService::build_plan_with_context_and_device_boards(
+        &profile,
+        "agent.completed",
+        &OutputTemplateContext::default(),
+        &device_board_ids,
+    );
+
+    assert_eq!(1, plan.actions.len());
+    match &plan.actions[0] {
+        OutputExecutionAction::DeviceExtension(action) => {
+            assert_eq!("desk-wio", action.device_id);
+            assert_eq!(DeviceExtensionActionType::DisplayFace, action.action);
+            assert_eq!(
+                Some("2133e686-77f5-4a29-923b-10d65211ca94"),
+                action.custom_face_group_id.as_deref()
+            );
+            assert_eq!(Some("face-1"), action.custom_face_id.as_deref());
+            assert_eq!(None, action.face_template.as_deref());
+            assert_eq!(None, action.face_intensity.as_deref());
+        }
+        other => panic!("expected display face extension action, got {other:?}"),
+    }
+}
+
+#[test]
 fn device_channel_display_face_action_uses_default_duration_when_missing() {
     let mut action = device_channel_action(
         "a1",
@@ -1260,6 +1311,8 @@ fn device_channel_action(
         pattern: None,
         display_face_template_id: None,
         display_face_intensity: None,
+        custom_face_group_id: None,
+        custom_face_id: None,
         display_template_id: None,
         display_accent: None,
         display_icon: None,

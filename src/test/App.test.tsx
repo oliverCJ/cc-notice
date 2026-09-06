@@ -73,7 +73,8 @@ const defaultConfig = {
       projectPath: null,
       enabled: false
     }
-  ]
+  ],
+  devices: []
 };
 
 const defaultProfileState = {

@@ -23,12 +23,16 @@ import { HardwareRuleCard } from './HardwareRuleCard';
 import { OutputTypeAddDialog } from './OutputTypeAddDialog';
 import { DeviceSelectOption } from './deviceChannelOptions';
 import { useI18n } from '@/i18n';
+import { CustomFaceLibraryEntries } from '@/domain/customFaces/library';
 
 type HardwareRulePanelProps = {
   rules: HardwareRule[];
   aiEventMappings: AiEventMapping[];
   deviceOptions?: DeviceSelectOption[];
   desktopNoticeInstances?: DesktopNoticeInstance[];
+  customFaceLibrary?: CustomFaceLibraryEntries | null;
+  customFaceLibraryLoading?: boolean;
+  onReloadCustomFaceLibrary?: () => void;
   onChange: (rules: HardwareRule[]) => void;
 };
 
@@ -39,6 +43,9 @@ export function HardwareRulePanel({
   aiEventMappings,
   deviceOptions,
   desktopNoticeInstances = [],
+  customFaceLibrary,
+  customFaceLibraryLoading = false,
+  onReloadCustomFaceLibrary,
   onChange
 }: HardwareRulePanelProps) {
   const t = useI18n();
@@ -247,6 +254,9 @@ export function HardwareRulePanel({
                         rule={rule}
                         deviceOptions={deviceOptions}
                         desktopNoticeInstances={desktopNoticeInstances}
+                        customFaceLibrary={customFaceLibrary}
+                        customFaceLibraryLoading={customFaceLibraryLoading}
+                        onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
                         canRemove={eventRules.length > 1}
                         onUpdate={updateRuleWithEnabledLimit}
                         onRemove={removeRule}
@@ -265,6 +275,9 @@ export function HardwareRulePanel({
           existingRules={draftRules}
           deviceOptions={deviceOptions}
           desktopNoticeInstances={desktopNoticeInstances}
+          customFaceLibrary={customFaceLibrary}
+          customFaceLibraryLoading={customFaceLibraryLoading}
+          onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
           onCancel={() => setAddDialogState({ open: false, internalEvent: '' })}
           onAdd={addOutputType}
         />

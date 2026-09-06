@@ -233,6 +233,7 @@ export type AppConfig = {
   hookEventSelections: HookEventSelections;
   hookConfigTargets: HookConfigTarget[];
   desktopNoticeInstances: DesktopNoticeInstance[];
+  devices: DeviceInstance[];
 };
 
 export type AppConfigSaveResult = {
@@ -590,6 +591,7 @@ export type DeviceRuntimeErrorCode =
   | 'DEVICE_NOT_CONNECTED'
   | 'DEVICE_CHANNEL_NOT_CONFIGURED'
   | 'DEVICE_CHANNEL_ACTION_UNSUPPORTED'
+  | 'DEVICE_CUSTOM_FACE_OUTPUT_MISMATCH'
   | 'DEVICE_IO_WORKER_STOPPED'
   | 'DEVICE_ACTION_TIMEOUT'
   | 'DEVICE_INFO_TIMEOUT'
@@ -864,6 +866,8 @@ export type DeviceChannelRuleAction = {
   displayMessageMaxChars?: number | null;
   displayFaceTemplateId?: string | null;
   displayFaceIntensity?: 'subtle' | 'standard' | 'strong' | null;
+  customFaceGroupId?: string | null;
+  customFaceId?: string | null;
 };
 
 export type HardwareOutput = {

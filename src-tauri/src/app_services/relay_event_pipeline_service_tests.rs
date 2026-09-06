@@ -618,6 +618,8 @@ fn device_channel_rule(
         pattern: None,
         display_face_template_id: None,
         display_face_intensity: None,
+        custom_face_group_id: None,
+        custom_face_id: None,
         display_template_id: None,
         display_accent: None,
         display_icon: None,
