@@ -139,6 +139,7 @@ fn rp2040_board_uid_prefixes() -> &'static [&'static str] {
         "rp2040-pico",
         "rp2040-pico-oled-096",
         "rp2040-pico-oled-091",
+        "rp2040-pico-oled-128x128",
     ]
 }
 
@@ -209,7 +210,8 @@ mod tests {
             vec![
                 "rp2040-pico:143101".to_string(),
                 "rp2040-pico-oled-096:143101".to_string(),
-                "rp2040-pico-oled-091:143101".to_string()
+                "rp2040-pico-oled-091:143101".to_string(),
+                "rp2040-pico-oled-128x128:143101".to_string()
             ],
             descriptors[0].stable_device_uid_candidates
         );

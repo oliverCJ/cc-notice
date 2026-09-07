@@ -32,10 +32,25 @@ describe('firmwareWiringGuides', () => {
     );
   });
 
+  test('returns target-specific wiring for Pico OLED 1.5-inch 128x128', () => {
+    const guide = getFirmwareWiringGuide({
+      boardId: 'rp2040-pico-oled-128x128',
+      targetId: 'rp2040-pico-oled-128x128-128x128'
+    });
+
+    expect(guide?.titleKey).toBe('firmware.wiring.guides.rp2040PicoOled128x128.title');
+    expect(guide?.pinRows.map((row) => row.label)).toContain('GP20');
+    expect(guide?.pinRows.map((row) => row.label)).toContain('GP21');
+    expect(guide?.reservedPinKeys).toContain(
+      'firmware.wiring.guides.rp2040PicoOled128x128.reserved.i2c'
+    );
+  });
+
   test('keeps wiring guides for every visible bundled firmware board', () => {
     const visibleBoardIds = [
       'rp2040-pico',
       'rp2040-pico-oled-091',
+      'rp2040-pico-oled-128x128',
       'arduino-uno',
       'arduino-nano',
       'sparkfun-pro-micro-32u4',

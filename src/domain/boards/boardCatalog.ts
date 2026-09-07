@@ -6,6 +6,7 @@ import {
 } from '@/api/tauriApi';
 import {
   rp2040PicoAvailableChannels,
+  rp2040PicoOled128x128AvailableChannels,
   rp2040PicoOled091AvailableChannels,
   rp2040PicoOledAvailableChannels
 } from './rp2040PicoChannels';
@@ -207,6 +208,33 @@ const boardCatalog: BoardCatalogEntry[] = [
       }
     },
     channels: rp2040PicoOled091AvailableChannels
+  },
+  {
+    id: 'rp2040-pico-oled-128x128',
+    displayName: 'Raspberry Pi Pico + OLED 1.5" 128x128 SH1107',
+    identityLabel: 'stable-uid',
+    connectionResourceMode: 'matched-only',
+    deviceExtensions: {
+      display: {
+        status: true,
+        card: false,
+        lines: true,
+        runtime: true,
+        face: true,
+        faceStyleVersion: 'no-brow-warm-v1',
+        faceRendererProfile: 'oled-128x128-v1',
+        faceTemplates: noBrowWarmFaceTemplates,
+        clear: true,
+        sizeClass: 'medium',
+        pixelWidth: 128,
+        pixelHeight: 128,
+        statuses: ['notice', 'working', 'success', 'warning', 'error'],
+        titleMaxChars: 16,
+        messageMaxChars: 16,
+        textEncoding: 'ascii'
+      }
+    },
+    channels: rp2040PicoOled128x128AvailableChannels
   },
   {
     id: 'arduino-leonardo',

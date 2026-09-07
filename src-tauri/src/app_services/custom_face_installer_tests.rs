@@ -121,6 +121,16 @@ fn installs_full_group_through_existing_worker_and_refreshes_status() {
         r#"{{"ok":true,"v":2,"type":"custom_face_status","state":"installed","profile_code":3,"group_id":"{}","group_runtime_hash":"{}","default_face_id":"{}","face_count":1,"encoded_bytes":{}}}"#,
         group.group_id, group_hash, group.default_face_id, encoded_bytes
     ));
+    ack_lines.push(
+        r#"{"ok":true,"v":2,"type":"set_custom_face_active_source"}"#.to_string(),
+    );
+    ack_lines.push(
+        r#"{"ok":true,"v":2,"type":"device_info","board_id":"seeed-wio-terminal","device_uid":"seeed-wio-terminal:0011223344556677","firmware_version":"0.2.1","protocol_version":2,"custom_face":{"protocol_version":1,"profile_code":3,"pixel_width":320,"pixel_height":240,"max_faces":15,"max_frames_per_face":10,"max_group_bytes":393216,"chunk_bytes":512,"incremental_update":true},"custom_face_active":{"source":"custom","group_id":"00000000-0000-4000-8000-000000000001"}}"#.to_string(),
+    );
+    ack_lines.push(
+        r#"{"ok":true,"v":2,"type":"custom_face_status","state":"installed","profile_code":3,"group_id":"00000000-0000-4000-8000-000000000001","group_runtime_hash":"b7b9bc4dd2cf2f56600ac55d8bd68dfe2063c03b1eb4a781b006779675981fc8","default_face_id":"00000000-0000-4000-8000-000000000011","face_count":1,"encoded_bytes":1463}"#.to_string(),
+    );
+    ack_lines.push(r#"{"ok":true,"v":2,"type":"display_clear"}"#.to_string());
     let mut registry = DeviceRuntimeRegistry::new(vec![test_device("desk-wio")]);
     registry
         .connect_with_transport(
@@ -177,8 +187,29 @@ fn installs_full_group_through_existing_worker_and_refreshes_status() {
         .iter()
         .any(|line| line.contains("\"type\":\"custom_face_install_commit\"")));
     assert_eq!(
-        "{\"v\":2,\"type\":\"custom_face_status\"}\n",
+        "{\"v\":2,\"type\":\"display_clear\"}\n",
         sent_lines.last().expect("refreshed status line")
+    );
+    assert_eq!(
+        2,
+        sent_lines
+            .iter()
+            .filter(|line| line.contains("\"type\":\"device_info\""))
+            .count()
+    );
+    assert_eq!(
+        3,
+        sent_lines
+            .iter()
+            .filter(|line| line.contains("\"type\":\"custom_face_status\""))
+            .count()
+    );
+    assert_eq!(
+        Some(group.group_id.clone()),
+        state
+            .firmware_info
+            .and_then(|info| info.custom_face_active)
+            .and_then(|active| active.group_id)
     );
 }
 

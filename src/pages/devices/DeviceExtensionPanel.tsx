@@ -73,6 +73,7 @@ export function DeviceExtensionPanel({
   const connected = selectedState?.status === 'connected';
   const busy = actionStatus === 'sending';
   const disabled = !deviceId || !connected || busy;
+  const customFaceActiveSource = selectedState?.firmwareInfo?.customFaceActive?.source ?? 'builtin';
 
   if (!displayCapabilities && buzzerPatterns.length === 0) {
     return null;
@@ -140,6 +141,7 @@ export function DeviceExtensionPanel({
             disabled={disabled}
             selectedFaceTemplateId={selectedFaceTemplateId}
             selectedState={selectedState}
+            customFaceActiveSource={customFaceActiveSource}
             customFaceTestContext={customFaceTestContext}
             displayFaceDurationMs={displayFaceDurationMs}
             onSelectedFaceTemplateIdChange={setSelectedFaceTemplateId}
@@ -213,6 +215,7 @@ type DisplayTestControlsProps = {
   displayCapabilities: DeviceDisplayCapabilities;
   disabled: boolean;
   selectedState: DeviceRuntimeState | null;
+  customFaceActiveSource: 'builtin' | 'custom';
   customFaceTestContext?: CustomFaceDisplayTestContext | null;
   selectedFaceTemplateId: string;
   displayFaceDurationMs: string;
@@ -227,6 +230,7 @@ function DisplayTestControls({
   displayCapabilities,
   disabled,
   selectedState,
+  customFaceActiveSource,
   customFaceTestContext,
   selectedFaceTemplateId,
   displayFaceDurationMs,
@@ -256,6 +260,7 @@ function DisplayTestControls({
   const effectiveDurationMs =
     parsedDurationMs ?? deviceChannelParameterConstraints.durationMs.defaultValue;
   const customFaceSupported = Boolean(selectedState?.firmwareInfo?.customFace);
+  const customFaceActivated = customFaceActiveSource === 'custom';
   const installedCustomFace = selectedState?.customFaceStatus?.installed ?? null;
   const installedCustomFaceGroup =
     installedCustomFace && customFaceTestContext
@@ -305,7 +310,7 @@ function DisplayTestControls({
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
-                    variant={displayFaceTestMode === 'builtin' ? 'secondary' : 'outline'}
+                    variant={displayFaceTestMode === 'builtin' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setDisplayFaceTestMode('builtin')}
                   >
@@ -313,9 +318,14 @@ function DisplayTestControls({
                   </Button>
                   <Button
                     type="button"
-                    variant={displayFaceTestMode === 'custom' ? 'secondary' : 'outline'}
+                    variant={displayFaceTestMode === 'custom' ? 'default' : 'outline'}
                     size="sm"
                     disabled={!customFaceSupported}
+                    className={
+                      displayFaceTestMode === 'custom'
+                        ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        : ''
+                    }
                     onClick={() => setDisplayFaceTestMode('custom')}
                   >
                     {t('devices.deviceExtension.customFaceTest')}
@@ -371,6 +381,7 @@ function DisplayTestControls({
                     selectedCustomFace={selectedCustomFace}
                     customFaceMissingLocally={customFaceMissingLocally}
                     installed={Boolean(installedCustomFace)}
+                    customFaceActivated={customFaceActivated}
                     displayFaceDurationMs={displayFaceDurationMs}
                     effectiveDurationMs={effectiveDurationMs}
                     onSelectedCustomFaceIdChange={setSelectedCustomFaceId}
@@ -386,6 +397,7 @@ function DisplayTestControls({
               customFaceProfile &&
               selectedCustomFace.frames.length > 0 ? (
                 <CustomFaceAnimatedPreview
+                  key={`${selectedCustomFace.faceId}:${selectedCustomFace.frames.length}`}
                   ariaLabel={t('devices.deviceExtension.customFacePreview')}
                   className="mx-auto w-full rounded-md border border-border"
                   width={customFaceProfile.width}
@@ -423,6 +435,7 @@ type CustomDisplayFaceTestControlsProps = {
   selectedCustomFace: CustomFaceGroup['faces'][number] | null;
   customFaceMissingLocally: boolean;
   installed: boolean;
+  customFaceActivated: boolean;
   displayFaceDurationMs: string;
   effectiveDurationMs: number;
   onSelectedCustomFaceIdChange: (value: string) => void;
@@ -442,6 +455,7 @@ function CustomDisplayFaceTestControls({
   selectedCustomFace,
   customFaceMissingLocally,
   installed,
+  customFaceActivated,
   displayFaceDurationMs,
   effectiveDurationMs,
   onSelectedCustomFaceIdChange,
@@ -482,48 +496,55 @@ function CustomDisplayFaceTestControls({
   }
 
   return (
-    <div className="flex min-w-0 flex-wrap items-end gap-2">
-      <div className="min-w-[160px] flex-1 space-y-1">
-        <Label htmlFor="device-custom-display-face">
-          {t('devices.deviceExtension.customFace')}
-        </Label>
-        <Select value={selectedCustomFaceId} onValueChange={onSelectedCustomFaceIdChange}>
-          <SelectTrigger id="device-custom-display-face">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {installedCustomFaceGroup.faces.map((face) => (
-              <SelectItem key={face.faceId} value={face.faceId}>
-                {face.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="space-y-2">
+      {!customFaceActivated ? (
+        <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+          {t('devices.deviceExtension.customFaceTestRequiresActivation')}
+        </p>
+      ) : null}
+      <div className="flex min-w-0 flex-wrap items-end gap-2">
+        <div className="min-w-[160px] flex-1 space-y-1">
+          <Label htmlFor="device-custom-display-face">
+            {t('devices.deviceExtension.customFace')}
+          </Label>
+          <Select value={selectedCustomFaceId} onValueChange={onSelectedCustomFaceIdChange}>
+            <SelectTrigger id="device-custom-display-face">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {installedCustomFaceGroup.faces.map((face) => (
+                <SelectItem key={face.faceId} value={face.faceId}>
+                  {face.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <DisplayFaceDurationInput
+          disabled={disabled}
+          value={displayFaceDurationMs}
+          onValueChange={onDisplayFaceDurationMsChange}
+          onBlur={onNormalizeDisplayFaceDuration}
+        />
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={disabled || !selectedCustomFace || !customFaceActivated}
+          onClick={() =>
+            selectedCustomFace && customFaceActivated
+              ? onSendCustomDisplayFace(
+                  installedCustomFaceGroup.groupId,
+                  selectedCustomFace.faceId,
+                  effectiveDurationMs
+                )
+              : undefined
+          }
+        >
+          <Monitor className="mr-2 h-4 w-4" />
+          {t('devices.deviceExtension.testCustomFace')}
+        </Button>
       </div>
-      <DisplayFaceDurationInput
-        disabled={disabled}
-        value={displayFaceDurationMs}
-        onValueChange={onDisplayFaceDurationMsChange}
-        onBlur={onNormalizeDisplayFaceDuration}
-      />
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        disabled={disabled || !selectedCustomFace}
-        onClick={() =>
-          selectedCustomFace
-            ? onSendCustomDisplayFace(
-                installedCustomFaceGroup.groupId,
-                selectedCustomFace.faceId,
-                effectiveDurationMs
-              )
-            : undefined
-        }
-      >
-        <Monitor className="mr-2 h-4 w-4" />
-        {t('devices.deviceExtension.testCustomFace')}
-      </Button>
     </div>
   );
 }

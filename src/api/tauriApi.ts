@@ -19,6 +19,44 @@ export async function openExternalUrl(url: string): Promise<void> {
   await invoke('open_external_url', { url });
 }
 
+export type StorageUsageStatus = 'ok' | 'missing' | 'unreadable';
+
+export type StorageUsageEntry = {
+  path: string;
+  status: StorageUsageStatus;
+  bytes: number;
+  fileCount: number;
+  directoryCount: number;
+};
+
+export type StorageUsageSnapshot = {
+  cache: StorageUsageEntry;
+  logs: StorageUsageEntry;
+};
+
+export type StorageCleanupStatus = 'cleaned' | 'missing' | 'partial' | 'failed';
+
+export type StorageCleanupEntry = {
+  path: string;
+  status: StorageCleanupStatus;
+  removedBytes: number;
+  removedFiles: number;
+  error?: string | null;
+};
+
+export type StorageCleanupResult = {
+  cache: StorageCleanupEntry;
+  logs: StorageCleanupEntry;
+};
+
+export async function getStorageUsageSnapshot(): Promise<StorageUsageSnapshot> {
+  return invoke<StorageUsageSnapshot>('storage_usage_snapshot');
+}
+
+export async function clearStorage(): Promise<StorageCleanupResult> {
+  return invoke<StorageCleanupResult>('clear_storage');
+}
+
 export type SubmitRelayEventRequest = {
   source: string;
   event: string;

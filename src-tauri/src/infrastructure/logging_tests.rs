@@ -115,6 +115,20 @@ fn file_only_writer_records_file_log_without_console_sink() {
 }
 
 #[test]
+fn truncate_log_file_clears_existing_content_and_reports_original_size() {
+    let file_path = temp_log_dir("truncate-log-file").join("cc-notice.log");
+    std::fs::write(&file_path, "keep only the newest bytes").expect("log should write");
+
+    let original_len = truncate_log_file(&file_path).expect("truncate should succeed");
+
+    assert_eq!(original_len, 26);
+    assert_eq!(
+        "",
+        std::fs::read_to_string(&file_path).expect("log should be readable after truncate")
+    );
+}
+
+#[test]
 fn archive_lock_path_is_scoped_to_log_file_name() {
     let lock_path = archive_lock_path(Path::new("/tmp/logs/cc-notice-relay.log"))
         .expect("lock path should build");

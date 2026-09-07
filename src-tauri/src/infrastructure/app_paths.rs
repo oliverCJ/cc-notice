@@ -41,6 +41,39 @@ pub fn app_home_dir_for_user(home: &Path) -> PathBuf {
     home.join(APP_HOME_DIR_NAME)
 }
 
+pub fn app_cache_dir() -> Result<PathBuf, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let local_app_data =
+            std::env::var_os("LOCALAPPDATA").ok_or_else(|| "LOCALAPPDATA is not available".to_string())?;
+        return Ok(app_cache_dir_for_local_app_data(&PathBuf::from(local_app_data)));
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        return Ok(app_cache_dir_for_user(&user_home_dir()?));
+    }
+}
+
+pub fn app_cache_dir_for_user(home: &Path) -> PathBuf {
+    #[cfg(target_os = "macos")]
+    {
+        return home.join("Library").join("Caches").join("cc-notice");
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        return home.join(".cache").join("cc-notice");
+    }
+
+    #[allow(unreachable_code)]
+    home.join(".cache").join("cc-notice")
+}
+
+pub fn app_cache_dir_for_local_app_data(local_app_data: &Path) -> PathBuf {
+    local_app_data.join("cc-notice").join("Cache")
+}
+
 pub fn settings_file_path() -> Result<PathBuf, String> {
     Ok(app_home_dir()?.join("settings.json"))
 }
@@ -89,5 +122,38 @@ mod tests {
         let app_home = app_home_dir_for_user(Path::new("/Users/alice"));
 
         assert_eq!(Path::new("/Users/alice/.cc-notice"), app_home.as_path());
+    }
+
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn app_cache_uses_library_caches_directory_under_user_home() {
+        let app_cache = app_cache_dir_for_user(Path::new("/Users/alice"));
+
+        assert_eq!(
+            Path::new("/Users/alice").join("Library").join("Caches").join("cc-notice"),
+            app_cache
+        );
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn app_cache_uses_hidden_cache_directory_under_user_home() {
+        let app_cache = app_cache_dir_for_user(Path::new("/Users/alice"));
+
+        assert_eq!(Path::new("/Users/alice").join(".cache").join("cc-notice"), app_cache);
+    }
+
+    #[test]
+    fn app_cache_uses_local_app_data_cache_directory_on_windows() {
+        let app_cache = app_cache_dir_for_local_app_data(Path::new(
+            r"C:\Users\alice\AppData\Local",
+        ));
+
+        assert_eq!(
+            Path::new(r"C:\Users\alice\AppData\Local")
+                .join("cc-notice")
+                .join("Cache"),
+            app_cache
+        );
     }
 }

@@ -49,6 +49,12 @@ pub(crate) use transport_monitor::{
     open_device_transport_monitor_window_impl,
 };
 
+pub(crate) fn bundled_firmware_artifact_for_state(
+    runtime_state: &crate::core::device::DeviceRuntimeState,
+) -> Result<Option<crate::core::firmware::FirmwareArtifact>, String> {
+    firmware_lookup::bundled_firmware_artifact_for_state(runtime_state)
+}
+
 #[tauri::command]
 pub fn device_runtime_states(
     state: tauri::State<'_, AppState>,

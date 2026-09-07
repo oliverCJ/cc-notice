@@ -3,6 +3,7 @@ import { RefreshCw } from 'lucide-react';
 import { DeviceDiscoveryState, useDeviceDiscovery } from '@/hooks/useDeviceDiscovery';
 import { DeviceRuntimeRegistryState } from '@/hooks/useDeviceRuntimeRegistry';
 import { type Translator, useI18n } from '@/i18n';
+import { useToast } from '@/hooks/use-toast';
 import {
   CustomFaceGroup,
   CustomFaceGroupSummary,
@@ -63,6 +64,7 @@ export function DevicesPage({
   customFaceEditorOpen = false,
 }: DevicesPageProps) {
   const t = useI18n();
+  const { toast } = useToast();
   const discovery = useDeviceDiscovery({
     onRegisteredDevice: registry.upsertDeviceState,
     onIdentifiedMatchedDevice: connectIdentifiedMatchedDevice,
@@ -279,6 +281,12 @@ export function DevicesPage({
         selectedCustomFaceGroupId
       );
       registry.upsertDeviceState(nextState);
+      toast({
+        title: t('devices.customFaces.installSuccessTitle'),
+        description: t('devices.customFaces.installSuccessDescription', {
+          name: customFaceGroupById[selectedCustomFaceGroupId]?.name ?? selectedCustomFaceGroupId,
+        }),
+      });
     } catch (error) {
       setCustomFaceInstallError(error instanceof Error ? error.message : String(error));
     } finally {
@@ -308,6 +316,12 @@ export function DevicesPage({
     try {
       const nextState = await setCustomFaceActiveSource(selectedState.deviceId, 'builtin', null);
       registry.upsertDeviceState(nextState);
+      toast({
+        title: t('devices.customFaces.activationSuccessTitle'),
+        description: t('devices.customFaces.activationSuccessDescription', {
+          source: t('devices.customFaces.activeSourceBuiltin'),
+        }),
+      });
     } catch (error) {
       setCustomFaceActivationError(error instanceof Error ? error.message : String(error));
     }
@@ -322,6 +336,12 @@ export function DevicesPage({
     try {
       const nextState = await setCustomFaceActiveSource(selectedState.deviceId, 'custom', groupId);
       registry.upsertDeviceState(nextState);
+      toast({
+        title: t('devices.customFaces.activationSuccessTitle'),
+        description: t('devices.customFaces.activationSuccessDescription', {
+          source: t('devices.customFaces.activeSourceCustom'),
+        }),
+      });
     } catch (error) {
       setCustomFaceActivationError(error instanceof Error ? error.message : String(error));
     }
@@ -557,23 +577,38 @@ function CustomFaceInstallPanel({
       <div className="mt-3 flex flex-wrap gap-2">
         <Button
           type="button"
-          variant={activeSource === 'builtin' ? 'secondary' : 'outline'}
+          variant={activeSource === 'builtin' ? 'default' : 'outline'}
           size="sm"
           disabled={!connected || installing}
+          className={
+            activeSource === 'builtin'
+              ? 'bg-sky-600 text-white hover:bg-sky-700'
+              : ''
+          }
           onClick={onActivateBuiltin}
         >
           {t('devices.customFaces.activateBuiltin')}
         </Button>
         <Button
           type="button"
-          variant={activeSource === 'custom' ? 'secondary' : 'outline'}
+          variant={activeSource === 'custom' ? 'default' : 'outline'}
           size="sm"
           disabled={!connected || installing || !installed}
+          className={
+            activeSource === 'custom'
+              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+              : ''
+          }
           onClick={onActivateCustom}
         >
           {t('devices.customFaces.activateCustom')}
         </Button>
       </div>
+      {installed && activeSource !== 'custom' ? (
+        <p className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
+          {t('devices.deviceExtension.customFaceNeedsActivation')}
+        </p>
+      ) : null}
       {deployment && !deployment.allowed ? (
         <p className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {t('devices.customFaces.preflightFailed', {

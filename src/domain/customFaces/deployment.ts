@@ -48,11 +48,8 @@ export function checkCustomFaceDeployment(
   const addReason = (reason: CustomFaceDeploymentReason) => {
     if (!reasons.includes(reason)) reasons.push(reason);
   };
-  const profile = CUSTOM_FACE_CONTRACT.profiles.find(
-    (candidate) => candidate.id === group.displayProfileId,
-  );
-  const deployableProfile =
-    profile?.deployment === 'enabled' ? profile : undefined;
+  const profile = resolveDeployableProfile(group.displayProfileId);
+  const deployableProfile = profile?.deployment === 'enabled' ? profile : undefined;
 
   if (!deployableProfile) addReason('profile-not-deployable');
   validateDisplayCapabilities(target.display, profile, addReason);
@@ -139,4 +136,29 @@ function validateFrames(
 
 function isPositiveInteger(value: number | null | undefined): value is number {
   return Number.isInteger(value) && Number(value) > 0;
+}
+
+function resolveDeployableProfile(profileId: string) {
+  const exactProfile = CUSTOM_FACE_CONTRACT.profiles.find(
+    (candidate) => candidate.id === profileId,
+  );
+  if (exactProfile) {
+    return exactProfile;
+  }
+
+  const inferredProfile = CUSTOM_FACE_CONTRACT.profiles.find((candidate) => {
+    if (candidate.deployment !== 'enabled') {
+      return false;
+    }
+    return editorSizeMatchesProfile(profileId, candidate.width, candidate.height);
+  });
+  return inferredProfile ?? undefined;
+}
+
+function editorSizeMatchesProfile(profileId: string, width: number, height: number) {
+  const customProfile = profileId.match(/^custom-(\d+)x(\d+)-v1$/);
+  if (!customProfile) {
+    return false;
+  }
+  return Number(customProfile[1]) === width && Number(customProfile[2]) === height;
 }

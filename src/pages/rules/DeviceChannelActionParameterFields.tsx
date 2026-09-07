@@ -500,6 +500,7 @@ export function DeviceChannelActionParameterFields({
                     }
                     return (
                       <CustomFaceAnimatedPreview
+                        key={`${selectedCustomFace.faceId}:${selectedCustomFace.frames.length}`}
                         width={profile.width}
                         height={profile.height}
                         frames={selectedCustomFace.frames}

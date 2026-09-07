@@ -468,6 +468,38 @@ export const enMessages = {
         },
       },
     },
+    storage: {
+      title: 'Cache and Logs',
+      description: 'Review and clear app cache and runtime logs.',
+      cacheLabel: 'Cache',
+      logsLabel: 'Logs',
+      refresh: 'Rescan',
+      clear: 'Clear Cache and Logs',
+      confirmTitle: 'Clear cache and logs?',
+      confirmDescription:
+        'This only clears the app-specific cache directory and ~/.cc-notice/logs. Other config or assets will stay intact.',
+      totalSummary: 'Total usage: {{bytes}}',
+      unresolvedPath: 'Path unavailable',
+      size: 'Usage',
+      files: 'Files',
+      directories: 'Directories',
+      unknown: 'Unknown',
+      status: {
+        ok: 'Ready',
+        missing: 'Missing',
+        unreadable: 'Unreadable',
+        cleaned: 'Cleared',
+        partial: 'Partial',
+        failed: 'Failed',
+      },
+      clearSuccessTitle: 'Cleanup complete',
+      clearSuccessDescription:
+        '{{bytes}} freed, {{cleanedTargets}} targets cleared, {{missingTargets}} targets were already missing.',
+      clearPartialTitle: 'Cleanup finished with partial failures',
+      clearPartialDescription:
+        '{{bytes}} freed, cache status: {{cacheStatus}}, log status: {{logsStatus}}.',
+      clearFailedTitle: 'Cleanup failed',
+    },
     logTitle: 'Logs',
     logDescription: 'Logs are written to $HOME/.cc-notice/logs by default for troubleshooting.',
   },
@@ -1672,12 +1704,16 @@ export const enMessages = {
       reloadGroups: 'Refresh face groups',
       install: 'Install to selected device',
       installing: 'Installing...',
+      installSuccessTitle: 'Custom face installed',
+      installSuccessDescription: 'Wrote "{{name}}" into the device custom slot.',
       installedGroup: 'Installed: {{groupId}}, {{bytes}} bytes.',
       activeSourceLabel: 'Active source: {{source}}',
       activeSourceBuiltin: 'Built-in',
       activeSourceCustom: 'Custom',
       activateBuiltin: 'Switch to built-in',
       activateCustom: 'Activate custom',
+      activationSuccessTitle: 'Face source switched',
+      activationSuccessDescription: 'Current active source is now {{source}}.',
       preflightFailed: 'This face group cannot be installed: {{reasons}}',
       preflightReasonSeparator: ', ',
       preflightReasons: {
@@ -1971,6 +2007,9 @@ export const enMessages = {
       customFace: 'Custom face',
       customFacePreview: 'Custom face preview',
       customFaceNotInstalled: 'No custom face group is installed on this device.',
+      customFaceNeedsActivation:
+        'A custom face group is installed on this device. Activate it before testing.',
+      customFaceTestRequiresActivation: 'Activate the custom face before testing.',
       customFaceMissingLocalGroup:
         'The device has an installed custom face group, but this computer cannot find it: {{groupId}}. Import or sync the group before testing.',
       displayFaceDurationMs: 'Duration (ms)',
@@ -2319,6 +2358,10 @@ export const enMessages = {
         description:
           'For Raspberry Pi Pico with a 0.91-inch 128x32 I2C OLED, using GP20/GP21 for the display while keeping GP22 as a normal output channel.',
       },
+      oled128: {
+        description:
+          'For Raspberry Pi Pico with a 1.5-inch 128x128 I2C SH1107 OLED, keeping the common output channels while adding more screen space for facial expressions.',
+      },
       stm32SmallMcu: {
         description:
           'Scoped to the STM32F103C6T6 minimum resource profile, with stable digital output, onboard USB CDC serial, and memory-heavy features disabled.',
@@ -2366,6 +2409,8 @@ export const enMessages = {
         oled096Scl: 'Connect to OLED D0 / SCL.',
         oled091Sda: 'Connect to OLED SDA.',
         oled091Scl: 'Connect to OLED SCL.',
+        oled128Sda: 'Connect to OLED SDA.',
+        oled128Scl: 'Connect to OLED SCL.',
         oledReset: 'Connect to OLED RES / RST. Firmware sends one reset pulse after power-up.',
         oledPower: 'Connect OLED VCC to 3V3 and GND to board GND.',
       },
@@ -2406,6 +2451,14 @@ export const enMessages = {
         },
         rp2040PicoOled091: {
           title: 'Pico + OLED 0.91-inch 128x32 Wiring',
+          summary:
+            'This firmware uses GP20/GP21 for the I2C OLED. The software exposes normal digital output, buzzer, and display output entries.',
+          reserved: {
+            i2c: 'GP20 and GP21 are reserved for OLED I2C and are not normal digital output channels.',
+          },
+        },
+        rp2040PicoOled128x128: {
+          title: 'Pico + OLED 1.5-inch 128x128 Wiring',
           summary:
             'This firmware uses GP20/GP21 for the I2C OLED. The software exposes normal digital output, buzzer, and display output entries.',
           reserved: {

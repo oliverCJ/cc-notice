@@ -449,6 +449,38 @@ export const zhMessages = {
         },
       },
     },
+    storage: {
+      title: '缓存与日志',
+      description: '查看并清理软件缓存和运行日志。',
+      cacheLabel: '缓存',
+      logsLabel: '日志',
+      refresh: '重新扫描',
+      clear: '清理缓存和日志',
+      confirmTitle: '清理缓存和日志？',
+      confirmDescription:
+        '只会清理平台缓存目录下的 cc-notice 专属缓存，以及 ~/.cc-notice/logs，不会删除其它配置或素材。',
+      totalSummary: '合计占用：{{bytes}}',
+      unresolvedPath: '路径暂不可用',
+      size: '占用',
+      files: '文件数',
+      directories: '目录数',
+      unknown: '未知',
+      status: {
+        ok: '可清理',
+        missing: '目录不存在',
+        unreadable: '无法读取',
+        cleaned: '已清理',
+        partial: '部分失败',
+        failed: '清理失败',
+      },
+      clearSuccessTitle: '清理完成',
+      clearSuccessDescription:
+        '已释放 {{bytes}}，{{cleanedTargets}} 个目标已清理，{{missingTargets}} 个目标原本不存在。',
+      clearPartialTitle: '清理完成但有部分失败',
+      clearPartialDescription:
+        '已释放 {{bytes}}，缓存状态：{{cacheStatus}}，日志状态：{{logsStatus}}。',
+      clearFailedTitle: '清理失败',
+    },
     logTitle: '日志',
     logDescription: '日志默认写入 $HOME/.cc-notice/logs，便于排查运行问题。',
   },
@@ -1605,12 +1637,16 @@ export const zhMessages = {
       reloadGroups: '刷新表情组列表',
       install: '安装到当前设备',
       installing: '正在安装…',
+      installSuccessTitle: '自定义表情安装成功',
+      installSuccessDescription: '已将「{{name}}」写入设备自定义槽位。',
       installedGroup: '设备已安装：{{groupId}}，占用 {{bytes}} 字节。',
       activeSourceLabel: '当前激活：{{source}}',
       activeSourceBuiltin: '内置',
       activeSourceCustom: '自定义',
       activateBuiltin: '切回内置表情',
       activateCustom: '激活自定义表情',
+      activationSuccessTitle: '表情激活成功',
+      activationSuccessDescription: '当前激活源已切换为{{source}}。',
       preflightFailed: '当前表情组不能下发：{{reasons}}',
       preflightReasonSeparator: '、',
       preflightReasons: {
@@ -1889,6 +1925,8 @@ export const zhMessages = {
       customFace: '自定义表情',
       customFacePreview: '自定义表情预览',
       customFaceNotInstalled: '当前设备未安装自定义表情组。',
+      customFaceNeedsActivation: '设备已安装自定义表情组，请先激活后再进行测试。',
+      customFaceTestRequiresActivation: '请先激活自定义表情后再测试。',
       customFaceMissingLocalGroup:
         '设备已安装自定义表情组，但本机未找到对应组数据：{{groupId}}。请先导入或同步该表情组后再测试。',
       displayFaceDurationMs: '持续时长(ms)',
@@ -2214,6 +2252,10 @@ export const zhMessages = {
         description:
           '适合 Raspberry Pi Pico 外接 0.91 寸 128x32 I2C OLED，使用 GP20/GP21 连接屏幕并保留 GP22 作为普通输出通道。',
       },
+      oled128: {
+        description:
+          '适合 Raspberry Pi Pico 外接 1.5 寸 128x128 I2C SH1107 OLED，保留常用输出通道并提供更大的屏幕表情显示空间。',
+      },
       stm32SmallMcu: {
         description:
           '按 STM32F103C6T6 最小资源约束开放稳妥数字输出，启用板载 USB CDC 串口，不启用高占用能力。',
@@ -2255,6 +2297,8 @@ export const zhMessages = {
         oled096Scl: '连接 OLED D0 / SCL。',
         oled091Sda: '连接 OLED SDA。',
         oled091Scl: '连接 OLED SCL。',
+        oled128Sda: '连接 OLED SDA。',
+        oled128Scl: '连接 OLED SCL。',
         oledReset: '连接 OLED RES / RST，固件上电后会执行一次复位脉冲。',
         oledPower: 'OLED VCC 接 3V3，GND 接板卡 GND。',
       },
@@ -2288,6 +2332,14 @@ export const zhMessages = {
         },
         rp2040PicoOled091: {
           title: 'Pico + OLED 0.91 寸 128x32 接线说明',
+          summary:
+            '该固件使用 GP20/GP21 连接 I2C OLED，软件侧开放普通数字输出、蜂鸣器和屏幕输出入口。',
+          reserved: {
+            i2c: 'GP20 和 GP21 被 OLED I2C 占用，不再作为普通数字输出通道。',
+          },
+        },
+        rp2040PicoOled128x128: {
+          title: 'Pico + OLED 1.5 寸 128x128 接线说明',
           summary:
             '该固件使用 GP20/GP21 连接 I2C OLED，软件侧开放普通数字输出、蜂鸣器和屏幕输出入口。',
           reserved: {

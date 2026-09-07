@@ -25,6 +25,7 @@ import { ArduinoCliStatus, getArduinoCliStatus, ResetConfigurationScope } from '
 import type { DesktopNoticeInstance } from '@/domain/desktopNotice';
 import { DesktopNoticeInstanceLibrary } from '@/pages/desktop-notice/DesktopNoticeInstanceLibrary';
 import { SettingsResetSection } from './SettingsResetSection';
+import { StorageCleanupCard } from './StorageCleanupCard';
 
 type SettingsPageProps = {
   config: AppConfigView;
@@ -558,6 +559,10 @@ export function SettingsPage({
       <Separator />
 
       <SettingsResetSection onReset={onResetConfiguration} />
+
+      <Separator />
+
+      <StorageCleanupCard />
 
       <Separator />
 

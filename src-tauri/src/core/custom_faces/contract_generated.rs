@@ -50,6 +50,16 @@ pub const CUSTOM_FACE_PROFILES: &[CustomFaceProfileSpec] = &[
         max_group_bytes: 393_216,
         deployment_enabled: true,
     },
+    CustomFaceProfileSpec {
+        code: 4,
+        id: "custom-mono-128x128-v1",
+        width: 128,
+        height: 128,
+        framebuffer_bytes: 2_048,
+        max_frames: 10,
+        max_group_bytes: 262_144,
+        deployment_enabled: true,
+    },
 ];
 
 pub fn custom_face_profile_by_id(id: &str) -> Option<CustomFaceProfileSpec> {
@@ -63,6 +73,12 @@ pub fn custom_face_profile_by_id(id: &str) -> Option<CustomFaceProfileSpec> {
     let area = usize::from(width) * usize::from(height);
     if !(10..=1024).contains(&width) || !(10..=1024).contains(&height) || area > 1_048_576 {
         return None;
+    }
+    if let Some(profile) = CUSTOM_FACE_PROFILES
+        .iter()
+        .find(|profile| profile.deployment_enabled && profile.width == width && profile.height == height)
+    {
+        return Some(*profile);
     }
     let max_frames = if area <= 8192 {
         20

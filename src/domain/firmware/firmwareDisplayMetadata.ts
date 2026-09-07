@@ -42,6 +42,16 @@ const rp2040Display091Metadata: FirmwareDisplayMetadata = {
   recommendationReasonKey: null
 };
 
+const rp2040Display128Metadata: FirmwareDisplayMetadata = {
+  recommended: false,
+  family: 'rp2040',
+  familyLabelKey: 'firmware.boardFamilies.rp2040',
+  capabilityTier: 'extended',
+  capabilityTierLabelKey: 'firmware.capabilityTiers.extended.label',
+  capabilityTierDescriptionKey: 'firmware.capabilityTiers.oled128.description',
+  recommendationReasonKey: null
+};
+
 const smallAvrMetadata: FirmwareDisplayMetadata = {
   recommended: false,
   family: 'arduino-avr',
@@ -112,6 +122,10 @@ export function getFirmwareDisplayMetadata(boardId: string): FirmwareDisplayMeta
 
   if (boardId === 'rp2040-pico-oled-091') {
     return rp2040Display091Metadata;
+  }
+
+  if (boardId === 'rp2040-pico-oled-128x128') {
+    return rp2040Display128Metadata;
   }
 
   if (tinyAvrBoardIds.has(boardId)) {

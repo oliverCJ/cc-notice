@@ -39,6 +39,16 @@ export const CUSTOM_FACE_CONTRACT = {
       "maxGroupBytes": 393216,
       "deployment": "enabled",
       "framebufferBytes": 9600
+    },
+    {
+      "code": 4,
+      "id": "custom-mono-128x128-v1",
+      "width": 128,
+      "height": 128,
+      "maxFrames": 10,
+      "maxGroupBytes": 262144,
+      "deployment": "enabled",
+      "framebufferBytes": 2048
     }
   ]
 } as const;

@@ -13,6 +13,7 @@ const getCustomFaceGroupMock = vi.hoisted(() => vi.fn());
 const installCustomFaceGroupToDeviceMock = vi.hoisted(() => vi.fn());
 const setCustomFaceActiveSourceMock = vi.hoisted(() => vi.fn());
 const openDeviceTransportMonitorWindowMock = vi.hoisted(() => vi.fn());
+const toastMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@/api/tauriApi', async () => {
   const actual = await vi.importActual<typeof import('@/api/tauriApi')>('@/api/tauriApi');
@@ -25,6 +26,15 @@ vi.mock('@/api/tauriApi', async () => {
     openDeviceTransportMonitorWindow: openDeviceTransportMonitorWindowMock,
   };
 });
+
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: () => ({
+    toast: toastMock,
+    toasts: [],
+    dismiss: vi.fn(),
+  }),
+  toast: toastMock,
+}));
 
 vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
   clearRect: vi.fn(),
@@ -203,6 +213,7 @@ describe('DevicesPage', () => {
     installCustomFaceGroupToDeviceMock.mockReset();
     setCustomFaceActiveSourceMock.mockReset();
     openDeviceTransportMonitorWindowMock.mockResolvedValue(undefined);
+    toastMock.mockReset();
   });
 
   test('uses generic device management description instead of board-specific copy', () => {
@@ -1921,6 +1932,167 @@ describe('DevicesPage', () => {
     expect(screen.getByText('当前激活：自定义')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '切回内置表情' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '激活自定义表情' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '激活自定义表情' })).toHaveClass('bg-emerald-600');
+  });
+
+  test('disables custom face test until the installed group is activated', async () => {
+    const group = customFaceGroup320x240();
+    getCustomFaceGroupsMock.mockResolvedValue([
+      {
+        groupId: group.groupId,
+        name: group.name,
+        displayProfileId: group.displayProfileId,
+        revision: 1,
+        defaultFaceId: group.defaultFaceId,
+        faceCount: 1,
+        libraryHash: 'hash-1',
+      },
+    ]);
+    getCustomFaceGroupMock.mockResolvedValue(group);
+
+    renderDevicesPage({
+      ...registryState,
+      states: [
+        {
+          ...wioRuntimeState(),
+          customFaceStatus: {
+            state: 'installed',
+            installed: {
+              profileCode: 3,
+              groupId: group.groupId,
+              groupRuntimeHash: 'b7b9bc4dd2cf2f56600ac55d8bd68dfe2063c03b1eb4a781b006779675981fc8',
+              defaultFaceId: group.defaultFaceId,
+              faceCount: 1,
+              encodedBytes: 1463,
+            },
+            errorCode: null,
+          },
+          firmwareInfo: {
+            ...wioRuntimeState().firmwareInfo,
+            customFaceActive: {
+              source: 'builtin',
+              groupId: null,
+            },
+          },
+        },
+      ],
+    });
+
+    await screen.findByText('Wio group');
+    fireEvent.click(screen.getByRole('button', { name: '自定义表情测试' }));
+
+    expect(screen.getByText('设备已安装自定义表情组，请先激活后再进行测试。')).toBeInTheDocument();
+    expect(screen.getByText('请先激活自定义表情后再测试。')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '测试自定义表情' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '切回内置表情' })).toHaveClass('bg-sky-600');
+  });
+
+  test('shows a success toast after installing a custom face group', async () => {
+    const group = customFaceGroup320x240();
+    const nextRuntime = {
+      ...wioRuntimeState(),
+      customFaceStatus: {
+        state: 'installed' as const,
+        installed: {
+          profileCode: 3,
+          groupId: group.groupId,
+          groupRuntimeHash: 'abcdef',
+          defaultFaceId: group.defaultFaceId,
+          faceCount: 1,
+          encodedBytes: 2048,
+        },
+        errorCode: null,
+      },
+    };
+    getCustomFaceGroupsMock.mockResolvedValue([
+      {
+        groupId: group.groupId,
+        name: group.name,
+        displayProfileId: group.displayProfileId,
+        revision: 1,
+        defaultFaceId: group.defaultFaceId,
+        faceCount: 1,
+        libraryHash: 'hash-1',
+      },
+    ]);
+    getCustomFaceGroupMock.mockResolvedValue(group);
+    installCustomFaceGroupToDeviceMock.mockResolvedValue(nextRuntime);
+
+    renderDevicesPage({
+      ...registryState,
+      states: [wioRuntimeState()],
+    });
+
+    await screen.findByText('Wio group');
+    fireEvent.click(screen.getByRole('button', { name: '安装到当前设备' }));
+
+    await waitFor(() =>
+      expect(toastMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: '自定义表情安装成功',
+          description: '已将「Wio group」写入设备自定义槽位。',
+        })
+      )
+    );
+  });
+
+  test('shows a success toast after switching custom face active source', async () => {
+    const group = customFaceGroup320x240();
+    getCustomFaceGroupsMock.mockResolvedValue([
+      {
+        groupId: group.groupId,
+        name: group.name,
+        displayProfileId: group.displayProfileId,
+        revision: 1,
+        defaultFaceId: group.defaultFaceId,
+        faceCount: 1,
+        libraryHash: 'hash-1',
+      },
+    ]);
+    getCustomFaceGroupMock.mockResolvedValue(group);
+    setCustomFaceActiveSourceMock.mockResolvedValue({
+      ...wioRuntimeState(),
+      firmwareInfo: {
+        ...wioRuntimeState().firmwareInfo,
+        customFaceActive: {
+          source: 'custom',
+          groupId: group.groupId,
+        },
+      },
+    });
+
+    renderDevicesPage({
+      ...registryState,
+      states: [
+        {
+          ...wioRuntimeState(),
+          customFaceStatus: {
+            state: 'installed',
+            installed: {
+              profileCode: 3,
+              groupId: group.groupId,
+              groupRuntimeHash: 'b7b9bc4dd2cf2f56600ac55d8bd68dfe2063c03b1eb4a781b006779675981fc8',
+              defaultFaceId: group.defaultFaceId,
+              faceCount: 1,
+              encodedBytes: 1463,
+            },
+            errorCode: null,
+          },
+        },
+      ],
+    });
+
+    await screen.findByText('Wio group');
+    fireEvent.click(screen.getByRole('button', { name: '激活自定义表情' }));
+
+    await waitFor(() =>
+      expect(toastMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: '表情激活成功',
+          description: '当前激活源已切换为自定义。',
+        })
+      )
+    );
   });
 
   test('shows activation failure separately from install failure', async () => {
@@ -2056,6 +2228,13 @@ describe('DevicesPage', () => {
         {
           ...wioRuntimeState(),
           customFaceStatus: { state: 'installed', installed, errorCode: null },
+          firmwareInfo: {
+            ...wioRuntimeState().firmwareInfo,
+            customFaceActive: {
+              source: 'custom',
+              groupId: group.groupId,
+            },
+          },
         },
       ],
     });

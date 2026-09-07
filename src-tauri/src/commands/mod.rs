@@ -13,3 +13,4 @@ pub mod hook_config;
 pub mod monitor;
 pub mod profile;
 pub mod sound;
+pub mod storage_cleanup;

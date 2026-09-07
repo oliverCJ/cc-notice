@@ -146,6 +146,54 @@ export const DISPLAY_FACE_CONTRACT = {
       },
       "previewColor": "semantic",
       "maxFaceOffsetX": 4
+    },
+    {
+      "id": "oled-128x128-v1",
+      "width": 128,
+      "height": 128,
+      "strokeWidth": 4,
+      "symbolUnit": 1,
+      "anchors": {
+        "leftEyeX": 32,
+        "rightEyeX": 96,
+        "eyeY": 38,
+        "eyeWidth": 20,
+        "eyeHeight": 20,
+        "mouthX": 64,
+        "mouthY": 86,
+        "mouthRadius": 24,
+        "mouthHeight": 12,
+        "symbolX": 98,
+        "symbolY": 18
+      },
+      "regions": {
+        "eyes": {
+          "x": 18,
+          "y": 20,
+          "width": 92,
+          "height": 48
+        },
+        "mouth": {
+          "x": 36,
+          "y": 66,
+          "width": 57,
+          "height": 40
+        },
+        "symbol": {
+          "x": 94,
+          "y": 8,
+          "width": 34,
+          "height": 88
+        },
+        "face": {
+          "x": 14,
+          "y": 8,
+          "width": 114,
+          "height": 112
+        }
+      },
+      "previewColor": "#d7ff70",
+      "maxFaceOffsetX": 2
     }
   ],
   "templates": [

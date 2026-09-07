@@ -4,9 +4,10 @@ use std::sync::{Arc, Mutex};
 
 use crate::app_services::device_io_worker::{DeviceIoCommandResult, DeviceIoError};
 use crate::app_services::device_runtime_registry::DeviceRuntimeRegistry;
+use crate::commands::device::bundled_firmware_artifact_for_state;
 use crate::core::custom_faces::device_protocol_generated::CUSTOM_FACE_DEVICE_MAX_RAW_CHUNK_BYTES;
 use crate::core::custom_faces::{compile_group, package_hash, CustomFaceGroup};
-use crate::core::device::DeviceRuntimeState;
+use crate::core::device::{DeviceCustomFaceActiveSource, DeviceRuntimeState};
 use crate::core::protocol::{ProtocolAck, ProtocolCommandV2};
 
 pub fn build_full_install_commands(
@@ -85,7 +86,10 @@ pub fn install_custom_face_group(
     let status_result = prepared_status
         .worker
         .send_protocol_command(prepared_status.command);
-    registry.complete_custom_face_status_query(device_id, status_session_id, status_result)
+    let mut state =
+        registry.complete_custom_face_status_query(device_id, status_session_id, status_result)?;
+    state = sync_device_after_custom_face_install(registry, device_id, state)?;
+    Ok(state)
 }
 
 pub fn install_custom_face_group_with_shared_registry(
@@ -112,10 +116,12 @@ pub fn install_custom_face_group_with_shared_registry(
     let status_result = prepared_status
         .worker
         .send_protocol_command(prepared_status.command);
-    registry
+    let mut state = registry
         .lock()
         .map_err(|error| error.to_string())?
-        .complete_custom_face_status_query(device_id, status_session_id, status_result)
+        .complete_custom_face_status_query(device_id, status_session_id, status_result)?;
+    state = sync_device_after_custom_face_install_with_shared_registry(registry, device_id, state)?;
+    Ok(state)
 }
 
 fn send_install_command(
@@ -164,6 +170,139 @@ fn validate_install_ack(
     }
     if ack.ack_type.as_deref() != Some(expected_ack_type) {
         return Err(format!("unexpected {expected_ack_type} response type"));
+    }
+    Ok(())
+}
+
+fn sync_device_after_custom_face_install(
+    registry: &mut DeviceRuntimeRegistry,
+    device_id: &str,
+    state: DeviceRuntimeState,
+) -> Result<DeviceRuntimeState, String> {
+    let installed = state
+        .custom_face_status
+        .installed
+        .as_ref()
+        .ok_or_else(|| "custom face install did not produce an installed group".to_string())?;
+    registry.set_custom_face_active_source(
+        device_id,
+        DeviceCustomFaceActiveSource::Custom,
+        Some(installed.group_id.clone()),
+    )?;
+    let artifact = bundled_firmware_artifact_for_state(&state)?
+        .ok_or_else(|| "bundled firmware artifact not found for device board".to_string())?;
+    let refreshed_state = registry.query_device_info(device_id, &artifact)?;
+    send_display_clear(registry, device_id)?;
+    Ok(refreshed_state)
+}
+
+fn sync_device_after_custom_face_install_with_shared_registry(
+    registry: &Arc<Mutex<DeviceRuntimeRegistry>>,
+    device_id: &str,
+    state: DeviceRuntimeState,
+) -> Result<DeviceRuntimeState, String> {
+    let installed = state
+        .custom_face_status
+        .installed
+        .as_ref()
+        .ok_or_else(|| "custom face install did not produce an installed group".to_string())?;
+    registry
+        .lock()
+        .map_err(|error| error.to_string())?
+        .set_custom_face_active_source(
+            device_id,
+            DeviceCustomFaceActiveSource::Custom,
+            Some(installed.group_id.clone()),
+        )?;
+    let artifact = bundled_firmware_artifact_for_state(&state)?
+        .ok_or_else(|| "bundled firmware artifact not found for device board".to_string())?;
+    let refreshed_state = registry
+        .lock()
+        .map_err(|error| error.to_string())?
+        .query_device_info(device_id, &artifact)?;
+    send_display_clear_with_shared_registry(registry, device_id)?;
+    Ok(refreshed_state)
+}
+
+fn send_display_clear(
+    registry: &mut DeviceRuntimeRegistry,
+    device_id: &str,
+) -> Result<(), String> {
+    let action = crate::core::device::DeviceExtensionAction {
+        device_id: device_id.to_string(),
+        channel_id: None,
+        action: crate::core::device::DeviceExtensionActionType::DisplayClear,
+        status: None,
+        title: None,
+        message: None,
+        icon: None,
+        lines: None,
+        face_template: None,
+        face_intensity: None,
+        custom_face_group_id: None,
+        custom_face_id: None,
+        duration_ms: None,
+        pattern: None,
+        control: None,
+        active: None,
+    };
+    let prepared = registry
+        .prepare_extension_command(&action)
+        .map_err(|result| result.error.unwrap_or_else(|| "display_clear failed".to_string()))?;
+    let session_id = prepared.session_id;
+    let result = prepared.worker.send_protocol_command(prepared.command);
+    let (command_result, fallback) = registry.complete_extension_command(&action, session_id, result);
+    if fallback.is_some() {
+        return Err("display_clear unexpectedly required fallback".to_string());
+    }
+    if command_result.status != "sent" {
+        return Err(command_result
+            .error
+            .unwrap_or_else(|| "display_clear failed".to_string()));
+    }
+    Ok(())
+}
+
+fn send_display_clear_with_shared_registry(
+    registry: &Arc<Mutex<DeviceRuntimeRegistry>>,
+    device_id: &str,
+) -> Result<(), String> {
+    let action = crate::core::device::DeviceExtensionAction {
+        device_id: device_id.to_string(),
+        channel_id: None,
+        action: crate::core::device::DeviceExtensionActionType::DisplayClear,
+        status: None,
+        title: None,
+        message: None,
+        icon: None,
+        lines: None,
+        face_template: None,
+        face_intensity: None,
+        custom_face_group_id: None,
+        custom_face_id: None,
+        duration_ms: None,
+        pattern: None,
+        control: None,
+        active: None,
+    };
+    let prepared = registry
+        .lock()
+        .map_err(|error| error.to_string())?
+        .prepare_extension_command(&action)
+        .map_err(|result| result.error.unwrap_or_else(|| "display_clear failed".to_string()))?;
+    let session_id = prepared.session_id;
+    let result = prepared.worker.send_protocol_command(prepared.command);
+    let (command_result, fallback) = registry
+        .lock()
+        .map_err(|error| error.to_string())?
+        .complete_extension_command(&action, session_id, result);
+    if fallback.is_some() {
+        return Err("display_clear unexpectedly required fallback".to_string());
+    }
+    if command_result.status != "sent" {
+        return Err(command_result
+            .error
+            .unwrap_or_else(|| "display_clear failed".to_string()));
     }
     Ok(())
 }

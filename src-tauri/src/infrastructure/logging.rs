@@ -68,6 +68,26 @@ pub fn open_log_file(log_file: &Path) -> Result<File, String> {
         .map_err(|error| error.to_string())
 }
 
+pub fn active_log_file_names() -> [&'static str; 2] {
+    [LOG_FILE_NAME, RELAY_LOG_FILE_NAME]
+}
+
+pub fn truncate_log_file(log_file: &Path) -> Result<u64, String> {
+    if !log_file.exists() {
+        return Ok(0);
+    }
+
+    let original_len = std::fs::metadata(log_file)
+        .map_err(|error| error.to_string())?
+        .len();
+    let file = OpenOptions::new()
+        .write(true)
+        .open(log_file)
+        .map_err(|error| error.to_string())?;
+    file.set_len(0).map_err(|error| error.to_string())?;
+    Ok(original_len)
+}
+
 pub fn archive_log_file(log_file: &Path, retention_days: i64) -> Result<(), String> {
     let _lock = ArchiveLock::acquire(log_file)?;
     let Some(modified_date) = log_file_modified_date(log_file)? else {

@@ -30,6 +30,26 @@ const CUSTOM_FACE_128X32: CustomFaceDeviceCapabilities = {
   maxGroupBytes: 131_072,
 };
 
+const DISPLAY_128X128: DeviceDisplayCapabilities = {
+  status: true,
+  face: true,
+  clear: true,
+  pixelWidth: 128,
+  pixelHeight: 128,
+  statuses: [],
+  titleMaxChars: 0,
+  messageMaxChars: 0,
+};
+
+const CUSTOM_FACE_128X128: CustomFaceDeviceCapabilities = {
+  protocolVersion: 1,
+  profileCode: 4,
+  pixelWidth: 128,
+  pixelHeight: 128,
+  maxFramesPerFace: 10,
+  maxGroupBytes: 262_144,
+};
+
 function group(
   displayProfileId = 'custom-mono-128x32-v1',
   frameCount = 1,
@@ -81,6 +101,22 @@ describe('custom face deployment preflight', () => {
     expect(reasonsFor(group(), DISPLAY_128X32, null)).toContain(
       'custom-face-capability-missing',
     );
+  });
+
+  test('accepts compatible 128x128 groups from either canonical or legacy custom ids', () => {
+    const canonical = checkCustomFaceDeployment(group('custom-mono-128x128-v1', 1, 2048), {
+      display: DISPLAY_128X128,
+      customFace: CUSTOM_FACE_128X128,
+    });
+    const legacy = checkCustomFaceDeployment(group('custom-128x128-v1', 1, 2048), {
+      display: DISPLAY_128X128,
+      customFace: CUSTOM_FACE_128X128,
+    });
+
+    expect(canonical.allowed).toBe(true);
+    expect(legacy.allowed).toBe(true);
+    expect(legacy.reasons).toEqual([]);
+    expect(legacy.profile?.id).toBe('custom-mono-128x128-v1');
   });
 
   test('rejects displays without face support or a complete matching size', () => {

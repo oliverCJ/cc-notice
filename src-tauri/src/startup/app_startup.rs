@@ -350,6 +350,8 @@ pub fn run() {
             commands::firmware::firmware_flash_status,
             commands::firmware::firmware_flash_targets,
             commands::firmware::flash_firmware,
+            commands::storage_cleanup::storage_usage_snapshot,
+            commands::storage_cleanup::clear_storage,
             commands::app_config::get_app_config,
             commands::app_config::save_app_config,
             commands::app_config::reset_configuration,

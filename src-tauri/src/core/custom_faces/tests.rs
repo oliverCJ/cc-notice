@@ -67,6 +67,15 @@ fn validates_a_static_128x32_group() {
 }
 
 #[test]
+fn compiles_legacy_128x128_group_as_deployable_canonical_profile() {
+    let group = test_group("custom-128x128-v1", 1, 1, 2048);
+
+    let compiled = compile_group(&group).expect("legacy 128x128 profile should compile");
+
+    assert_eq!(compiled.profile_code, 4);
+}
+
+#[test]
 fn validates_50ms_frame_and_rejects_49ms_frame() {
     let mut group = test_group("custom-mono-128x32-v1", 1, 1, 512);
     group.faces[0].frames[0].duration_ms = 50;

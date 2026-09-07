@@ -150,6 +150,22 @@ const guidesByTargetId: Record<string, FirmwareWiringGuide> = {
       'firmware.wiring.noticeItems.oledI2cAddress',
       'firmware.wiring.noticeItems.sharedGround'
     ]
+  },
+  'rp2040-pico-oled-128x128-128x128': {
+    titleKey: 'firmware.wiring.guides.rp2040PicoOled128x128.title',
+    summaryKey: 'firmware.wiring.guides.rp2040PicoOled128x128.summary',
+    pinRows: [
+      pinRow('GP20', 'firmware.wiring.functions.oledSda', 'firmware.wiring.wires.oled128Sda'),
+      pinRow('GP21', 'firmware.wiring.functions.oledScl', 'firmware.wiring.wires.oled128Scl'),
+      pinRow('3V3 / GND', 'firmware.wiring.functions.oledPower', 'firmware.wiring.wires.oledPower'),
+      ...rp2040Oled091OutputRows
+    ],
+    reservedPinKeys: ['firmware.wiring.guides.rp2040PicoOled128x128.reserved.i2c'],
+    noticeKeys: [
+      'firmware.wiring.noticeItems.rp2040Voltage',
+      'firmware.wiring.noticeItems.oledI2cAddress',
+      'firmware.wiring.noticeItems.sharedGround'
+    ]
   }
 };
 
@@ -167,6 +183,9 @@ export function getFirmwareWiringGuide(
   }
   if (artifact.boardId === 'rp2040-pico-oled-091') {
     return guidesByTargetId['rp2040-pico-oled-091-128x32'];
+  }
+  if (artifact.boardId === 'rp2040-pico-oled-128x128') {
+    return guidesByTargetId['rp2040-pico-oled-128x128-128x128'];
   }
   return guidesByBoardId[artifact.boardId] ?? null;
 }

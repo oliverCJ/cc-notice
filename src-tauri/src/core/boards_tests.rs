@@ -139,6 +139,7 @@ fn bundled_face_displays_expose_real_pixel_resolution() {
     for (board_id, width, height) in [
         ("rp2040-pico-oled-096", 128, 64),
         ("rp2040-pico-oled-091", 128, 32),
+        ("rp2040-pico-oled-128x128", 128, 128),
         ("seeed-wio-terminal", 320, 240),
     ] {
         let display = catalog
@@ -162,6 +163,7 @@ fn bundled_face_displays_expose_renderer_profiles() {
     for (board_id, renderer_profile) in [
         ("rp2040-pico-oled-091", "oled-128x32-v1"),
         ("rp2040-pico-oled-096", "oled-128x64-v1"),
+        ("rp2040-pico-oled-128x128", "oled-128x128-v1"),
         ("seeed-wio-terminal", "wio-320x240-v1"),
     ] {
         let display = catalog
@@ -346,6 +348,7 @@ fn bundled_rp2040_boards_hide_pwm_and_ws2812_software_channels() {
         "rp2040-pico",
         "rp2040-pico-oled-096",
         "rp2040-pico-oled-091",
+        "rp2040-pico-oled-128x128",
     ] {
         let board = registry.board(board_id).expect("board should exist");
         let available_channels = board.available_channels();
@@ -858,6 +861,11 @@ fn pico_oled_variants_declare_runtime_display_capability() {
             "rp2040-pico-oled-091",
             true,
             crate::core::device::DeviceDisplaySizeClass::Compact,
+        ),
+        (
+            "rp2040-pico-oled-128x128",
+            true,
+            crate::core::device::DeviceDisplaySizeClass::Medium,
         ),
     ] {
         let board = catalog

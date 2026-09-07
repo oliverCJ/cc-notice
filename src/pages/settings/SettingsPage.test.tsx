@@ -3,6 +3,22 @@ import { describe, expect, test, vi } from 'vitest';
 import { I18nProvider } from '@/i18n';
 import { SettingsPage } from './SettingsPage';
 
+const tauriApiMocks = vi.hoisted(() => ({
+  clearStorage: vi.fn(),
+  getArduinoCliStatus: vi.fn(),
+  getStorageUsageSnapshot: vi.fn()
+}));
+
+vi.mock('@/api/tauriApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/api/tauriApi')>();
+  return {
+    ...actual,
+    clearStorage: tauriApiMocks.clearStorage,
+    getArduinoCliStatus: tauriApiMocks.getArduinoCliStatus,
+    getStorageUsageSnapshot: tauriApiMocks.getStorageUsageSnapshot
+  };
+});
+
 vi.mock('@tauri-apps/api/event', () => ({
   listen: vi.fn().mockResolvedValue(vi.fn())
 }));
@@ -36,7 +52,53 @@ function deferredPromise<T>() {
   return { promise, resolve, reject };
 }
 
+const storageSnapshot = {
+  cache: {
+    path: '/Users/test/Library/Caches/cc-notice',
+    status: 'ok' as const,
+    bytes: 1024 * 1024 * 2,
+    fileCount: 12,
+    directoryCount: 4
+  },
+  logs: {
+    path: '/Users/test/.cc-notice/logs',
+    status: 'ok' as const,
+    bytes: 1024 * 1024 * 3,
+    fileCount: 8,
+    directoryCount: 1
+  }
+};
+
+const storageCleanupResult = {
+  cache: {
+    path: '/Users/test/Library/Caches/cc-notice',
+    status: 'cleaned' as const,
+    removedBytes: 1024 * 1024 * 2,
+    removedFiles: 12,
+    error: null
+  },
+  logs: {
+    path: '/Users/test/.cc-notice/logs',
+    status: 'cleaned' as const,
+    removedBytes: 1024 * 1024 * 3,
+    removedFiles: 8,
+    error: null
+  }
+};
+
 describe('SettingsPage', () => {
+  beforeEach(() => {
+    tauriApiMocks.clearStorage.mockResolvedValue(storageCleanupResult);
+    tauriApiMocks.getArduinoCliStatus.mockResolvedValue({
+      configuredPath: null,
+      resolvedPath: 'arduino-cli',
+      available: false,
+      version: null,
+      error: null
+    });
+    tauriApiMocks.getStorageUsageSnapshot.mockResolvedValue(storageSnapshot);
+  });
+
   test('shows independent reset actions and confirms destructive reset', async () => {
     const onResetConfiguration = vi.fn().mockResolvedValue(undefined);
     render(
@@ -71,6 +133,46 @@ describe('SettingsPage', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: '确认重置' }));
 
     await waitFor(() => expect(onResetConfiguration).toHaveBeenCalledWith('all'));
+  });
+
+  test('shows storage cleanup card and clears cache and logs after confirmation', async () => {
+    render(
+      <I18nProvider language="zh-CN">
+        <SettingsPage
+          config={config}
+          onSavePort={vi.fn()}
+          onSaveArduinoCliPath={vi.fn()}
+          onSaveLanguage={vi.fn()}
+          onSaveThemeMode={vi.fn()}
+          onSaveWindowCloseBehavior={vi.fn()}
+          onSaveWindowStartupMode={vi.fn()}
+          onSaveWindowLaunchAtLogin={vi.fn()}
+          onSaveWindowHideOnLoginLaunch={vi.fn()}
+          onRotateHookToken={vi.fn()}
+          onResetConfiguration={vi.fn()}
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText('缓存与日志')).toBeInTheDocument();
+    expect(tauriApiMocks.getStorageUsageSnapshot).not.toHaveBeenCalled();
+    expect(screen.getByText('清理缓存和日志')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '重新扫描' }));
+
+    await waitFor(() => expect(tauriApiMocks.getStorageUsageSnapshot).toHaveBeenCalledTimes(1));
+    expect(screen.getByText('2.0 MiB')).toBeInTheDocument();
+    expect(screen.getByText('3.0 MiB')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '清理缓存和日志' }));
+
+    const dialog = await screen.findByRole('alertdialog', { name: '清理缓存和日志？' });
+    expect(within(dialog).getByText(/只会清理平台缓存目录/)).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: '确认' }));
+
+    await waitFor(() => expect(tauriApiMocks.clearStorage).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(tauriApiMocks.getStorageUsageSnapshot).toHaveBeenCalled());
   });
 
   test('saves close-to-tray behavior from window settings switch', async () => {

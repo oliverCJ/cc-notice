@@ -107,6 +107,52 @@ boards:
     defaultChannelTemplateIds:
       - rp2040-digital-output
       - rp2040-buzzer
+  - id: rp2040-pico-oled-128x128
+    displayName: Raspberry Pi Pico + OLED 1.5" 128x128 SH1107
+    family: raspberry-pi-pico
+    chip: rp2040
+    mcu: rp2040
+    protocolVersion: 2
+    defaultTransport: serial
+    defaultBaudRate: 115200
+    supportedTransports: [serial]
+    supportedFlashStrategies: [uf2_mount_copy]
+    identity:
+      stableUid: required
+    deviceExtensions:
+      display:
+        status: true
+        card: false
+        lines: true
+        runtime: true
+        face: true
+        faceStyleVersion: no-brow-warm-v1
+        faceRendererProfile: oled-128x128-v1
+        faceTemplates:
+          - idle-sleep
+          - idle-bored
+          - working-focus
+          - working-busy
+          - waiting-call
+          - waiting-wait
+          - success-happy
+          - success-surprise
+          - warning-shock
+          - warning-sweat
+          - error-awkward
+          - error-panic
+        clear: true
+        sizeClass: medium
+        pixelWidth: 128
+        pixelHeight: 128
+        statuses: [notice, working, success, warning, error]
+        titleMaxChars: 16
+        messageMaxChars: 16
+        textEncoding: ascii
+    pinCatalogId: rp2040-pico-oled-128x128
+    defaultChannelTemplateIds:
+      - rp2040-digital-output
+      - rp2040-buzzer
   - id: arduino-leonardo
     displayName: Arduino Leonardo
     family: arduino-avr
@@ -640,6 +686,135 @@ pinCatalogs:
         physicalPin: 29
         gpio: GP22
         capabilities: [digital-output]
+      - id: gp26
+        label: GP26
+        physicalPin: 31
+        gpio: GP26
+        capabilities: [digital-output]
+      - id: gp27
+        label: GP27
+        physicalPin: 32
+        gpio: GP27
+        capabilities: [digital-output]
+      - id: gp28
+        label: GP28
+        physicalPin: 34
+        gpio: GP28
+        capabilities: [digital-output]
+  - id: rp2040-pico-oled-128x128
+    pins:
+      - id: gp0
+        label: GP0
+        physicalPin: 1
+        gpio: GP0
+        capabilities: [digital-output]
+      - id: gp1
+        label: GP1
+        physicalPin: 2
+        gpio: GP1
+        capabilities: [digital-output]
+      - id: gp2
+        label: GP2
+        physicalPin: 4
+        gpio: GP2
+        capabilities: [digital-output]
+      - id: gp3
+        label: GP3
+        physicalPin: 5
+        gpio: GP3
+        capabilities: [digital-output]
+      - id: gp4
+        label: GP4
+        physicalPin: 6
+        gpio: GP4
+        capabilities: [digital-output]
+      - id: gp5
+        label: GP5
+        physicalPin: 7
+        gpio: GP5
+        capabilities: [digital-output]
+      - id: gp6
+        label: GP6
+        physicalPin: 9
+        gpio: GP6
+        capabilities: [digital-output]
+      - id: gp7
+        label: GP7
+        physicalPin: 10
+        gpio: GP7
+        capabilities: [digital-output]
+      - id: gp8
+        label: GP8
+        physicalPin: 11
+        gpio: GP8
+        capabilities: [digital-output]
+      - id: gp9
+        label: GP9
+        physicalPin: 12
+        gpio: GP9
+        capabilities: [digital-output]
+      - id: gp10
+        label: GP10
+        physicalPin: 14
+        gpio: GP10
+        capabilities: [digital-output]
+      - id: gp11
+        label: GP11
+        physicalPin: 15
+        gpio: GP11
+        capabilities: [digital-output]
+      - id: gp12
+        label: GP12
+        physicalPin: 16
+        gpio: GP12
+        capabilities: [digital-output]
+      - id: gp13
+        label: GP13
+        physicalPin: 17
+        gpio: GP13
+        capabilities: [digital-output]
+      - id: gp14
+        label: GP14
+        physicalPin: 19
+        gpio: GP14
+        capabilities: [digital-output]
+      - id: gp15
+        label: GP15
+        physicalPin: 20
+        gpio: GP15
+        capabilities: [digital-output]
+      - id: gp16
+        label: GP16
+        physicalPin: 21
+        gpio: GP16
+        capabilities: [digital-output]
+      - id: gp17
+        label: GP17
+        physicalPin: 22
+        gpio: GP17
+        capabilities: [digital-output]
+      - id: gp18
+        label: GP18
+        physicalPin: 24
+        gpio: GP18
+        capabilities: [buzzer]
+      - id: gp19
+        label: GP19
+        physicalPin: 25
+        gpio: GP19
+        capabilities: [buzzer]
+      - id: gp20
+        label: GP20 / OLED SDA
+        physicalPin: 26
+        gpio: GP20
+        roles: [i2c-sda, oled]
+        capabilities: []
+      - id: gp21
+        label: GP21 / OLED SCL
+        physicalPin: 27
+        gpio: GP21
+        roles: [i2c-scl, oled]
+        capabilities: []
       - id: gp26
         label: GP26
         physicalPin: 31
