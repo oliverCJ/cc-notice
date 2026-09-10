@@ -26,6 +26,8 @@ import type { DesktopNoticeInstance } from '@/domain/desktopNotice';
 import { DesktopNoticeInstanceLibrary } from '@/pages/desktop-notice/DesktopNoticeInstanceLibrary';
 import { SettingsResetSection } from './SettingsResetSection';
 import { StorageCleanupCard } from './StorageCleanupCard';
+import { AppUpdateCard } from './AppUpdateCard';
+import type { AppUpdateState } from '@/domain/appUpdate';
 
 type SettingsPageProps = {
   config: AppConfigView;
@@ -44,6 +46,9 @@ type SettingsPageProps = {
   onPreviewDesktopNoticeInstance?: (instanceId: string) => Promise<void>;
   onHideDesktopNoticeInstance?: (instanceId: string) => Promise<void>;
   onSaveDesktopNoticeWindowBounds?: (instanceId: string) => Promise<void>;
+  appUpdateState?: AppUpdateState;
+  onCheckForAppUpdate?: () => void;
+  onOpenUpdateDownload?: (url: string) => void;
 };
 
 export function SettingsPage({
@@ -62,7 +67,16 @@ export function SettingsPage({
   onDeleteDesktopNoticeInstance = async () => undefined,
   onPreviewDesktopNoticeInstance = async () => undefined,
   onHideDesktopNoticeInstance = async () => undefined,
-  onSaveDesktopNoticeWindowBounds = async () => undefined
+  onSaveDesktopNoticeWindowBounds = async () => undefined,
+  appUpdateState = {
+    status: 'idle',
+    result: null,
+    error: null,
+    lastCheckedAt: null,
+    checking: false
+  },
+  onCheckForAppUpdate = () => undefined,
+  onOpenUpdateDownload = () => undefined
 }: SettingsPageProps) {
   const t = useI18n();
   const [port, setPort] = useState(config.localHookServer.port);
@@ -563,6 +577,12 @@ export function SettingsPage({
       <Separator />
 
       <StorageCleanupCard />
+
+      <AppUpdateCard
+        state={appUpdateState}
+        onCheck={onCheckForAppUpdate}
+        onOpenDownload={onOpenUpdateDownload}
+      />
 
       <Separator />
 

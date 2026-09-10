@@ -108,6 +108,9 @@ test('macOS package script builds relay for each app architecture', () => {
   expect(script).toContain('"beforeBuildCommand":"npm run build"');
   expect(script).toContain('cc-notice-relay');
   expect(script).toContain('prepareUniversalRelay();');
+  expect(script).toContain('SSH_CONNECTION');
+  expect(script).toContain('SSH_TTY');
+  expect(script).toContain('--no-bundle');
   expect(script).not.toContain('prepareSingleArchRelay');
 });
 

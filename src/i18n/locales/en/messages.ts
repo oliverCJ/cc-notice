@@ -15,6 +15,8 @@ export const enMessages = {
     ariaLabel: 'App information',
     version: 'v{{version}}',
     developer: 'Developer',
+    updateAvailable: 'Update available: v{{version}}',
+    updateAvailableAria: 'Update available {{version}}, open download page',
   },
   common: {
     cancel: 'Cancel',
@@ -347,6 +349,24 @@ export const enMessages = {
   settings: {
     title: 'Settings',
     description: 'Manage log directories, app preferences, and diagnostic export.',
+    update: {
+      title: 'Software Update',
+      description: 'Check the latest stable CC Notice version and release notes.',
+      check: 'Check for Updates',
+      checking: 'Checking...',
+      currentVersion: 'Current version: v{{version}}',
+      latestVersion: 'Latest version: v{{version}}',
+      upToDate: 'You are using the latest version.',
+      available: 'A new version is available.',
+      releaseTitle: 'Release: {{name}}',
+      publishedAt: 'Published: {{time}}',
+      releaseNotes: 'Release Notes',
+      noReleaseNotes: 'No release notes were provided.',
+      openDownload: 'Open Download Page',
+      checkFailed: 'Update check failed: {{error}}',
+      neverChecked: 'Not checked yet',
+      lastCheckedAt: 'Last checked: {{time}}',
+    },
     localHookServer: 'Local Hook Server',
     localHookServerDescription: 'Configure the local Hook event receiver.',
     receivePort: 'Receive Port',
@@ -499,6 +519,10 @@ export const enMessages = {
       clearPartialDescription:
         '{{bytes}} freed, cache status: {{cacheStatus}}, log status: {{logsStatus}}.',
       clearFailedTitle: 'Cleanup failed',
+      progress: {
+        cleaning: 'Clearing cache and logs...',
+        rescanning: 'Rescanning storage usage...',
+      },
     },
     logTitle: 'Logs',
     logDescription: 'Logs are written to $HOME/.cc-notice/logs by default for troubleshooting.',
@@ -977,8 +1001,6 @@ export const enMessages = {
       project: 'Project Config',
       enabled: 'Enabled',
       disabled: 'Disabled',
-      enableHint:
-        'Enabling a global config disables project configs for the same tool. Enabling a project config disables the global config for that tool. The same project directory cannot be added twice.',
       outdated: 'Outdated',
       exists: '✓ Config file exists',
       missing: '○ Config file does not exist and can be created automatically',

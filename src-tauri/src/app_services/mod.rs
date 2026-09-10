@@ -1,4 +1,5 @@
 pub mod app_config_service;
+pub mod app_update_service;
 pub mod arduino_cli_service;
 pub mod custom_face_installer;
 pub mod custom_face_library;

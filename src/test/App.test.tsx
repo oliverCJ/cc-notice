@@ -410,6 +410,17 @@ function defaultInvoke(command: string, args?: unknown) {
     if (command === 'get_app_config') {
       return Promise.resolve(defaultConfig);
     }
+    if (command === 'check_for_app_update') {
+      return Promise.resolve({
+        currentVersion: '1.1.1',
+        latestVersion: '1.1.1',
+        status: 'up-to-date',
+        releaseName: 'CC Notice 1.1.1',
+        releaseBody: '',
+        publishedAt: '2026-09-09T00:00:00Z',
+        releaseUrl: 'https://github.com/oliverCJ/cc-notice/releases/tag/v1.1.1'
+      });
+    }
     if (command === 'save_app_config') {
       return Promise.resolve({
         config: configFromInvokeArgs(args),
@@ -924,6 +935,11 @@ test('hook settings selects events, previews and writes global target only', asy
   expect(screen.getByText('/Users/test/.codex/hooks.json')).toBeInTheDocument();
   expect(screen.getByLabelText('Debug')).toHaveAttribute('aria-checked', 'true');
   expect(screen.getByText(/Debug 模式会写入 --debug/)).toBeInTheDocument();
+  expect(
+    screen.queryByText(
+      '启用全局配置会停用同源项目配置；启用项目配置会停用同源全局配置。同一目录的项目目标不可重复添加。'
+    )
+  ).not.toBeInTheDocument();
 
   await act(async () => {
     fireEvent.click(screen.getByText('子代理开始'));
@@ -972,6 +988,23 @@ test('hook settings selects events, previews and writes global target only', asy
 
   expect(screen.queryByRole('button', { name: '添加项目目录' })).not.toBeInTheDocument();
   expect(screen.queryByText('project-a')).not.toBeInTheDocument();
+});
+
+test('checks for app updates once after startup without rechecking when settings opens', async () => {
+  await renderApp();
+
+  await waitFor(() =>
+    expect(invokeMock).toHaveBeenCalledWith('check_for_app_update')
+  );
+  const checkCount = invokeMock.mock.calls.filter(
+    ([command]) => command === 'check_for_app_update'
+  ).length;
+
+  fireEvent.click(screen.getByRole('button', { name: '设置' }));
+  expect(await screen.findByRole('heading', { name: '设置' })).toBeInTheDocument();
+  expect(
+    invokeMock.mock.calls.filter(([command]) => command === 'check_for_app_update')
+  ).toHaveLength(checkCount);
 });
 
 test('hook settings previews managed hook restore before confirming file changes', async () => {

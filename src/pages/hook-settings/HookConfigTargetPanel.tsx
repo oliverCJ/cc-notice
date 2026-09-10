@@ -63,9 +63,6 @@ export function HookConfigTargetPanel({
             {error}
           </HookSettingsAlert>
         )}
-        <HookSettingsAlert icon={AlertCircle} tone="warning">
-          {t('hookSettings.targets.enableHint')}
-        </HookSettingsAlert>
         {targets.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center">
             <FolderOpen className="mb-4 h-12 w-12 text-muted-foreground" />

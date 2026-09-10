@@ -320,6 +320,7 @@ pub fn run() {
             commands::desktop_notice::desktop_notice_window_payload,
             commands::desktop_notice::save_desktop_notice_window_bounds,
             commands::external_link::open_external_url,
+            commands::app_update::check_for_app_update,
             commands::device::device_runtime_states,
             commands::device::device_runtime_state,
             commands::device::scan_device_transports,

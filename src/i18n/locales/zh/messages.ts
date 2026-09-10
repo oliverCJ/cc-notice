@@ -15,6 +15,8 @@ export const zhMessages = {
     ariaLabel: '软件信息',
     version: 'v{{version}}',
     developer: '开发者',
+    updateAvailable: '发现新版本：v{{version}}',
+    updateAvailableAria: '发现新版本 {{version}}，点击打开下载页面',
   },
   common: {
     cancel: '取消',
@@ -339,6 +341,24 @@ export const zhMessages = {
   settings: {
     title: '设置',
     description: '管理日志目录、应用偏好和诊断导出。',
+    update: {
+      title: '软件更新',
+      description: '检查 CC Notice 的最新正式版本和发布说明。',
+      check: '检查新版本',
+      checking: '检查中...',
+      currentVersion: '当前版本：v{{version}}',
+      latestVersion: '最新版本：v{{version}}',
+      upToDate: '当前已是最新版本。',
+      available: '发现新版本。',
+      releaseTitle: '发布版本：{{name}}',
+      publishedAt: '发布时间：{{time}}',
+      releaseNotes: '发布说明',
+      noReleaseNotes: '暂无发布说明。',
+      openDownload: '打开下载页面',
+      checkFailed: '检查新版本失败：{{error}}',
+      neverChecked: '尚未检查',
+      lastCheckedAt: '上次检查：{{time}}',
+    },
     localHookServer: '本地 Hook 接收服务',
     localHookServerDescription: '配置本地 Hook 事件接收服务',
     receivePort: '接收端口',
@@ -480,6 +500,10 @@ export const zhMessages = {
       clearPartialDescription:
         '已释放 {{bytes}}，缓存状态：{{cacheStatus}}，日志状态：{{logsStatus}}。',
       clearFailedTitle: '清理失败',
+      progress: {
+        cleaning: '正在清理缓存和日志...',
+        rescanning: '正在重新扫描占用...',
+      },
     },
     logTitle: '日志',
     logDescription: '日志默认写入 $HOME/.cc-notice/logs，便于排查运行问题。',
@@ -943,8 +967,6 @@ export const zhMessages = {
       project: '项目配置',
       enabled: '已启用',
       disabled: '已禁用',
-      enableHint:
-        '启用全局配置会停用同源项目配置；启用项目配置会停用同源全局配置。同一目录的项目目标不可重复添加。',
       outdated: '配置过期',
       exists: '✓ 配置文件已存在',
       missing: '○ 配置文件不存在，可自动新建',

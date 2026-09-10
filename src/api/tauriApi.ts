@@ -19,6 +19,22 @@ export async function openExternalUrl(url: string): Promise<void> {
   await invoke('open_external_url', { url });
 }
 
+export type AppUpdateStatus = 'up-to-date' | 'update-available';
+
+export type AppUpdateCheckResult = {
+  currentVersion: string;
+  latestVersion: string;
+  status: AppUpdateStatus;
+  releaseName: string;
+  releaseBody: string;
+  publishedAt: string | null;
+  releaseUrl: string;
+};
+
+export function checkForAppUpdate() {
+  return invoke<AppUpdateCheckResult>('check_for_app_update');
+}
+
 export type StorageUsageStatus = 'ok' | 'missing' | 'unreadable';
 
 export type StorageUsageEntry = {

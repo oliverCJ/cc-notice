@@ -1,4 +1,5 @@
 pub mod app_config;
+pub mod app_update;
 pub mod custom_face_editor;
 pub mod custom_face_pixelizer;
 pub mod custom_face_vectorizer;

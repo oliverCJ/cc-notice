@@ -1,6 +1,6 @@
 [package]
 name = "cc-notice"
-version = "1.1.1"
+version = "1.2.1"
 description = "AI coding status notice desktop application"
 edition = "2021"
 default-run = "cc-notice"

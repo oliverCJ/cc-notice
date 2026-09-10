@@ -11,9 +11,19 @@ type AppShellProps = {
   activePage: PageId;
   children: ReactNode;
   onPageChange: (pageId: PageId) => void;
+  updateAvailable?: boolean;
+  latestVersion?: string;
+  onOpenUpdate?: () => void;
 };
 
-export function AppShell({ activePage, children, onPageChange }: AppShellProps) {
+export function AppShell({
+  activePage,
+  children,
+  onPageChange,
+  updateAvailable = false,
+  latestVersion,
+  onOpenUpdate
+}: AppShellProps) {
   const t = useI18n();
 
   return (
@@ -55,7 +65,11 @@ export function AppShell({ activePage, children, onPageChange }: AppShellProps) 
           </nav>
         </div>
         <div className="mt-auto pt-6">
-          <AppSidebarInfo />
+          <AppSidebarInfo
+            latestVersion={latestVersion}
+            onOpenUpdate={onOpenUpdate}
+            updateAvailable={updateAvailable}
+          />
         </div>
       </aside>
       <section className="p-5 md:p-8">{children}</section>

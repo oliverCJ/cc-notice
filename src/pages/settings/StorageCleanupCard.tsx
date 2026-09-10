@@ -5,7 +5,7 @@ import {
   getStorageUsageSnapshot,
   type StorageCleanupResult,
   type StorageUsageEntry,
-  type StorageUsageSnapshot
+  type StorageUsageSnapshot,
 } from '@/api/tauriApi';
 import {
   AlertDialog,
@@ -15,7 +15,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +23,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useI18n } from '@/i18n';
 
 type ResultTone = 'success' | 'warning' | 'destructive';
+type ProgressState = {
+  value: number;
+  label: string;
+};
 
 export function StorageCleanupCard() {
   const t = useI18n();
@@ -32,20 +36,33 @@ export function StorageCleanupCard() {
   const [clearing, setClearing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [progress, setProgress] = useState<ProgressState | null>(null);
 
   // 进入设置页时不自动扫描，避免首屏被磁盘遍历拖慢。
-  const loadSnapshot = useCallback(async () => {
-    setLoading(true);
-    try {
-      const next = await getStorageUsageSnapshot();
-      setSnapshot(next);
-      setError(null);
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : String(loadError));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const loadSnapshot = useCallback(
+    async (isCleanupRescan = false) => {
+      setLoading(true);
+      if (isCleanupRescan) {
+        setProgress({
+          value: 75,
+          label: t('settings.storage.progress.rescanning'),
+        });
+      }
+      try {
+        const next = await getStorageUsageSnapshot();
+        setSnapshot(next);
+        setError(null);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : String(loadError));
+      } finally {
+        setLoading(false);
+        if (isCleanupRescan) {
+          setProgress(null);
+        }
+      }
+    },
+    [t]
+  );
 
   const totalBytes = useMemo(() => {
     if (!snapshot) {
@@ -59,24 +76,29 @@ export function StorageCleanupCard() {
 
   async function handleClearConfirm() {
     setClearing(true);
+    setProgress({
+      value: 25,
+      label: t('settings.storage.progress.cleaning'),
+    });
     try {
       const result = await clearStorage();
-      await loadSnapshot();
+      await loadSnapshot(true);
       const outcome = summarizeCleanupResult(result, t);
       toast({
         title: outcome.title,
         description: outcome.description,
-        variant: outcome.tone === 'destructive' ? 'destructive' : 'default'
+        variant: outcome.tone === 'destructive' ? 'destructive' : 'default',
       });
     } catch (clearError) {
       toast({
         title: t('settings.storage.clearFailedTitle'),
         description: clearError instanceof Error ? clearError.message : String(clearError),
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setClearing(false);
       setConfirmOpen(false);
+      setProgress(null);
     }
   }
 
@@ -123,10 +145,34 @@ export function StorageCleanupCard() {
                 : t('settings.storage.totalSummary', { bytes: '-' })}
             </p>
           </div>
+          {progress && (
+            <div className="space-y-2" aria-live="polite">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">{progress.label}</span>
+                <span className="font-medium text-foreground">{progress.value}%</span>
+              </div>
+              <div
+                className="h-2 w-full overflow-hidden rounded-full bg-muted"
+                role="progressbar"
+                aria-label={progress.label}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progress.value}
+              >
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] duration-300"
+                  style={{ width: `${progress.value}%` }}
+                />
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      <AlertDialog open={confirmOpen} onOpenChange={(nextOpen) => !nextOpen && setConfirmOpen(false)}>
+      <AlertDialog
+        open={confirmOpen}
+        onOpenChange={(nextOpen) => !nextOpen && setConfirmOpen(false)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('settings.storage.confirmTitle')}</AlertDialogTitle>
@@ -150,7 +196,7 @@ function StorageUsageBlock({
   label,
   entry,
   loading,
-  statusText
+  statusText,
 }: {
   label: string;
   entry: StorageUsageEntry | null;
@@ -164,14 +210,17 @@ function StorageUsageBlock({
       <div className="flex items-center justify-between gap-3">
         <p className="font-medium text-foreground">{label}</p>
         <span className="text-xs text-muted-foreground">
-          {loading ? t('common.loading') : statusText ?? t('settings.storage.unknown')}
+          {loading ? t('common.loading') : (statusText ?? t('settings.storage.unknown'))}
         </span>
       </div>
       <p className="mt-2 break-all text-xs text-muted-foreground">
         {entry?.path ?? t('settings.storage.unresolvedPath')}
       </p>
       <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
-        <StatItem label={t('settings.storage.size')} value={entry ? formatBytes(entry.bytes) : '-'} />
+        <StatItem
+          label={t('settings.storage.size')}
+          value={entry ? formatBytes(entry.bytes) : '-'}
+        />
         <StatItem
           label={t('settings.storage.files')}
           value={entry ? String(entry.fileCount) : '-'}
@@ -232,8 +281,8 @@ function summarizeCleanupResult(
       description: t('settings.storage.clearSuccessDescription', {
         bytes: formatBytes(removedBytes),
         cleanedTargets,
-        missingTargets
-      })
+        missingTargets,
+      }),
     };
   }
 
@@ -243,8 +292,8 @@ function summarizeCleanupResult(
     description: t('settings.storage.clearPartialDescription', {
       bytes: formatBytes(removedBytes),
       cacheStatus: t(`settings.storage.status.${result.cache.status}`),
-      logsStatus: t(`settings.storage.status.${result.logs.status}`)
-    })
+      logsStatus: t(`settings.storage.status.${result.logs.status}`),
+    }),
   };
 }
 
@@ -254,12 +303,13 @@ function formatBytes(bytes: number): string {
   }
 
   const units = ['KiB', 'MiB', 'GiB', 'TiB'];
+  const lastUnit = units[units.length - 1];
   let value = bytes;
   let unit = 'B';
   for (const nextUnit of units) {
     value /= 1024;
     unit = nextUnit;
-    if (value < 1024 || nextUnit === units.at(-1)) {
+    if (value < 1024 || nextUnit === lastUnit) {
       break;
     }
   }

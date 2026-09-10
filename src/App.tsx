@@ -9,6 +9,7 @@ import {
   getAppConfig,
   getDesktopNoticeWindowPayload,
   openCustomFaceEditor,
+  openExternalUrl,
   hideDesktopNoticeInstance,
   previewDesktopNoticeInstance,
   resetConfiguration,
@@ -45,6 +46,7 @@ import {
 } from './state/appStore';
 import { AppShell } from '@/components/app/AppShell';
 import { useAppBootstrap } from '@/hooks/useAppBootstrap';
+import { useAppUpdate } from '@/hooks/useAppUpdate';
 import { useDebugState } from '@/hooks/useDebugState';
 import { useDiagnosticsState } from '@/hooks/useDiagnosticsState';
 import { useDeviceRuntimeAutomation } from '@/hooks/useDeviceRuntimeAutomation';
@@ -180,6 +182,7 @@ export default function App() {
   });
   const t = useMemo(() => createTranslator(appConfig.ui.language), [appConfig.ui.language]);
   useThemeMode(appConfig.ui.themeMode);
+  const appUpdate = useAppUpdate();
   const selectedTool = useMemo(
     () => aiTools.find((tool) => tool.id === selectedToolId) ?? aiTools[0],
     [selectedToolId]
@@ -319,6 +322,12 @@ export default function App() {
   function handleSelectTool(toolId: AiToolId) {
     setSelectedToolId(toolId);
     clearHookConfigArtifacts();
+  }
+
+  function handleOpenUpdateDownload(url: string) {
+    void openExternalUrl(url).catch((error) => {
+      console.warn('failed to open app update download page', error);
+    });
   }
 
   function saveAppConfigQueued(buildNextConfig: (currentConfig: AppConfigView) => AppConfigView) {
@@ -645,6 +654,9 @@ export default function App() {
         onPreviewDesktopNoticeInstance={handlePreviewDesktopNoticeInstance}
         onHideDesktopNoticeInstance={handleHideDesktopNoticeInstance}
         onSaveDesktopNoticeWindowBounds={handleSaveDesktopNoticeWindowBounds}
+        appUpdateState={appUpdate}
+        onCheckForAppUpdate={() => void appUpdate.checkManually()}
+        onOpenUpdateDownload={handleOpenUpdateDownload}
       />
     ),
     debug: (
@@ -663,7 +675,17 @@ export default function App() {
 
   return (
     <I18nProvider language={appConfig.ui.language}>
-      <AppShell activePage={activePage} onPageChange={setActivePage}>
+      <AppShell
+        activePage={activePage}
+        latestVersion={appUpdate.result?.latestVersion}
+        onOpenUpdate={() => {
+          if (appUpdate.result?.releaseUrl) {
+            handleOpenUpdateDownload(appUpdate.result.releaseUrl);
+          }
+        }}
+        onPageChange={setActivePage}
+        updateAvailable={appUpdate.status === 'update-available'}
+      >
         <ProfileRepairAlert
           profileName={profileState?.activeProfile.name ?? profileState?.activeProfileId ?? ''}
           repair={profileState?.profileRepair}
