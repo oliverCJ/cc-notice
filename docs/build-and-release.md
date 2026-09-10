@@ -2,7 +2,7 @@
 
 ## 版本规则
 
-当前正式版本从 `1.1.1` 开始。后续常规功能和修复优先升级小版本号，例如 `1.1.2`、`1.1.3`；只有出现明确不兼容变更、发布策略重构或重大功能边界调整时，才升级中版本或大版本。
+当前正式版本为 `1.2.1`。后续常规功能和修复优先升级小版本号，例如 `1.2.2`、`1.2.3`；只有出现明确不兼容变更、发布策略重构或重大功能边界调整时，才升级中版本或大版本。
 
 发版前必须同步以下位置的版本号：
 
@@ -79,6 +79,12 @@ npm run package:mac:all
 - `package:mac:arm64`：生成 Apple Silicon 使用的 `aarch64-apple-darwin` 应用包。
 - `package:mac:universal`：生成同时包含 `x86_64` 和 `arm64` 的 universal 应用包。
 - `package:mac:all`：按顺序生成 x64、arm64、universal 三类 macOS 包。
+
+如果是在 SSH、tmux 这类远程命令行会话中执行，脚本会自动改为 `tauri build --no-bundle`，只生成 `.app` 构建产物，不再调用 DMG 打包。需要显式生成 DMG 时，请在本机正常图形会话里运行相同命令，或手动加上 `--bundle` 覆盖默认行为：
+
+```bash
+npm run package:mac:arm64 -- --bundle
+```
 
 ## Windows 发布包
 

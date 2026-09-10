@@ -28,6 +28,25 @@ function runCommand(command, args) {
   }
 }
 
+function isRemoteSession() {
+  return Boolean(process.env.SSH_CONNECTION || process.env.SSH_TTY || process.env.TMUX);
+}
+
+function parsePackagingMode(argv) {
+  const flags = new Set(argv);
+  if (flags.has('--bundle') && flags.has('--no-bundle')) {
+    throw new Error('Use only one of --bundle or --no-bundle.');
+  }
+
+  if (flags.has('--bundle')) {
+    return true;
+  }
+  if (flags.has('--no-bundle')) {
+    return false;
+  }
+  return !isRemoteSession();
+}
+
 function relayOutputPath(target) {
   return join(process.cwd(), 'src-tauri', 'target', target, 'release', RELAY_NAME);
 }
@@ -74,19 +93,23 @@ function prepareUniversalRelay() {
   syncRelayAsset(universalRelay);
 }
 
-function buildTauriPackage(target) {
+function buildTauriPackage(target, bundleDmg) {
   console.log(`[package:mac] Building Tauri package for ${target}`);
-  runCommand('npx', [
+  const args = [
     'tauri',
     'build',
     '--target',
     target,
     '--config',
     tauriBuildConfig
-  ]);
+  ];
+  if (!bundleDmg) {
+    args.push('--no-bundle');
+  }
+  runCommand('npx', args);
 }
 
-function packageTarget(packageName) {
+function packageTarget(packageName, bundleDmg) {
   const target = TARGETS[packageName];
 
   if (!target) {
@@ -94,19 +117,27 @@ function packageTarget(packageName) {
   }
 
   prepareUniversalRelay();
-  buildTauriPackage(target);
+  buildTauriPackage(target, bundleDmg);
 }
 
 function main() {
   const packageName = process.argv[2] ?? '';
+  const extraArgs = process.argv.slice(3);
+  const bundleDmg = parsePackagingMode(extraArgs);
   const packages = packageName === 'all' ? ALL_PACKAGES : [packageName];
 
   if (!packageName || (!TARGETS[packageName] && packageName !== 'all')) {
-    throw new Error('Usage: node scripts/package-macos.mjs <x64|arm64|universal|all>');
+    throw new Error(
+      'Usage: node scripts/package-macos.mjs <x64|arm64|universal|all> [--bundle|--no-bundle]'
+    );
+  }
+
+  if (!bundleDmg) {
+    console.log('[package:mac] Remote session or --no-bundle detected; skipping DMG bundling.');
   }
 
   for (const currentPackage of packages) {
-    packageTarget(currentPackage);
+    packageTarget(currentPackage, bundleDmg);
   }
 }
 
