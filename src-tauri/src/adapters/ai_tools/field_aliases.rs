@@ -30,12 +30,38 @@ pub const DEFAULT_PAYLOAD_ALIASES: ToolPayloadAliases = ToolPayloadAliases {
         raw_aliases: &["prompt"],
     },
     tool_response: PayloadFieldAliases {
-        summary_aliases: &["tool_response", "toolResponse"],
-        raw_aliases: &["tool_response", "toolResponse"],
+        summary_aliases: &[
+            "tool_response",
+            "toolResponse",
+            "tool_output",
+            "toolOutput",
+            "toolResult",
+        ],
+        raw_aliases: &[
+            "tool_response",
+            "toolResponse",
+            "tool_output",
+            "toolOutput",
+            "toolResult",
+        ],
     },
     last_assistant_message: PayloadFieldAliases {
-        summary_aliases: &["last_assistant_message", "lastAssistantMessage"],
-        raw_aliases: &["last_assistant_message", "lastAssistantMessage"],
+        summary_aliases: &[
+            "last_assistant_message",
+            "lastAssistantMessage",
+            "prompt_response",
+            "promptResponse",
+            "response",
+            "text",
+        ],
+        raw_aliases: &[
+            "last_assistant_message",
+            "lastAssistantMessage",
+            "prompt_response",
+            "promptResponse",
+            "response",
+            "text",
+        ],
     },
     pwd: PayloadFieldAliases {
         summary_aliases: &["cwd"],
@@ -90,5 +116,29 @@ mod tests {
             payload_value_as_text(&json!({"exit_code":0,"stdout":"ok"}))
         );
         assert_eq!(None, payload_value_as_text(&serde_json::Value::Null));
+    }
+
+    #[test]
+    fn shared_aliases_cover_new_tool_completion_and_tool_result_fields() {
+        let payload = json!({
+            "prompt_response": "Gemini completed",
+            "tool_output": "Cursor output",
+            "toolResult": "Copilot output"
+        });
+
+        assert_eq!(
+            Some("Gemini completed".to_string()),
+            first_payload_field_as_text(
+                &payload,
+                DEFAULT_PAYLOAD_ALIASES.last_assistant_message.raw_aliases
+            )
+        );
+        assert_eq!(
+            Some("Cursor output".to_string()),
+            first_payload_field_as_text(
+                &payload,
+                DEFAULT_PAYLOAD_ALIASES.tool_response.raw_aliases
+            )
+        );
     }
 }

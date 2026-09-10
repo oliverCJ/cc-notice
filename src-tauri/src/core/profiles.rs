@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::core::desktop_notice::{
     desktop_notice_animation_period_range, validate_desktop_notice_appearance,
@@ -204,6 +205,14 @@ pub struct DeviceChannelRuleAction {
     pub brightness_percent: Option<u8>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pattern: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_face_template_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_face_intensity: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_face_group_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_face_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub display_template_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -582,6 +591,9 @@ fn validate_device_channel_action_parameters(
             )?;
             Ok(())
         }
+        DeviceChannelActionType::DisplayFace => {
+            validate_device_channel_display_face(action, rule_id)
+        }
         DeviceChannelActionType::SetColor => {
             require_device_channel_field(
                 action
@@ -609,6 +621,108 @@ fn validate_device_channel_action_parameters(
         | DeviceChannelActionType::Deactivate
         | DeviceChannelActionType::Pulse
         | DeviceChannelActionType::Clear => Ok(()),
+    }
+}
+
+fn validate_display_face_template_id(
+    template_id: Option<&str>,
+    rule_id: &str,
+) -> Result<(), String> {
+    let Some(template_id) = template_id.map(str::trim).filter(|value| !value.is_empty()) else {
+        return Err(format!(
+            "device-channel rule {} display-face action requires display_face_template_id",
+            rule_id
+        ));
+    };
+
+    if matches!(
+        template_id,
+        "idle-sleep"
+            | "idle-bored"
+            | "working-focus"
+            | "working-busy"
+            | "waiting-call"
+            | "waiting-wait"
+            | "success-happy"
+            | "success-surprise"
+            | "warning-shock"
+            | "warning-sweat"
+            | "error-awkward"
+            | "error-panic"
+    ) {
+        Ok(())
+    } else {
+        Err(format!(
+            "device-channel rule {} has unsupported display_face_template_id: {}",
+            rule_id, template_id
+        ))
+    }
+}
+
+fn validate_display_face_intensity(intensity: Option<&str>, rule_id: &str) -> Result<(), String> {
+    let Some(intensity) = intensity.map(str::trim).filter(|value| !value.is_empty()) else {
+        return Ok(());
+    };
+    if matches!(intensity, "subtle" | "standard" | "strong") {
+        Ok(())
+    } else {
+        Err(format!(
+            "device-channel rule {} has unsupported display_face_intensity: {}",
+            rule_id, intensity
+        ))
+    }
+}
+
+fn validate_device_channel_display_face(
+    action: &DeviceChannelRuleAction,
+    rule_id: &str,
+) -> Result<(), String> {
+    let builtin_template = action
+        .display_face_template_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    let builtin_intensity = action.display_face_intensity.as_deref();
+    let custom_group_id = action
+        .custom_face_group_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    let custom_face_id = action
+        .custom_face_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+
+    let template_id = builtin_template.ok_or_else(|| {
+        format!(
+            "device-channel rule {} display-face action requires display_face_template_id",
+            rule_id
+        )
+    })?;
+    validate_display_face_template_id(Some(template_id), rule_id)?;
+
+    match (custom_group_id, custom_face_id) {
+        (None, None) => validate_display_face_intensity(builtin_intensity, rule_id),
+        (Some(group_id), Some(face_id)) => {
+            Uuid::parse_str(group_id).map_err(|_| {
+                format!(
+                    "device-channel rule {} has invalid custom_face_group_id: {}",
+                    rule_id, group_id
+                )
+            })?;
+            if face_id.is_empty() {
+                return Err(format!(
+                    "device-channel rule {} has empty custom_face_id",
+                    rule_id
+                ));
+            }
+            Ok(())
+        }
+        _ => Err(format!(
+            "device-channel rule {} display-face action requires both custom_face_group_id and custom_face_id when custom face is selected",
+            rule_id
+        )),
     }
 }
 

@@ -8,12 +8,13 @@ import {
   Sliders,
   Bug,
   Stethoscope,
-  type LucideIcon
+  type LucideIcon,
 } from 'lucide-react';
 import type { DesktopNoticeInstance, DesktopNoticeRuleTarget } from '@/domain/desktopNotice';
 import type { DeviceRuntimeErrorCode } from '@/api/tauriApi';
+import type { DeviceInstance } from '@/api/tauriApi';
 
-export type AiToolId = 'codex' | 'claude-code';
+export type AiToolId = string;
 export type PageId =
   | 'setup'
   | 'monitor'
@@ -136,6 +137,7 @@ export type AppConfigView = {
   hookEventSelections: HookEventSelectionsView;
   hookConfigTargets: Array<Omit<HookConfigTargetView, 'configPath' | 'exists' | 'canCreate'>>;
   desktopNoticeInstances: DesktopNoticeInstance[];
+  devices: DeviceInstance[];
 };
 
 export type LocalHookServerStatusView = {
@@ -163,10 +165,16 @@ export const navItems: NavItem[] = [
   { id: 'devices', labelKey: 'nav.devices', icon: Cpu, isHidden: false },
   { id: 'firmware', labelKey: 'nav.firmware', icon: HardDrive, isHidden: false },
   { id: 'settings', labelKey: 'nav.settings', icon: Sliders },
-  { id: 'debug', labelKey: 'nav.debug', icon: Bug }
+  { id: 'debug', labelKey: 'nav.debug', icon: Bug },
 ];
 
-export const aiTools: AiToolOption[] = [
+export let aiTools: AiToolOption[] = [
   { id: 'codex', name: 'Codex' },
-  { id: 'claude-code', name: 'Claude Code' }
+  { id: 'claude-code', name: 'Claude Code' },
 ];
+
+export function syncAiToolsFromBackend(tools: Array<{ source: string; displayName: string }>) {
+  if (tools.length > 0) {
+    aiTools = tools.map((tool) => ({ id: tool.source, name: tool.displayName }));
+  }
+}

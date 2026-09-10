@@ -8,6 +8,8 @@ import {
   DiagnosticActionKind,
   getAppConfig,
   getDesktopNoticeWindowPayload,
+  openCustomFaceEditor,
+  openExternalUrl,
   hideDesktopNoticeInstance,
   previewDesktopNoticeInstance,
   resetConfiguration,
@@ -39,10 +41,12 @@ import {
   WindowCloseBehavior,
   WindowStartupMode,
   aiTools,
+  syncAiToolsFromBackend,
   PageId
 } from './state/appStore';
 import { AppShell } from '@/components/app/AppShell';
 import { useAppBootstrap } from '@/hooks/useAppBootstrap';
+import { useAppUpdate } from '@/hooks/useAppUpdate';
 import { useDebugState } from '@/hooks/useDebugState';
 import { useDiagnosticsState } from '@/hooks/useDiagnosticsState';
 import { useDeviceRuntimeAutomation } from '@/hooks/useDeviceRuntimeAutomation';
@@ -52,10 +56,15 @@ import { useProfileActions } from '@/hooks/useProfileActions';
 import { useRuntimeMonitorState } from '@/hooks/useRuntimeMonitorState';
 import { useThemeMode } from '@/hooks/useThemeMode';
 import { ProfileRepairAlert } from '@/components/app/ProfileRepairAlert';
+import { CustomFaceEditorWindow } from './pages/custom-face-editor/CustomFaceEditorWindow';
+import { CustomFaceImagePixelizerWindow } from './pages/custom-face-editor/CustomFaceImagePixelizerWindow';
+import { CustomFaceImageVectorizerWindow } from './pages/custom-face-editor/CustomFaceImageVectorizerWindow';
 
 const DEBUG_REFRESH_INTERVAL_MS = 2_000;
 const DESKTOP_NOTICE_WINDOW_BOUNDS_CHANGED_EVENT =
   'cc-notice://desktop-notice-window-bounds-changed';
+const CUSTOM_FACE_EDITOR_STATE_EVENT = 'cc-notice://custom-face-editor-state-changed';
+const APP_CONFIG_UPDATED_EVENT = 'cc-notice://app-config-updated';
 const DESKTOP_NOTICE_RUNTIME_BOUNDS_SAVE_DELAY_MS = 500;
 const MonitorPage = lazy(() =>
   import('./pages/monitor/MonitorPage').then((module) => ({ default: module.MonitorPage }))
@@ -75,6 +84,15 @@ declare global {
 }
 
 export default function App() {
+  if (window.location.pathname === '/custom-face-editor') {
+    return <CustomFaceEditorWindowApp />;
+  }
+  if (window.location.pathname === '/custom-face-image-pixelizer') {
+    return <CustomFaceImagePixelizerWindowApp />;
+  }
+  if (window.location.pathname === '/custom-face-image-vectorizer') {
+    return <CustomFaceImageVectorizerWindowApp />;
+  }
   const desktopNoticeInstanceId = getDesktopNoticeWindowInstanceId();
   if (desktopNoticeInstanceId) {
     return <DesktopNoticeWindowApp instanceId={desktopNoticeInstanceId} />;
@@ -89,6 +107,7 @@ export default function App() {
   const [selectedToolId, setSelectedToolId] = useState<AiToolId>('codex');
   const [setupActiveStepId, setSetupActiveStepId] = useState<SetupStepId>('hook-service');
   const [devicesPageVisited, setDevicesPageVisited] = useState(false);
+  const [customFaceEditorOpen, setCustomFaceEditorOpen] = useState(false);
   const [customInternalEventError, setCustomInternalEventError] = useState<string>();
   const [debugTestDialogRequestId, setDebugTestDialogRequestId] = useState(0);
   const {
@@ -104,6 +123,11 @@ export default function App() {
     setProfileState
   } = useAppBootstrap();
   const deviceRegistry = useDeviceRuntimeRegistry();
+  useEffect(() => {
+    if (hookEventState?.tools) {
+      syncAiToolsFromBackend(hookEventState.tools);
+    }
+  }, [hookEventState?.tools]);
   useDeviceRuntimeAutomation(deviceRegistry);
   const appConfigRef = useRef(appConfig);
   const activePageRef = useRef(activePage);
@@ -158,6 +182,7 @@ export default function App() {
   });
   const t = useMemo(() => createTranslator(appConfig.ui.language), [appConfig.ui.language]);
   useThemeMode(appConfig.ui.themeMode);
+  const appUpdate = useAppUpdate();
   const selectedTool = useMemo(
     () => aiTools.find((tool) => tool.id === selectedToolId) ?? aiTools[0],
     [selectedToolId]
@@ -190,6 +215,18 @@ export default function App() {
       disposed = true;
       unlisten?.();
     };
+  }, []);
+
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<boolean>(CUSTOM_FACE_EDITOR_STATE_EVENT, (event) => {
+      if (!disposed) setCustomFaceEditorOpen(event.payload);
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize custom face editor state listener', error));
+    return () => { disposed = true; unlisten?.(); };
   }, []);
 
   useEffect(() => {
@@ -252,6 +289,20 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<AppConfigView>(APP_CONFIG_UPDATED_EVENT, (event) => {
+      if (disposed) return;
+      appConfigRef.current = event.payload;
+      setAppConfig(event.payload);
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize app config listener', error));
+    return () => { disposed = true; unlisten?.(); };
+  }, []);
+
+  useEffect(() => {
     if (activePage === 'debug' || activePage === 'monitor') {
       void refreshDebugState();
       const refreshTimer = window.setInterval(() => {
@@ -271,6 +322,12 @@ export default function App() {
   function handleSelectTool(toolId: AiToolId) {
     setSelectedToolId(toolId);
     clearHookConfigArtifacts();
+  }
+
+  function handleOpenUpdateDownload(url: string) {
+    void openExternalUrl(url).catch((error) => {
+      console.warn('failed to open app update download page', error);
+    });
   }
 
   function saveAppConfigQueued(buildNextConfig: (currentConfig: AppConfigView) => AppConfigView) {
@@ -518,12 +575,14 @@ export default function App() {
     devices: null,
     rules: (
       <RulesPage
+        appConfig={appConfig}
         activeProfileId={profileState?.activeProfileId ?? appConfig.activeProfileId}
         error={profileError}
         hookCatalog={hookEventState?.catalog ?? []}
         hookEventSelections={hookEventState?.selected ?? appConfig.hookEventSelections}
         internalEvents={internalEvents}
         desktopNoticeInstances={appConfig.desktopNoticeInstances}
+        deviceRuntimeStates={deviceRegistry.states}
         profile={profileState?.activeProfile ?? null}
         profileError={profileError}
         profiles={profileState?.profiles ?? []}
@@ -595,6 +654,9 @@ export default function App() {
         onPreviewDesktopNoticeInstance={handlePreviewDesktopNoticeInstance}
         onHideDesktopNoticeInstance={handleHideDesktopNoticeInstance}
         onSaveDesktopNoticeWindowBounds={handleSaveDesktopNoticeWindowBounds}
+        appUpdateState={appUpdate}
+        onCheckForAppUpdate={() => void appUpdate.checkManually()}
+        onOpenUpdateDownload={handleOpenUpdateDownload}
       />
     ),
     debug: (
@@ -613,7 +675,17 @@ export default function App() {
 
   return (
     <I18nProvider language={appConfig.ui.language}>
-      <AppShell activePage={activePage} onPageChange={setActivePage}>
+      <AppShell
+        activePage={activePage}
+        latestVersion={appUpdate.result?.latestVersion}
+        onOpenUpdate={() => {
+          if (appUpdate.result?.releaseUrl) {
+            handleOpenUpdateDownload(appUpdate.result.releaseUrl);
+          }
+        }}
+        onPageChange={setActivePage}
+        updateAvailable={appUpdate.status === 'update-available'}
+      >
         <ProfileRepairAlert
           profileName={profileState?.activeProfile.name ?? profileState?.activeProfileId ?? ''}
           repair={profileState?.profileRepair}
@@ -624,11 +696,130 @@ export default function App() {
               registry={deviceRegistry}
               onOpenRulesPage={() => setActivePage('rules')}
               onOpenDiagnosticsCenter={() => setActivePage('diagnostics')}
+              customFaceEditorOpen={customFaceEditorOpen}
+              onOpenCustomFaceEditor={() => {
+                void openCustomFaceEditor()
+                  .then(() => setCustomFaceEditorOpen(true))
+                  .catch((error) => console.warn('failed to open custom face editor', error));
+              }}
             />
           </div>
         ) : null}
         {page}
       </AppShell>
+    </I18nProvider>
+  );
+}
+
+function CustomFaceEditorWindowApp() {
+  const [language, setLanguage] = useState<Language>('zh-CN');
+  const [themeMode, setThemeMode] = useState<AppConfigView['ui']['themeMode']>('system');
+  useThemeMode(themeMode);
+
+  useEffect(() => {
+    let disposed = false;
+    let configEventVersion = 0;
+    let unlisten: (() => void) | null = null;
+    void listen<AppConfigView>(APP_CONFIG_UPDATED_EVENT, (event) => {
+      if (disposed) return;
+      configEventVersion += 1;
+      setLanguage(event.payload.ui.language as Language);
+      setThemeMode(event.payload.ui.themeMode ?? 'system');
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize custom face editor config listener', error));
+    void getAppConfig()
+      .then((config) => {
+        if (!disposed && configEventVersion === 0) {
+          setLanguage(config.ui.language as Language);
+          setThemeMode(config.ui.themeMode ?? 'system');
+        }
+      })
+      .catch((error) => console.warn('failed to load app config for custom face editor window', error));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
+  return (
+    <I18nProvider language={language}>
+      <CustomFaceEditorWindow />
+    </I18nProvider>
+  );
+}
+
+function CustomFaceImagePixelizerWindowApp() {
+  const [language, setLanguage] = useState<Language>('zh-CN');
+  const [themeMode, setThemeMode] = useState<AppConfigView['ui']['themeMode']>('system');
+  useThemeMode(themeMode);
+
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<AppConfigView>(APP_CONFIG_UPDATED_EVENT, (event) => {
+      if (disposed) return;
+      setLanguage(event.payload.ui.language as Language);
+      setThemeMode(event.payload.ui.themeMode ?? 'system');
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize custom face image pixelizer config listener', error));
+    void getAppConfig()
+      .then((config) => {
+        if (!disposed) {
+          setLanguage(config.ui.language as Language);
+          setThemeMode(config.ui.themeMode ?? 'system');
+        }
+      })
+      .catch((error) => console.warn('failed to load app config for custom face image pixelizer window', error));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
+  return (
+    <I18nProvider language={language}>
+      <CustomFaceImagePixelizerWindow />
+    </I18nProvider>
+  );
+}
+
+function CustomFaceImageVectorizerWindowApp() {
+  const [language, setLanguage] = useState<Language>('zh-CN');
+  const [themeMode, setThemeMode] = useState<AppConfigView['ui']['themeMode']>('system');
+  useThemeMode(themeMode);
+
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<AppConfigView>(APP_CONFIG_UPDATED_EVENT, (event) => {
+      if (disposed) return;
+      setLanguage(event.payload.ui.language as Language);
+      setThemeMode(event.payload.ui.themeMode ?? 'system');
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize custom face image vectorizer config listener', error));
+    void getAppConfig()
+      .then((config) => {
+        if (!disposed) {
+          setLanguage(config.ui.language as Language);
+          setThemeMode(config.ui.themeMode ?? 'system');
+        }
+      })
+      .catch((error) => console.warn('failed to load app config for custom face image vectorizer window', error));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
+  return (
+    <I18nProvider language={language}>
+      <CustomFaceImageVectorizerWindow />
     </I18nProvider>
   );
 }
@@ -662,6 +853,15 @@ function DesktopNoticeWindowApp({ instanceId }: { instanceId: string }) {
 
   useEffect(() => {
     let disposed = false;
+    let unlistenConfig: (() => void) | null = null;
+    void listen<AppConfigView>(APP_CONFIG_UPDATED_EVENT, (event) => {
+      if (disposed) return;
+      setLanguage(event.payload.ui.language as Language);
+      setThemeMode(event.payload.ui.themeMode ?? 'system');
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlistenConfig = dispose;
+    }).catch((error) => console.warn('failed to initialize desktop notice config listener', error));
     const bootstrapPayload = window.__CC_NOTICE_DESKTOP_NOTICE_PAYLOAD__;
     if (bootstrapPayload) {
       console.info('desktop notice window bootstrap payload loaded', {
@@ -674,6 +874,7 @@ function DesktopNoticeWindowApp({ instanceId }: { instanceId: string }) {
       setPayload(bootstrapPayload);
       return () => {
         disposed = true;
+        unlistenConfig?.();
       };
     }
     const timer = window.setTimeout(() => {
@@ -699,6 +900,7 @@ function DesktopNoticeWindowApp({ instanceId }: { instanceId: string }) {
     }, 800);
     return () => {
       disposed = true;
+      unlistenConfig?.();
       window.clearTimeout(timer);
     };
   }, [instanceId]);
@@ -751,6 +953,15 @@ function DeviceMonitorWindowApp({ deviceId }: { deviceId: string }) {
 
   useEffect(() => {
     let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void listen<AppConfigView>(APP_CONFIG_UPDATED_EVENT, (event) => {
+      if (disposed) return;
+      setLanguage(event.payload.ui.language as Language);
+      setThemeMode(event.payload.ui.themeMode ?? 'system');
+    }).then((dispose) => {
+      if (disposed) dispose();
+      else unlisten = dispose;
+    }).catch((error) => console.warn('failed to initialize device monitor config listener', error));
     void getAppConfig()
       .then((config) => {
         if (!disposed) {
@@ -763,6 +974,7 @@ function DeviceMonitorWindowApp({ deviceId }: { deviceId: string }) {
       });
     return () => {
       disposed = true;
+      unlisten?.();
     };
   }, []);
 

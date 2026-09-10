@@ -11,11 +11,11 @@ pub fn load_board_catalog_from_str(content: &str) -> Result<BoardCatalog, String
 }
 
 pub fn load_bundled_board_catalog_from_str(content: &str) -> Result<BoardCatalog, String> {
-    validate_display_size_class_presence(content)?;
+    validate_display_contract_presence(content)?;
     load_board_catalog_from_str(content)
 }
 
-fn validate_display_size_class_presence(content: &str) -> Result<(), String> {
+fn validate_display_contract_presence(content: &str) -> Result<(), String> {
     let value: Value = serde_yaml::from_str(content)
         .map_err(|error| format!("failed to parse board catalog: {error}"))?;
     let Some(boards) = value.get("boards").and_then(|boards| boards.as_sequence()) else {
@@ -36,6 +36,14 @@ fn validate_display_size_class_presence(content: &str) -> Result<(), String> {
         if display.get("sizeClass").is_none() {
             return Err(format!(
                 "board {board_id} display extension must declare sizeClass"
+            ));
+        }
+        let pixel_width = display.get("pixelWidth").and_then(Value::as_u64);
+        let pixel_height = display.get("pixelHeight").and_then(Value::as_u64);
+        if !matches!((pixel_width, pixel_height), (Some(width), Some(height)) if width > 0 && height > 0)
+        {
+            return Err(format!(
+                "board {board_id} display extension must declare positive pixelWidth and pixelHeight"
             ));
         }
     }

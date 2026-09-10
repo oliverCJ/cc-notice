@@ -5,9 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::adapters::ai_tools::registry;
-use crate::app_services::hook_config_writer::handlers::{
-    command_has_debug, relay_event_from_command,
-};
+use crate::app_services::hook_config_writer::codec::codec_for_kind;
 use crate::core::app_config::{
     AppConfig, HookConfigTarget, HookConfigTargetScope, HookEventSelections,
 };
@@ -34,9 +32,20 @@ pub struct HookEventService;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HookEventFrontendState {
+    pub tools: Vec<AiToolFrontendDefinition>,
     pub catalog: Vec<HookEventDefinition>,
     pub selected: HookEventSelectionsView,
     pub targets: Vec<HookConfigTargetStatus>,
+    pub legacy_targets: Vec<HookConfigTargetStatus>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiToolFrontendDefinition {
+    pub source: String,
+    pub display_name: String,
+    pub global_config_path: String,
+    pub can_create_project_target: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -99,15 +108,43 @@ impl HookEventService {
             catalog.extend(hook_events_for_source(tool.source).iter().cloned());
         }
         let selected = selections_for_config(&config.hook_event_selections);
-        let targets = config
+        let all_targets = config
             .hook_config_targets
             .iter()
             .map(|target| Self::target_status_for_home_with_selections(target, home, &selected))
             .collect::<Result<Vec<_>, _>>()?;
+        let legacy_targets = all_targets
+            .iter()
+            .filter(|target| target.scope == "project")
+            .cloned()
+            .collect::<Vec<_>>();
+        let targets = all_targets
+            .into_iter()
+            .filter(|target| target.scope == "global")
+            .collect::<Vec<_>>();
         Ok(HookEventFrontendState {
+            tools: registry::all_ai_tools()
+                .iter()
+                .map(|tool| {
+                    Ok(AiToolFrontendDefinition {
+                        source: tool.source.to_string(),
+                        display_name: tool.display_name.to_string(),
+                        global_config_path: tool
+                            .config_path(
+                                crate::core::app_config::HookConfigTargetScope::Global,
+                                home,
+                                None,
+                            )?
+                            .to_string_lossy()
+                            .to_string(),
+                        can_create_project_target: tool.can_create_project_target,
+                    })
+                })
+                .collect::<Result<Vec<_>, String>>()?,
             catalog,
             selected,
             targets,
+            legacy_targets,
         })
     }
 }
@@ -180,64 +217,22 @@ fn hook_config_state(
             debug_enabled: false,
         };
     };
-    let managed_commands = managed_relay_commands(&value, source);
-    let configured_events = managed_commands
-        .iter()
-        .filter_map(|command| relay_event_from_command(command, source))
-        .collect::<Vec<_>>();
-    let debug_enabled = !managed_commands.is_empty()
-        && managed_commands
-            .iter()
-            .all(|command| command_has_debug(command));
-
-    HookConfigState {
-        matches_selected_events: same_event_set(selected_events, &configured_events),
-        debug_enabled,
-    }
-}
-
-fn managed_relay_commands(config: &Value, source: &str) -> Vec<String> {
-    let Some(hooks) = config.get("hooks").and_then(Value::as_object) else {
-        return Vec::new();
-    };
-    let mut commands = Vec::new();
-    for groups_value in hooks.values() {
-        let Some(groups) = groups_value.as_array() else {
-            continue;
+    let Ok(tool) = registry::ai_tool_definition(source) else {
+        return HookConfigState {
+            matches_selected_events: false,
+            debug_enabled: false,
         };
-        for group in groups {
-            let Some(handlers) = group.get("hooks").and_then(Value::as_array) else {
-                continue;
-            };
-            for handler in handlers {
-                let status_matches = handler
-                    .get("statusMessage")
-                    .and_then(Value::as_str)
-                    .map(|status| status.starts_with("CC Notice:"))
-                    .unwrap_or(false);
-                let Some(command) = handler.get("command").and_then(Value::as_str) else {
-                    continue;
-                };
-                if status_matches
-                    && command.contains("cc-notice-relay")
-                    && command.contains(&format!("--source {source}"))
-                {
-                    commands.push(command.to_string());
-                }
-            }
-        }
+    };
+    let Ok(state) = codec_for_kind(tool.codec_kind).inspect(source, &value, selected_events) else {
+        return HookConfigState {
+            matches_selected_events: false,
+            debug_enabled: false,
+        };
+    };
+    HookConfigState {
+        matches_selected_events: state.matches_selection,
+        debug_enabled: state.debug_enabled,
     }
-    commands
-}
-
-fn same_event_set(expected: &[String], actual: &[String]) -> bool {
-    let mut expected = expected.to_vec();
-    let mut actual = actual.to_vec();
-    expected.sort();
-    expected.dedup();
-    actual.sort();
-    actual.dedup();
-    expected == actual
 }
 
 #[cfg(test)]

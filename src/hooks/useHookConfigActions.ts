@@ -151,6 +151,10 @@ export function useHookConfigActions({
     setHookTargetBusy((current) => ({ ...current, [targetId]: 'restore' }));
     try {
       const result = await restoreHookConfigTarget(targetId);
+      const restoringTarget = hookEventState?.legacyTargets?.find((target) => target.id === targetId);
+      if (restoringTarget?.scope === 'project') {
+        await removeHookConfigTarget(targetId);
+      }
       const nextHookState = await getHookEventState();
       if (artifactSequence === hookConfigArtifactSequence.current) {
         setHookEventState(nextHookState);

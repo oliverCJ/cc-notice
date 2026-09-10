@@ -1,4 +1,9 @@
 pub mod app_config;
+pub mod app_update;
+pub mod custom_face_editor;
+pub mod custom_face_pixelizer;
+pub mod custom_face_vectorizer;
+pub mod custom_faces;
 pub mod debug;
 pub mod desktop_notice;
 pub mod device;
@@ -9,3 +14,4 @@ pub mod hook_config;
 pub mod monitor;
 pub mod profile;
 pub mod sound;
+pub mod storage_cleanup;

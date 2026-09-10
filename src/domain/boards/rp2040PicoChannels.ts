@@ -99,3 +99,8 @@ export const rp2040PicoOled091AvailableChannels: DeviceChannel[] = [
   ...createRp2040PicoDigitalChannels([20, 21]),
   ...rp2040PicoDefaultSpecialChannels
 ];
+
+export const rp2040PicoOled128x128AvailableChannels: DeviceChannel[] = [
+  ...createRp2040PicoDigitalChannels([20, 21]),
+  ...rp2040PicoDefaultSpecialChannels
+];

@@ -122,6 +122,28 @@ describe('DiagnosticsPage', () => {
 
     expect(onAction).toHaveBeenCalledWith('send-test-event');
   });
+
+  test('localizes custom face output mismatch device issue reason', () => {
+    renderDiagnosticsPage({
+      snapshot: {
+        ...snapshot,
+        deviceIssues: [
+          {
+            deviceId: 'desk-wio',
+            label: null,
+            status: 'error',
+            reason: 'device-custom-face-output-mismatch',
+            action: 'open-devices'
+          }
+        ]
+      }
+    });
+
+    expect(screen.getByText('自定义表情激活源或安装组与输出规则不匹配。')).toBeInTheDocument();
+    expect(
+      screen.queryByText('diagnostics.devices.issueReasons.deviceCustomFaceOutputMismatch')
+    ).not.toBeInTheDocument();
+  });
 });
 
 function renderDiagnosticsPage(props: Partial<ComponentProps<typeof DiagnosticsPage>> = {}) {

@@ -60,6 +60,20 @@
 
 Arduino 系列优先复用 `firmware/shared/notice_protocol`，不要为每块板复制完整协议解析器。
 
+自定义表情固件能力必须先做三态判定：
+
+- 不支持：没有完整存储证据、1024 字节命令/回复缓冲、A/B 断电保持或运行包播放计划时，禁止声明 `device_info.custom_face`，`custom_face_status` 返回 `unsupported_command`。
+- 休眠 provider：共享层可以保留 `NoticeCustomFaceProvider` 或 `notice_custom_face_provider_t` 骨架，但板卡入口不注册 provider；安装、存储与播放闭环未完成前，发布固件必须省略 `custom_face`。
+- 完整开启：只有完成 `custom-face-device-protocol-v1`、`custom-face-package-v1`、A/B 存储、安装会话、运行包验证、播放读取、`custom_face_status`、断电保持和回退验证后，才允许注册 provider 并输出能力。
+
+要求：
+
+- Arduino 固件必须复用 `firmware/shared/notice_protocol` 的可选 provider 和 `firmware/shared/custom-face-device-protocol` 的 C 序列化器。
+- Pico 固件必须复用 `firmware/shared/rp2040-pico` 的 provider 骨架和生成 C 契约，不得在板卡入口复制 profile code、512 chunk、1024 缓冲、max faces、max frames 或 group bytes。
+- 板卡入口只负责注册已验证 provider 和存储/播放实现；禁止在入口硬编码 JSON 字段、协议常量或运行包结构。
+- 未完成前必须省略 `device_info.custom_face`，不能把默认表情、`display.face`、host fixture 或屏幕分辨率解释为自定义表情能力。
+- `custom_face_status` 必须能明确返回 empty/installed；未完成前返回 `unsupported_command`，不得 timeout 或假成功。
+
 要求：
 
 - 固件 `board_id` 必须与软件 `boardId` 完全一致。

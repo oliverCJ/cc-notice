@@ -47,7 +47,7 @@ fn builds_display_runtime_action_for_connected_runtime_display_device() {
         ],
     );
 
-    assert_eq!(2, actions.len());
+    assert_eq!(1, actions.len());
     let action = &actions[0];
     assert_eq!("desk-wio", action.device_id);
     assert_eq!(DeviceExtensionActionType::DisplayRuntime, action.action);
@@ -61,13 +61,10 @@ fn builds_display_runtime_action_for_connected_runtime_display_device() {
         ]),
         action.lines.clone()
     );
-    assert_eq!("desk-oled", actions[1].device_id);
-    assert_eq!(DeviceExtensionActionType::DisplayRuntime, actions[1].action);
-    assert_eq!(Some("E/O 1/1"), actions[1].message.as_deref());
 }
 
 #[test]
-fn runtime_display_uses_compact_message_for_small_oled_devices() {
+fn runtime_display_skips_face_only_oled_devices() {
     let mut monitor = RuntimeMonitorService::new_for_tests("2026-07-16T10:00:00+08:00");
     for index in 0..111 {
         monitor.record_inbound_event(RuntimeEventRecord {
@@ -96,7 +93,7 @@ fn runtime_display_uses_compact_message_for_small_oled_devices() {
         )],
     );
 
-    assert_eq!(Some("E/O 111/123"), actions[0].message.as_deref());
+    assert!(actions.is_empty());
 }
 
 #[test]
@@ -193,6 +190,7 @@ fn runtime_state(
         transport: None,
         channels: Vec::new(),
         firmware_info: None,
+        custom_face_status: Default::default(),
         bundled_firmware_version: None,
         firmware_status: crate::core::device::DeviceFirmwareStatus::Unknown,
         firmware_check_error: None,

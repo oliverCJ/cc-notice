@@ -10,9 +10,9 @@ use crate::app_services::device_runtime_service::{
 };
 use crate::core::device::{
     DeviceChannel, DeviceChannelAction, DeviceCommandOutputType, DeviceCommandResult,
-    DeviceConnectionStatus, DeviceExtensionAction, DeviceExtensionActionType, DeviceInstance,
-    DeviceOperationKind, DeviceOperationSummary, DeviceRuntimeErrorCode, DeviceRuntimeState,
-    DeviceTransportConfig,
+    DeviceConnectionStatus, DeviceCustomFaceActiveSource, DeviceExtensionAction,
+    DeviceExtensionActionType, DeviceInstance, DeviceOperationKind, DeviceOperationSummary,
+    DeviceRuntimeErrorCode, DeviceRuntimeState, DeviceTransportConfig,
 };
 use crate::core::firmware::FirmwareArtifact;
 use crate::infrastructure::transports::transport::DeviceTransport;
@@ -528,6 +528,61 @@ impl DeviceRuntimeRegistry {
         Ok(state)
     }
 
+    pub fn prepare_custom_face_status_query(
+        &self,
+        device_id: &str,
+    ) -> Result<PreparedDeviceCommand, String> {
+        let service = self
+            .services
+            .get(device_id)
+            .ok_or_else(|| format!("device is not registered: {device_id}"))?;
+        service.prepare_custom_face_status_query()
+    }
+
+    pub fn complete_custom_face_status_query(
+        &mut self,
+        device_id: &str,
+        session_id: u64,
+        result: Result<DeviceIoCommandResult, DeviceIoError>,
+    ) -> Result<DeviceRuntimeState, String> {
+        let state = {
+            let service = self
+                .services
+                .get_mut(device_id)
+                .ok_or_else(|| format!("device is not registered: {device_id}"))?;
+            service.complete_custom_face_status_query(session_id, result)?;
+            service.state()
+        };
+        self.drain_and_handle_input_events(device_id);
+        Ok(state)
+    }
+
+    pub fn set_custom_face_active_source(
+        &mut self,
+        device_id: &str,
+        source: DeviceCustomFaceActiveSource,
+        group_id: Option<String>,
+    ) -> Result<DeviceRuntimeState, String> {
+        let service = self
+            .services
+            .get_mut(device_id)
+            .ok_or_else(|| format!("device is not registered: {device_id}"))?;
+        let state = service.set_custom_face_active_source(source, group_id)?;
+        Ok(state)
+    }
+
+    pub fn prepare_custom_face_install_command(
+        &self,
+        device_id: &str,
+        command: crate::core::protocol::ProtocolCommandV2,
+    ) -> Result<PreparedDeviceCommand, String> {
+        let service = self
+            .services
+            .get(device_id)
+            .ok_or_else(|| format!("device is not registered: {device_id}"))?;
+        service.prepare_custom_face_install_command(command)
+    }
+
     pub fn prepare_set_device_uid_command(
         &self,
         device_id: &str,
@@ -673,7 +728,8 @@ fn extension_action_channel_id(action: DeviceExtensionActionType) -> &'static st
         | DeviceExtensionActionType::DisplayCard
         | DeviceExtensionActionType::DisplayLines
         | DeviceExtensionActionType::DisplayRuntime
-        | DeviceExtensionActionType::DisplayClear => "display",
+        | DeviceExtensionActionType::DisplayClear
+        | DeviceExtensionActionType::DisplayFace => "display",
         DeviceExtensionActionType::BuzzerPattern => "buzzer",
         DeviceExtensionActionType::DeviceControl => "device",
     }
@@ -685,7 +741,8 @@ fn extension_action_output_type(action: DeviceExtensionActionType) -> DeviceComm
         | DeviceExtensionActionType::DisplayCard
         | DeviceExtensionActionType::DisplayLines
         | DeviceExtensionActionType::DisplayRuntime
-        | DeviceExtensionActionType::DisplayClear => DeviceCommandOutputType::Display,
+        | DeviceExtensionActionType::DisplayClear
+        | DeviceExtensionActionType::DisplayFace => DeviceCommandOutputType::Display,
         DeviceExtensionActionType::BuzzerPattern => DeviceCommandOutputType::Buzzer,
         DeviceExtensionActionType::DeviceControl => DeviceCommandOutputType::DeviceControl,
     }

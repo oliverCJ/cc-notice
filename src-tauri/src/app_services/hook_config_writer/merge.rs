@@ -93,7 +93,29 @@ pub(crate) fn restore_config_for_source(
     Ok(existing)
 }
 
-pub(crate) fn managed_handler_count(source: &str, existing: &Value) -> usize {
+pub(crate) fn managed_events(source: &str, existing: &Value) -> Vec<String> {
+    existing
+        .get("hooks")
+        .and_then(Value::as_object)
+        .map(|hooks| {
+            hooks
+                .iter()
+                .filter_map(|(event, groups)| {
+                    groups
+                        .as_array()?
+                        .iter()
+                        .filter_map(Value::as_object)
+                        .filter_map(|group| group.get("hooks").and_then(Value::as_array))
+                        .flat_map(|handlers| handlers.iter())
+                        .any(|handler| is_managed_handler(source, handler))
+                        .then_some(event.clone())
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+pub(crate) fn managed_commands(source: &str, existing: &Value) -> Vec<String> {
     existing
         .get("hooks")
         .and_then(Value::as_object)
@@ -105,10 +127,18 @@ pub(crate) fn managed_handler_count(source: &str, existing: &Value) -> usize {
                 .filter_map(Value::as_object)
                 .filter_map(|group| group.get("hooks").and_then(Value::as_array))
                 .flat_map(|handlers| handlers.iter())
-                .filter(|handler| is_managed_handler(source, handler))
-                .count()
+                .filter_map(|handler| {
+                    if !is_managed_handler(source, handler) {
+                        return None;
+                    }
+                    handler
+                        .get("command")
+                        .and_then(Value::as_str)
+                        .map(str::to_string)
+                })
+                .collect()
         })
-        .unwrap_or(0)
+        .unwrap_or_default()
 }
 
 fn remove_managed_handlers(source: &str, hooks: &mut serde_json::Map<String, Value>) {

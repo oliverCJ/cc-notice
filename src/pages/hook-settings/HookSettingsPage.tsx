@@ -11,6 +11,8 @@ import { HookConfigTargetPanel } from './HookConfigTargetPanel';
 import { useHookEventSelection } from './useHookEventSelection';
 import { defaultTargetDebugEnabled } from './hookTargetDebugMode';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle } from 'lucide-react';
 import { Translator, useI18n } from '@/i18n';
 
 type HookTargetBusyState = 'preview' | 'write' | 'restore';
@@ -69,7 +71,9 @@ export function HookSettingsPage({
     });
 
   const visibleTargets =
-    hookEventState?.targets.filter((target) => target.source === selectedToolId) ?? [];
+    hookEventState?.targets.filter(
+      (target) => target.source === selectedToolId && target.scope === 'global'
+    ) ?? [];
   const previewTargetLabel =
     hookEventState?.targets.find((target) => target.id === hookConfigPreviewDialog?.targetId)
       ?.label ?? hookConfigPreviewDialog?.targetId ?? '';
@@ -84,6 +88,8 @@ export function HookSettingsPage({
       target.exists && (!target.matchesSelectedEvents || debugMismatch);
   });
   const hookConfigDisplayError = displayHookConfigError(hookTargetError ?? hookConfigError, t);
+  const legacyTargets =
+    hookEventState?.legacyTargets?.filter((target) => target.source === selectedToolId) ?? [];
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -95,7 +101,10 @@ export function HookSettingsPage({
       {/* AI 工具切换 */}
       <Tabs value={selectedToolId} onValueChange={(val) => onSelectTool(val as AiToolId)}>
         <TabsList>
-          {aiTools.map((tool) => (
+          {(hookEventState?.tools?.length
+            ? hookEventState.tools.map((tool) => ({ id: tool.source, name: tool.displayName }))
+            : aiTools
+          ).map((tool) => (
             <TabsTrigger key={tool.id} value={tool.id}>
               {tool.name}
             </TabsTrigger>
@@ -110,6 +119,22 @@ export function HookSettingsPage({
         selectedToolId={selectedToolId}
         visibleEvents={visibleEvents}
       />
+
+      {legacyTargets.length > 0 && (
+        <div className="flex items-center justify-between gap-4 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <span>{t('hookSettings.legacy.message', { count: legacyTargets.length })}</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPreviewRestoreHookConfigTarget(legacyTargets[0].id)}
+          >
+            {t('hookSettings.legacy.cleanup')}
+          </Button>
+        </div>
+      )}
 
       {/* Hook 配置目标 */}
       <HookConfigTargetPanel

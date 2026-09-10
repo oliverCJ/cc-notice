@@ -112,6 +112,7 @@ fn spawn_connection_operation_with_emit<F>(
         }
 
         let mut persist_transport = None;
+        let mut prepared_custom_face_status_query = None;
         let mut prepared_gpio_input_commands = Vec::new();
         match result {
             Ok(result) => {
@@ -128,7 +129,10 @@ fn spawn_connection_operation_with_emit<F>(
                     monitor_recorder,
                 ) {
                     tracing::warn!(error, "failed to complete device connection operation");
-                } else if let Some(app) = &input_event_app {
+                } else {
+                    prepared_custom_face_status_query = registry_guard
+                        .prepare_custom_face_status_query(&input.device_id)
+                        .ok();
                     prepared_gpio_input_commands = registry_guard
                         .prepare_gpio_input_config_commands(&input.device_id, &[])
                         .unwrap_or_else(|error| {
@@ -139,11 +143,13 @@ fn spawn_connection_operation_with_emit<F>(
                             );
                             Vec::new()
                         });
-                    persist_transport = Some((
-                        app.clone(),
-                        input.device_id.clone(),
-                        input.transport.clone(),
-                    ));
+                    if let Some(app) = &input_event_app {
+                        persist_transport = Some((
+                            app.clone(),
+                            input.device_id.clone(),
+                            input.transport.clone(),
+                        ));
+                    }
                 }
             }
             Err(error) => {
@@ -160,6 +166,29 @@ fn spawn_connection_operation_with_emit<F>(
             }
         }
         drop(registry_guard);
+        if let Some(prepared) = prepared_custom_face_status_query {
+            let session_id = prepared.session_id;
+            let result = prepared.worker.send_protocol_command(prepared.command);
+            match registry.lock() {
+                Ok(mut registry) => {
+                    if let Err(error) =
+                        registry.complete_custom_face_status_query(&device_id, session_id, result)
+                    {
+                        tracing::warn!(
+                            device_id,
+                            error,
+                            "failed to sync custom face status after connection"
+                        );
+                    }
+                }
+                Err(error) => {
+                    tracing::warn!(
+                        error = %error,
+                        "failed to lock registry after custom face status sync"
+                    );
+                }
+            }
+        }
         for prepared in prepared_gpio_input_commands {
             let session_id = prepared.session_id;
             let result = prepared.worker.send_protocol_command(prepared.command);

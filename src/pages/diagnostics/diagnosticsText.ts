@@ -67,6 +67,7 @@ const deviceIssueReasonKeyByReason: Record<string, string> = {
   'device-not-connected': 'deviceNotConnected',
   'device-channel-not-configured': 'deviceChannelNotConfigured',
   'device-action-unsupported': 'deviceActionUnsupported',
+  'device-custom-face-output-mismatch': 'deviceCustomFaceOutputMismatch',
   'device-command-unsupported': 'deviceCommandUnsupported',
   'device-transport-error': 'deviceTransportError',
   'device-identity-limited': 'deviceIdentityLimited',

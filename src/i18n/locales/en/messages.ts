@@ -9,12 +9,14 @@ export const enMessages = {
     devices: 'Devices',
     firmware: 'Firmware',
     settings: 'Settings',
-    debug: 'Debug'
+    debug: 'Debug',
   },
   appInfo: {
     ariaLabel: 'App information',
     version: 'v{{version}}',
-    developer: 'Developer'
+    developer: 'Developer',
+    updateAvailable: 'Update available: v{{version}}',
+    updateAvailableAria: 'Update available {{version}}, open download page',
   },
   common: {
     cancel: 'Cancel',
@@ -36,13 +38,13 @@ export const enMessages = {
     previous: 'Previous',
     next: 'Next',
     notConfigured: 'Not configured',
-    loadingRuntimeMonitor: 'Loading runtime monitor...'
+    loadingRuntimeMonitor: 'Loading runtime monitor...',
   },
   colorEditor: {
-      currentColor: 'Current color {{color}}',
-      visualColorPicker: 'Visual color picker',
-      pickScreenColor: 'Pick color from screen',
-      nativeColorInput: 'Native color input',
+    currentColor: 'Current color {{color}}',
+    visualColorPicker: 'Visual color picker',
+    pickScreenColor: 'Pick color from screen',
+    nativeColorInput: 'Native color input',
     hexColor: 'HEX color',
     applyColor: 'Apply Color',
     close: 'Close',
@@ -50,12 +52,13 @@ export const enMessages = {
     presetHint: 'Quickly replace the current editing color',
     saturationValue: 'Color brightness and saturation',
     hue: 'Hue',
-    eyedropperUnsupported: 'Screen color picking is not supported in this environment'
+    eyedropperUnsupported: 'Screen color picking is not supported in this environment',
   },
   desktopNotice: {
     instance: {
       title: 'Desktop Notice',
-      description: 'Manage local desktop notice instances. Open previews, drag to adjust position, and save to local settings.',
+      description:
+        'Manage local desktop notice instances. Open previews, drag to adjust position, and save to local settings.',
       empty: 'No desktop notice instances yet. Create one to reference it from output rules.',
       create: 'New Desktop Notice',
       name: 'Name',
@@ -63,9 +66,10 @@ export const enMessages = {
       variants: {
         customLightbar: 'Custom Lightbar',
         edgeLightbar: 'Fixed Screen Edge Lightbar',
-        mascot: 'Desktop Mascot'
+        mascot: 'Desktop Mascot',
       },
-      typeSwitchWarning: 'Changing the instance type resets settings that belong to the current type.',
+      typeSwitchWarning:
+        'Changing the instance type resets settings that belong to the current type.',
       confirmTypeSwitch: 'Confirm Switch',
       cancelTypeSwitch: 'Cancel',
       presetPosition: 'Preset Position',
@@ -91,7 +95,7 @@ export const enMessages = {
         top: 'Top',
         bottom: 'Bottom',
         left: 'Left',
-        right: 'Right'
+        right: 'Right',
       },
       brightness: 'Brightness',
       breathingPeriod: 'Breathing period',
@@ -103,12 +107,13 @@ export const enMessages = {
       idleBehaviorHint: 'Idle behavior is the base state when no output rule is active.',
       resetVisualSettings: 'Reset visual settings',
       resetSuccessTitle: 'Reset to defaults',
-      resetSuccessDescription: 'The current visual settings were reset. Click Save to persist them.'
+      resetSuccessDescription:
+        'The current visual settings were reset. Click Save to persist them.',
     },
     mascot: {
       packs: {
         g7Buddy: 'G7 Buddy',
-        warmBuddy: 'Warm Buddy'
+        warmBuddy: 'Warm Buddy',
       },
       fields: {
         assetPack: 'Asset Pack',
@@ -121,7 +126,7 @@ export const enMessages = {
         bubblePlacement: 'Bubble Placement',
         bubbleFontSize: 'Bubble Font Size',
         bubbleFont: 'Bubble Font',
-        idleState: 'Idle State'
+        idleState: 'Idle State',
       },
       customGuide: {
         open: 'Custom mascot resource guide',
@@ -160,16 +165,16 @@ export const enMessages = {
         playModes: {
           loop: {
             name: 'loop',
-            description: 'Loop continuously for sleeping, working, or waiting states'
+            description: 'Loop continuously for sleeping, working, or waiting states',
           },
           onceThenHold: {
             name: 'once-then-hold',
-            description: 'Play once and hold, useful for success and error feedback'
+            description: 'Play once and hold, useful for success and error feedback',
           },
           onceThenIdle: {
             name: 'once-then-idle',
-            description: 'Play once and return to idle, useful for greetings or thanks'
-          }
+            description: 'Play once and return to idle, useful for greetings or thanks',
+          },
         },
         manifestTitle: 'Minimal manifest example',
         notAvailableYet:
@@ -179,7 +184,7 @@ export const enMessages = {
         downloadStartedDescription:
           'Check your browser or system downloads for cc-notice-custom-mascot-template.zip.',
         downloadFailedTitle: 'Template download failed',
-        downloadFailedDescription: 'The template download could not be started. Try again later.'
+        downloadFailedDescription: 'The template download could not be started. Try again later.',
       },
       diagnostics: {
         codes: {
@@ -187,102 +192,103 @@ export const enMessages = {
             title: 'Cannot read manifest',
             impact: 'This asset pack will not appear in the selector.',
             suggestion:
-              'Make sure manifest.json exists in the pack folder and can be read by the current user.'
+              'Make sure manifest.json exists in the pack folder and can be read by the current user.',
           },
           MANIFEST_INVALID_JSON: {
             title: 'Invalid manifest JSON',
             impact: 'The app cannot parse this asset pack.',
-            suggestion: 'Check manifest.json for commas, quotes, and brackets with a JSON validator.'
+            suggestion:
+              'Check manifest.json for commas, quotes, and brackets with a JSON validator.',
           },
           MANIFEST_TOO_LARGE: {
             title: 'Manifest file is too large',
             impact: 'This asset pack is skipped to avoid slow scans from abnormal files.',
-            suggestion: 'Keep manifest.json within 256KB.'
+            suggestion: 'Keep manifest.json within 256KB.',
           },
           INVALID_ID: {
             title: 'Invalid asset pack ID',
             impact: 'The app cannot save or match this asset pack reliably.',
-            suggestion: 'Use lowercase letters, digits, hyphens, underscores, or dots.'
+            suggestion: 'Use lowercase letters, digits, hyphens, underscores, or dots.',
           },
           INVALID_RENDERER: {
             title: 'Unsupported renderer',
             impact: 'This asset pack will not be loaded.',
-            suggestion: 'The renderer field must be gif.'
+            suggestion: 'The renderer field must be gif.',
           },
           INVALID_ANIMATION_PATH: {
             title: 'Invalid animation path',
             impact: 'This asset pack is skipped to prevent reading outside the pack folder.',
-            suggestion: 'Use relative paths inside the asset pack folder and do not include ../.'
+            suggestion: 'Use relative paths inside the asset pack folder and do not include ../.',
           },
           MISSING_ANIMATION_FILE: {
             title: 'Missing GIF file',
             impact: 'The referenced action animation cannot be played.',
-            suggestion: 'Check that animations paths match the actual GIF file names.'
+            suggestion: 'Check that animations paths match the actual GIF file names.',
           },
           INVALID_GIF_FILE: {
             title: 'Invalid GIF file',
             impact: 'This animation cannot be used as a desktop mascot resource.',
-            suggestion: 'Replace it with a valid GIF file.'
+            suggestion: 'Replace it with a valid GIF file.',
           },
           ANIMATION_FILE_TOO_LARGE: {
             title: 'GIF file is too large',
             impact: 'This asset pack is skipped to avoid loading and playback pressure.',
-            suggestion: 'Each GIF must be under 10MB. Around 2MB is recommended.'
+            suggestion: 'Each GIF must be under 10MB. Around 2MB is recommended.',
           },
           PACK_TOO_LARGE: {
             title: 'Asset pack is too large',
             impact: 'This asset pack is skipped to avoid scan and loading pressure.',
-            suggestion: 'The total GIF size in one pack must be under 80MB.'
+            suggestion: 'The total GIF size in one pack must be under 80MB.',
           },
           TOO_MANY_PACKS: {
             title: 'Too many asset packs',
             impact: 'Packs after the limit will not be scanned.',
-            suggestion: 'Reduce the number of folders in the mascots directory.'
+            suggestion: 'Reduce the number of folders in the mascots directory.',
           },
           TOO_MANY_ANIMATIONS: {
             title: 'Too many animations',
             impact: 'This asset pack is skipped.',
-            suggestion: 'Keep animations within 128 entries.'
+            suggestion: 'Keep animations within 128 entries.',
           },
           TOO_MANY_ACTIONS: {
             title: 'Too many actions',
             impact: 'This asset pack is skipped.',
-            suggestion: 'Keep actions within 64 entries.'
+            suggestion: 'Keep actions within 64 entries.',
           },
           MISSING_REQUIRED_ACTION: {
             title: 'Missing required action',
             impact: 'The app cannot guarantee the basic states are available.',
             suggestion:
-              'Provide at least one action for idle, task-received, working, success, and error.'
+              'Provide at least one action for idle, task-received, working, success, and error.',
           },
           UNKNOWN_ACTION_ANIMATION: {
             title: 'Action references an unknown animation',
             impact: 'This action cannot be played.',
-            suggestion: 'Make sure action.animation exists in the animations map.'
+            suggestion: 'Make sure action.animation exists in the animations map.',
           },
           INVALID_INTERACTION_ACTION: {
             title: 'Invalid interaction action reference',
             impact: 'This asset pack did not pass completeness checks.',
-            suggestion: 'Make sure interactions references existing action IDs.'
+            suggestion: 'Make sure interactions references existing action IDs.',
           },
           UNKNOWN: {
             title: 'Unknown asset pack issue',
             impact: 'This asset pack was not loaded.',
-            suggestion: 'Check the diagnostic code and raw message against the pack configuration.'
-          }
-        }
+            suggestion: 'Check the diagnostic code and raw message against the pack configuration.',
+          },
+        },
       },
       bubblePlacements: {
         top: 'Top',
         topLeft: 'Top Left',
-        topRight: 'Top Right'
+        topRight: 'Top Right',
       },
       bubbleFonts: {
         softHandwriting: 'Soft Handwriting',
         roundCute: 'Rounded Cute',
         comic: 'Comic Handwriting',
         cleanSans: 'Clean Sans',
-        systemDefault: 'System Default'
+        systemDefault: 'System Default',
       },
       states: {
         'task-received': 'Task Received',
@@ -292,7 +298,7 @@ export const enMessages = {
         success: 'Done',
         warning: 'Warning',
         error: 'Error',
-        idle: 'Idle'
+        idle: 'Idle',
       },
       actions: {
         taskReceivedWave: 'Task Received: Wave',
@@ -321,16 +327,15 @@ export const enMessages = {
         idleThanks: 'Idle: Thanks',
         idleLove: 'Idle: Love',
         idleBye: 'Idle: Bye',
-        idleBreathe: 'Idle: Breathe'
-      }
-    }
+        idleBreathe: 'Idle: Breathe',
+      },
+    },
   },
   profileRepair: {
     title: 'Configuration Repaired',
     description:
       'Profile "{{profile}}" contained entries that could not be parsed or no longer match the current rules. CC Notice kept usable configuration and removed the invalid parts.',
-    action:
-      'Reconfigure the removed parts in Hook Settings, AI Event Mapping, or Devices.',
+    action: 'Reconfigure the removed parts in Hook Settings, AI Event Mapping, or Devices.',
     items: {
       unrecoverableProfile:
         'Profile "{{profile}}" could not be parsed, so it was isolated as a backup and CC Notice switched to an available profile',
@@ -338,12 +343,30 @@ export const enMessages = {
       hookEvents: 'Removed {{count}} invalid Hook event selections',
       aiMappings: 'Removed {{count}} invalid AI event mappings',
       hardwareRules: 'Removed {{count}} invalid output rules',
-      device: 'Restored the device configuration to the default device'
-    }
+      device: 'Restored the device configuration to the default device',
+    },
   },
   settings: {
     title: 'Settings',
     description: 'Manage log directories, app preferences, and diagnostic export.',
+    update: {
+      title: 'Software Update',
+      description: 'Check the latest stable CC Notice version and release notes.',
+      check: 'Check for Updates',
+      checking: 'Checking...',
+      currentVersion: 'Current version: v{{version}}',
+      latestVersion: 'Latest version: v{{version}}',
+      upToDate: 'You are using the latest version.',
+      available: 'A new version is available.',
+      releaseTitle: 'Release: {{name}}',
+      publishedAt: 'Published: {{time}}',
+      releaseNotes: 'Release Notes',
+      noReleaseNotes: 'No release notes were provided.',
+      openDownload: 'Open Download Page',
+      checkFailed: 'Update check failed: {{error}}',
+      neverChecked: 'Not checked yet',
+      lastCheckedAt: 'Last checked: {{time}}',
+    },
     localHookServer: 'Local Hook Server',
     localHookServerDescription: 'Configure the local Hook event receiver.',
     receivePort: 'Receive Port',
@@ -372,7 +395,8 @@ export const enMessages = {
     themeModeSystem: 'Follow System',
     themeModeLight: 'Light',
     themeModeDark: 'Dark',
-    themeModeHelp: 'When following the system, CC Notice matches the current operating system appearance.',
+    themeModeHelp:
+      'When following the system, CC Notice matches the current operating system appearance.',
     saveThemeMode: 'Save Appearance',
     themeModeSavedDescription: 'Appearance settings were updated.',
     windowBehaviorTitle: 'Window Behavior',
@@ -423,17 +447,17 @@ export const enMessages = {
           button: 'Reset App Settings',
           title: 'Reset App Settings',
           description: 'Restore the port and interface language to their defaults.',
-          warning: 'After changing the port, restart CC Notice before the local Hook service uses the new port.',
-          success: 'App settings were restored to defaults.'
+          warning:
+            'After changing the port, restart CC Notice before the local Hook service uses the new port.',
+          success: 'App settings were restored to defaults.',
         },
         'hook-settings': {
           button: 'Reset Hook Settings',
           title: 'Reset Hook Settings',
-          description:
-            'Restore Hook targets and global Hook event selections to defaults.',
+          description: 'Restore Hook targets and global Hook event selections to defaults.',
           warning:
             'This does not modify or delete Hook config files under Codex, Claude Code, or other AI tool directories.',
-          success: 'Hook settings were restored to defaults.'
+          success: 'Hook settings were restored to defaults.',
         },
         'profile-mappings': {
           button: 'Reset Mappings',
@@ -442,7 +466,7 @@ export const enMessages = {
             'Restore AI event mappings and output rules in the current profile to defaults.',
           warning:
             'Manual mapping changes, output rules, webhooks, sounds, and device channel bindings in the current profile will be overwritten.',
-          success: 'The current profile mappings were restored to defaults.'
+          success: 'The current profile mappings were restored to defaults.',
         },
         devices: {
           button: 'Reset Devices',
@@ -451,7 +475,7 @@ export const enMessages = {
             'Restore the device list and device channels to the default RP2040 Pico configuration.',
           warning:
             'Connected devices return to disconnected runtime state, and manually added or removed channels are replaced by default channels.',
-          success: 'Device configuration was restored to the default RP2040 Pico setup.'
+          success: 'Device configuration was restored to the default RP2040 Pico setup.',
         },
         all: {
           button: 'Reset All',
@@ -460,13 +484,48 @@ export const enMessages = {
             'Restore app settings, Hook settings, profiles, and device configuration to defaults.',
           warning:
             'This deletes custom profiles and restores the default profile, but does not delete logs, Hook tokens, relay tools, or external AI tool Hook files.',
-          success: 'All configuration was restored to defaults.'
-        }
-      }
+          success: 'All configuration was restored to defaults.',
+        },
+      },
+    },
+    storage: {
+      title: 'Cache and Logs',
+      description: 'Review and clear app cache and runtime logs.',
+      cacheLabel: 'Cache',
+      logsLabel: 'Logs',
+      refresh: 'Rescan',
+      clear: 'Clear Cache and Logs',
+      confirmTitle: 'Clear cache and logs?',
+      confirmDescription:
+        'This only clears the app-specific cache directory and ~/.cc-notice/logs. Other config or assets will stay intact.',
+      totalSummary: 'Total usage: {{bytes}}',
+      unresolvedPath: 'Path unavailable',
+      size: 'Usage',
+      files: 'Files',
+      directories: 'Directories',
+      unknown: 'Unknown',
+      status: {
+        ok: 'Ready',
+        missing: 'Missing',
+        unreadable: 'Unreadable',
+        cleaned: 'Cleared',
+        partial: 'Partial',
+        failed: 'Failed',
+      },
+      clearSuccessTitle: 'Cleanup complete',
+      clearSuccessDescription:
+        '{{bytes}} freed, {{cleanedTargets}} targets cleared, {{missingTargets}} targets were already missing.',
+      clearPartialTitle: 'Cleanup finished with partial failures',
+      clearPartialDescription:
+        '{{bytes}} freed, cache status: {{cacheStatus}}, log status: {{logsStatus}}.',
+      clearFailedTitle: 'Cleanup failed',
+      progress: {
+        cleaning: 'Clearing cache and logs...',
+        rescanning: 'Rescanning storage usage...',
+      },
     },
     logTitle: 'Logs',
-    logDescription:
-      'Logs are written to $HOME/.cc-notice/logs by default for troubleshooting.'
+    logDescription: 'Logs are written to $HOME/.cc-notice/logs by default for troubleshooting.',
   },
   debug: {
     title: 'Debug',
@@ -502,7 +561,8 @@ export const enMessages = {
     mappingStage: 'Stage:',
     viewDetails: 'View Details',
     testDialogTitle: 'Send Test Event',
-    testDialogDescription: 'Use a real AI Hook event to test the current Profile mapping and outputs.',
+    testDialogDescription:
+      'Use a real AI Hook event to test the current Profile mapping and outputs.',
     aiTool: 'AI Tool',
     hookEvent: 'Hook Event',
     hookEventPlaceholder: 'Select Hook Event',
@@ -552,35 +612,35 @@ export const enMessages = {
       nodes: {
         inbound: {
           title: 'Inbound Event',
-          description: 'The app received the Hook event forwarded by the AI tool.'
+          description: 'The app received the Hook event forwarded by the AI tool.',
         },
         validation: {
           title: 'Validation and Response',
-          description: 'Request reading, basic validation, and relay response were completed.'
+          description: 'Request reading, basic validation, and relay response were completed.',
         },
         mapping: {
           title: 'Event Mapping',
-          description: 'The AI Hook event was mapped to an internal notice event.'
+          description: 'The AI Hook event was mapped to an internal notice event.',
         },
         rules: {
           title: 'Rule Matching',
-          description: 'The internal event was matched against output rules in the active profile.'
+          description: 'The internal event was matched against output rules in the active profile.',
         },
         outputs: {
           title: 'Output Execution',
-          description: 'Local, Webhook, and device output plans were executed.'
+          description: 'Local, Webhook, and device output plans were executed.',
         },
         completion: {
           title: 'Completion',
-          description: 'Background processing finished and final timing was recorded.'
-        }
+          description: 'Background processing finished and final timing was recorded.',
+        },
       },
       status: {
         success: 'Success',
         warning: 'Warning',
         error: 'Error',
         pending: 'Pending',
-        skipped: 'Skipped'
+        skipped: 'Skipped',
       },
       facts: {
         source: 'Source',
@@ -600,12 +660,12 @@ export const enMessages = {
         deviceProcessing: 'Device Output Time',
         webhookProcessing: 'Webhook Output Time',
         localProcessing: 'Local Output Time',
-        error: 'Error'
+        error: 'Error',
       },
       messages: {
         noInternalEvent: 'No internal event was mapped, so output rules will not run.',
         noOutputs: 'No output rule matched or matched rules are disabled.',
-        asyncPending: 'Async processing has not reported a completion time yet.'
+        asyncPending: 'Async processing has not reported a completion time yet.',
       },
       outputGroups: {
         local: 'Local Outputs',
@@ -627,9 +687,9 @@ export const enMessages = {
         deviceAck: 'Device Response',
         deviceErrorCode: 'Error Code',
         deviceError: 'Error',
-        emptyAck: 'No response content'
-      }
-    }
+        emptyAck: 'No response content',
+      },
+    },
   },
   diagnostics: {
     title: 'Diagnostics Center',
@@ -645,23 +705,23 @@ export const enMessages = {
       warning: 'Warning',
       error: 'Error',
       notConfigured: 'Not Configured',
-      unknown: 'Unknown'
+      unknown: 'Unknown',
     },
     severity: {
       error: 'Error',
       warning: 'Warning',
-      info: 'Info'
+      info: 'Info',
     },
     sections: {
       hookService: { title: 'Hook Service' },
       relay: { title: 'Relay Tool' },
       hookConfig: { title: 'Hook Configuration' },
       profile: { title: 'Active Profile' },
-      devices: { title: 'Device Output' }
+      devices: { title: 'Device Output' },
     },
     flow: {
       title: 'Link Topology',
-      description: 'Key node status from AI Hook to output device.'
+      description: 'Key node status from AI Hook to output device.',
     },
     issues: {
       title: 'Issues to Handle',
@@ -671,59 +731,62 @@ export const enMessages = {
         hookServiceNotRunning: {
           title: 'Local Hook service is not running',
           description: 'AI tools cannot send Hook events to the app.',
-          suggestion: 'Check whether the app is running correctly, or restart it.'
+          suggestion: 'Check whether the app is running correctly, or restart it.',
         },
         relayNotInstalled: {
           title: 'Relay tool is not installed',
           description: 'AI tool Hook commands need the local relay tool to forward events.',
-          suggestion: 'Open Hook Settings and write the Hook configuration again.'
+          suggestion: 'Open Hook Settings and write the Hook configuration again.',
         },
         relayOutdated: {
           title: 'Relay tool needs update',
           description: 'The installed relay tool differs from the bundled version.',
-          suggestion: 'Restart the app or write Hook configuration again to sync the relay tool.'
+          suggestion: 'Restart the app or write Hook configuration again to sync the relay tool.',
         },
         hookConfigTargetNotSynced: {
           title: 'Hook configuration is not synced',
-          description: 'An enabled Hook target does not match the events selected in Hook Settings.',
-          suggestion: 'Open Hook Settings, preview the target, and update it.'
+          description:
+            'An enabled Hook target does not match the events selected in Hook Settings.',
+          suggestion: 'Open Hook Settings, preview the target, and update it.',
         },
         profileMappingWithoutOutput: {
           title: 'Internal event has no output rule',
-          description: 'AI Hooks can map to the internal event, but the internal event has no enabled output.',
-          suggestion: 'Open AI Event Mapping and add output rules for the internal event.'
+          description:
+            'AI Hooks can map to the internal event, but the internal event has no enabled output.',
+          suggestion: 'Open AI Event Mapping and add output rules for the internal event.',
         },
         deviceNoneRegistered: {
           title: 'No device registered',
           description: 'No registered device is available for hardware output.',
-          suggestion: 'Open Devices, scan resources, and register a device.'
+          suggestion: 'Open Devices, scan resources, and register a device.',
         },
         deviceReferencedOffline: {
           title: 'A referenced device is offline',
           description: 'An output rule references a device that is not connected.',
-          suggestion: 'Connect the device, or auto-connect registered devices from the Devices page.'
+          suggestion:
+            'Connect the device, or auto-connect registered devices from the Devices page.',
         },
         deviceHeartbeatIssue: {
           title: 'Device heartbeat issue',
           description: 'The device is connected, but protocol heartbeat responses are abnormal.',
-          suggestion: 'Check the cable and firmware version, then reconnect the device if needed.'
+          suggestion: 'Check the cable and firmware version, then reconnect the device if needed.',
         },
         deviceFirmwareIssue: {
           title: 'Device firmware status issue',
           description: 'The device firmware or protocol version may not match this app.',
-          suggestion: 'Open Firmware and flash the bundled firmware.'
+          suggestion: 'Open Firmware and flash the bundled firmware.',
         },
         deviceRuntimeIssue: {
           title: 'Device runtime issue',
           description: 'The device runtime state needs attention.',
-          suggestion: 'Open Devices and inspect the device state.'
+          suggestion: 'Open Devices and inspect the device state.',
         },
         runtimeRecentFailure: {
           title: 'Recent runtime failure detected',
           description: 'A recent Hook event or output execution failed.',
-          suggestion: 'Open Debug and inspect the detailed log.'
-        }
-      }
+          suggestion: 'Open Debug and inspect the detailed log.',
+        },
+      },
     },
     devices: {
       title: 'Devices and Firmware',
@@ -736,13 +799,19 @@ export const enMessages = {
         firmwareIssue: 'The device firmware or protocol version may not match this app.',
         connectionError: 'The device connection or runtime state is abnormal.',
         deviceNotConnected: 'The device is not connected, so the output cannot be sent.',
-        deviceChannelNotConfigured: 'The output rule references a device channel that is not configured.',
+        deviceChannelNotConfigured:
+          'The output rule references a device channel that is not configured.',
         deviceActionUnsupported: 'The selected channel does not support the configured action.',
         deviceCommandUnsupported: 'The current firmware does not support this command.',
-        deviceTransportError: 'Device transport failed. Check the cable, port usage, or reconnect the device.',
-        deviceIdentityLimited: 'This board cannot provide a strongly stable device ID. Watch connection order when using multiple identical boards.',
-        boardCatalogMissing: 'The board catalog entry for this device is missing. Check whether the firmware and app versions match.',
-        runtimeIssue: 'The device runtime state needs attention.'
+        deviceCustomFaceOutputMismatch:
+          'Custom face active source or installed group does not match the output rule.',
+        deviceTransportError:
+          'Device transport failed. Check the cable, port usage, or reconnect the device.',
+        deviceIdentityLimited:
+          'This board cannot provide a strongly stable device ID. Watch connection order when using multiple identical boards.',
+        boardCatalogMissing:
+          'The board catalog entry for this device is missing. Check whether the firmware and app versions match.',
+        runtimeIssue: 'The device runtime state needs attention.',
       },
       metrics: {
         registered: 'Registered Devices',
@@ -750,16 +819,17 @@ export const enMessages = {
         offline: 'Offline Devices',
         heartbeatIssues: 'Heartbeat Issues',
         firmwareIssues: 'Firmware Issues',
-        referencedUnavailable: 'Referenced but Unavailable'
-      }
+        referencedUnavailable: 'Referenced but Unavailable',
+      },
     },
     deviceHealth: {
       title: 'Device Health',
-      description: 'Checks device connection, identity, firmware, heartbeat, input configuration, and rule references.',
+      description:
+        'Checks device connection, identity, firmware, heartbeat, input configuration, and rule references.',
       summary: {
         ok: 'Healthy',
         warning: 'Needs Attention',
-        error: 'Error'
+        error: 'Error',
       },
       checks: {
         connection: 'Connection',
@@ -767,7 +837,7 @@ export const enMessages = {
         firmware: 'Firmware',
         heartbeat: 'Heartbeat',
         ruleReference: 'Rule Reference',
-        inputConfig: 'Input Configuration'
+        inputConfig: 'Input Configuration',
       },
       issues: {
         none: 'No issue found',
@@ -776,6 +846,8 @@ export const enMessages = {
         deviceActionTimeout: 'Device action response timed out',
         deviceChannelNotConfigured: 'Device channel is not configured',
         deviceCommandUnsupported: 'The current firmware does not support this command',
+        deviceCustomFaceOutputMismatch:
+          'Custom face active source or installed group does not match the output rule',
         deviceConnectionChanged: 'Device connection changed during the operation',
         deviceInfoTimeout: 'Device info response timed out',
         deviceIoWorkerStopped: 'Device communication worker has stopped',
@@ -796,13 +868,14 @@ export const enMessages = {
         inputPendingSync: 'Input configuration will sync after the device connects',
         referencedOffline: 'The rule references a disconnected device',
         boardCatalogMissing: 'Board catalog entry is missing',
-        deviceIdentityLimited: 'Device identity is still temporary'
+        deviceIdentityLimited: 'Device identity is still temporary',
       },
-      empty: 'No registered device.'
+      empty: 'No registered device.',
     },
     quickActions: {
       title: 'Quick Actions',
-      description: 'Safe actions only. Configuration writes still require confirmation on the owning page.'
+      description:
+        'Safe actions only. Configuration writes still require confirmation on the owning page.',
     },
     actions: {
       refreshDiagnostics: 'Refresh All',
@@ -812,8 +885,8 @@ export const enMessages = {
       openFirmware: 'Open Firmware',
       openDebug: 'Open Debug',
       autoConnectRegisteredDevices: 'Auto-connect Registered Devices',
-      sendTestEvent: 'Send Test Event'
-    }
+      sendTestEvent: 'Send Test Event',
+    },
   },
   setup: {
     title: 'Setup',
@@ -826,28 +899,28 @@ export const enMessages = {
       hookService: {
         label: 'Local Hook Service',
         title: 'Hook Service',
-        description: 'Check local service status'
+        description: 'Check local service status',
       },
       hookSettings: {
         label: 'Hook Settings',
         title: 'Hook Configuration',
-        description: 'Configure AI tool hooks'
+        description: 'Configure AI tool hooks',
       },
       eventMapping: {
         label: 'Event Mapping',
         title: 'AI Event Mapping',
-        description: 'Configure event mapping rules'
+        description: 'Configure event mapping rules',
       },
       deviceFirmware: {
         label: 'Device and Firmware',
         title: 'Device Configuration',
-        description: 'Connect hardware device'
+        description: 'Connect hardware device',
       },
       diagnosticsCheck: {
         label: 'Diagnostics Check',
         title: 'Diagnostics Check',
-        description: 'Review link summary'
-      }
+        description: 'Review link summary',
+      },
     },
     hookService: {
       runningMessage: 'Local Hook service is running.',
@@ -858,7 +931,7 @@ export const enMessages = {
       description: 'Receives Hook events sent by AI tools.',
       eventUrl: 'Event URL:',
       healthUrl: 'Health URL:',
-      openDebug: 'Open Debug Page'
+      openDebug: 'Open Debug Page',
     },
     hookSetup: {
       selectToolTitle: 'Select AI Tool',
@@ -867,7 +940,8 @@ export const enMessages = {
       configureEventsTitle: 'Configure Hook Events',
       configureEventsDescription: 'Select events to listen for and write the config file.',
       openHookSettings: 'Open Hook Settings',
-      openHookSettingsHint: 'Select events, add config targets, and write config on the Hook Settings page.'
+      openHookSettingsHint:
+        'Select events, add config targets, and write config on the Hook Settings page.',
     },
     eventMapping: {
       configured: '{{count}} event mapping rules configured.',
@@ -877,19 +951,20 @@ export const enMessages = {
       flowTitle: 'Mapping flow:',
       flowStep1: 'AI tool triggers a Hook event, such as PreToolUse.',
       flowStep2: 'The event maps to an internal event, such as agent.started.',
-      flowStep3: 'The internal event triggers outputs, such as device channels or system notifications.',
+      flowStep3:
+        'The internal event triggers outputs, such as device channels or system notifications.',
       currentRules: 'Current mapping rules:',
       moreRules: '{{count}} more mapping rules...',
       viewRules: 'View and Edit Mapping Rules',
       startRules: 'Configure Event Mapping',
-      hint: 'This opens the AI Event Mapping page for configuration.'
+      hint: 'This opens the AI Event Mapping page for configuration.',
     },
     deviceFirmware: {
       deviceTitle: 'Device Connection and Firmware',
       deviceDescription:
         'Choose and flash the matching board firmware on the Firmware page, then identify, register, and connect the device on the Device Management page.',
       openDevices: 'Open Device Management',
-      openFirmware: 'Open Firmware Management'
+      openFirmware: 'Open Firmware Management',
     },
     diagnostics: {
       title: 'Link Summary',
@@ -897,14 +972,14 @@ export const enMessages = {
         'Lightly check Hook, mapping, output rules, and device status. Use Diagnostics Center for full troubleshooting.',
       loading: 'Loading setup diagnostics...',
       empty: 'No diagnostics data. Refresh diagnostics.',
-      openDiagnosticsCenter: 'Open Diagnostics Center'
-    }
+      openDiagnosticsCenter: 'Open Diagnostics Center',
+    },
   },
   hookSettings: {
     title: 'Hook Settings',
     description: 'Manage AI tool Hook events, global configuration, and project targets.',
     errors: {
-      invalidProjectDirectory: 'Select a valid project directory.'
+      invalidProjectDirectory: 'Select a valid project directory.',
     },
     events: {
       title: 'Hook Events',
@@ -915,7 +990,7 @@ export const enMessages = {
       loading: 'Loading Hook events...',
       empty: 'No matching events',
       recommended: 'Recommended',
-      requireOne: 'Select at least one Hook event.'
+      requireOne: 'Select at least one Hook event.',
     },
     targets: {
       title: 'Configuration Targets',
@@ -926,7 +1001,6 @@ export const enMessages = {
       project: 'Project Config',
       enabled: 'Enabled',
       disabled: 'Disabled',
-      enableHint: 'Enabling a global config disables project configs for the same tool. Enabling a project config disables the global config for that tool. The same project directory cannot be added twice.',
       outdated: 'Outdated',
       exists: '✓ Config file exists',
       missing: '○ Config file does not exist and can be created automatically',
@@ -934,24 +1008,33 @@ export const enMessages = {
       writing: 'Enabling...',
       write: 'Write',
       enable: 'Enable',
-      eventMismatch: 'Current config does not match the selected Hook events. Preview and update the config file.',
+      eventMismatch:
+        'Current config does not match the selected Hook events. Preview and update the config file.',
       debugMismatch: 'Debug mode setting changed. Preview and update the config file.',
-      debugEnabled: 'Debug mode writes --debug, so relay submits the original payload as well{{suffix}}',
-      debugDisabled: 'Debug is off: relay only submits default summary fields. Payload fields outside the summary cannot be used by output variables{{suffix}}',
+      debugEnabled:
+        'Debug mode writes --debug, so relay submits the original payload as well{{suffix}}',
+      debugDisabled:
+        'Debug is off: relay only submits default summary fields. Payload fields outside the summary cannot be used by output variables{{suffix}}',
       notUpdatedSuffix: '; current config has not been updated',
       writeDone: '✓ Written',
       enableDone: '✓ Enabled',
       backup: 'Backup: {{path}}',
       restoring: 'Restoring...',
-      removeTarget: 'Remove Target'
+      removeTarget: 'Remove Target',
+    },
+    legacy: {
+      message: '{{count}} legacy project Hook(s) may cause duplicate notifications',
+      cleanup: 'Review and clean up',
     },
     previewDialog: {
       title: '{{mode}}: {{targetLabel}}',
       writeMode: 'Config Preview',
       restoreMode: 'Restore Preview',
       writeDescription: '{{existsMessage}}, {{count}} events total',
-      restoreDescription: 'Confirming removes Hook entries managed by this app and keeps your own configuration.',
-      globalEnableWarning: 'Enabling a global config modifies the global Hook file and automatically disables project configs for the same tool to avoid duplicate reports.',
+      restoreDescription:
+        'Confirming removes Hook entries managed by this app and keeps your own configuration.',
+      globalEnableWarning:
+        'Enabling a global config modifies the global Hook file and automatically disables project configs for the same tool to avoid duplicate reports.',
       exists: 'Config file exists',
       missing: 'Config file does not exist and will be created automatically',
       diff: 'Diff',
@@ -965,8 +1048,8 @@ export const enMessages = {
       writing: 'Writing...',
       restoring: 'Restoring...',
       write: 'Write Config',
-      confirmRestore: 'Confirm Restore'
-    }
+      confirmRestore: 'Confirm Restore',
+    },
   },
   monitor: {
     title: 'Runtime Monitor',
@@ -982,7 +1065,7 @@ export const enMessages = {
       failures: 'Failures',
       uptime: 'Uptime',
       lastEvent: 'Last Event',
-      lastOutput: 'Last Output'
+      lastOutput: 'Last Output',
     },
     charts: {
       eventTitle: 'Received Event Trend',
@@ -990,7 +1073,7 @@ export const enMessages = {
       outputTitle: 'Output Trigger Trend',
       outputDescription: 'Grouped by output type, counting outputs triggered by real Hooks.',
       empty: 'No statistics yet',
-      successFailure: 'Success {{success}} / Failure {{failure}}'
+      successFailure: 'Success {{success}} / Failure {{failure}}',
     },
     outputTypes: {
       systemNotification: 'System Notification',
@@ -999,7 +1082,7 @@ export const enMessages = {
       deviceChannel: 'Device Channel',
       display: 'Device Display',
       buzzer: 'Buzzer',
-      desktopNotice: 'Desktop Notice'
+      desktopNotice: 'Desktop Notice',
     },
     outputs: {
       title: 'Output Type Overview',
@@ -1007,32 +1090,678 @@ export const enMessages = {
       empty: 'No output statistics yet',
       attempts: 'Attempts {{count}}',
       failures: 'Failures {{count}}',
-      successRate: 'Success {{rate}}%'
+      successRate: 'Success {{rate}}%',
     },
     recent: {
       title: 'Recent Events',
       description: 'Shows the latest 20 event summaries. Open details to inspect payload.',
       empty: 'No events',
       internalEvent: 'Internal event {{event}}',
-      details: 'Details'
+      details: 'Details',
     },
     health: {
       snapshotFailed: 'Failed to read runtime monitor snapshot: {{error}}',
       hookStopped: 'Local Hook service is not running.',
       runtimeErrors: '{{count}} error records exist in the current runtime cycle.',
-      notificationFocus: 'System notifications may be blocked by Focus or Do Not Disturb. Check notification permissions in system settings.'
-    }
+      notificationFocus:
+        'System notifications may be blocked by Focus or Do Not Disturb. Check notification permissions in system settings.',
+    },
+  },
+  customFaceEditor: {
+    library: {
+      title: 'My Face Groups',
+      description:
+        'Manage local custom faces. Each group uses one display resolution and contains up to 15 faces; the default face is used for group previews and device face recovery.',
+      newResolution: 'New resolution',
+      customResolution: 'Custom resolution',
+      customWidth: 'Custom width',
+      customHeight: 'Custom height',
+      newGroup: 'New group',
+      importGroup: 'Import .ccface',
+      hint: 'After creating a group, you can edit it frame by frame.',
+      empty: 'No face groups yet. Create a face group first.',
+      previewUnavailable: 'Preview unavailable',
+      defaultFacePreview: '{{name}} default face preview',
+      faceCount: '{{count}} faces',
+      open: 'Open',
+      copy: 'Copy',
+      resizeCopy: 'Save as another resolution',
+      rename: 'Rename',
+      export: 'Export',
+      remove: 'Delete',
+      revision: 'Revision {{revision}}',
+      profileFrames: '{{width}} × {{height}} · up to {{max}} frames',
+      invalidProfile: 'Invalid custom resolution',
+      loading: 'Loading face groups...',
+    },
+    groupDialogs: {
+      resizeTitle: 'Save as another resolution',
+      resizeDescription:
+        'Create a new group without changing the original; the new group opens for editing when ready.',
+      targetResolution: 'Target resolution',
+      selectResolution: 'Choose a resolution',
+      newGroupName: 'New group name',
+      customWidth: 'Width',
+      customHeight: 'Height',
+      maxFrames: 'Up to {{max}} frames',
+      trimFrames: '; {{count}} frames are expected to be trimmed.',
+      keepFrames: '; current frames will not be trimmed.',
+      create: 'Create and open',
+      creating: 'Creating...',
+      renameTitle: 'Rename face group',
+      renameDescription: 'The name only affects the local face library.',
+      groupName: 'Group name',
+      save: 'Save',
+      saving: 'Saving...',
+      confirmRename: 'Rename',
+      deleteTitle: 'Delete face group?',
+      deleteDescription:
+        'This deletes “{{name}}”, resolution {{profile}}, with {{count}} faces. This cannot be undone.',
+      deleting: 'Deleting...',
+      confirmDelete: 'Delete',
+      cancel: 'Cancel',
+    },
+    toolbar: {
+      ariaLabel: 'Face editing toolbar',
+      groups: { selection: 'Selection', drawing: 'Drawing', shapes: 'Shapes', history: 'History' },
+      tools: {
+        select: {
+          label: 'Select',
+          hint: 'Drag to create a selection, then copy, paste, or clear it',
+        },
+        brush: { label: 'Brush', hint: 'Click pixels to toggle their highlighted state' },
+        eraser: { label: 'Eraser', hint: 'Drag to erase the configured area' },
+        line: { label: 'Line', hint: 'Drag to preview, then release to apply' },
+        rectangle: {
+          label: 'Rectangle',
+          hint: 'Drag to preview; choose outline or filled in the properties',
+        },
+        circle: { label: 'Circle', hint: 'Drag a bounding box; preview matches the result' },
+        triangle: { label: 'Triangle', hint: 'Drag a bounding box to draw a triangle' },
+        pen: {
+          label: 'Pen',
+          hint: 'Place points, then finish with double-click or the properties button',
+        },
+      },
+      expand: 'Expand toolbar',
+      collapse: 'Collapse toolbar',
+      undo: 'Undo',
+      redo: 'Redo',
+      undoHint: 'Undo the latest complete operation',
+      redoHint: 'Redo the latest undone operation',
+    },
+    defaults: {
+      unnamedGroup: 'Unnamed group',
+      staticFace: 'Static face',
+      copySuffix: 'copy',
+      importSuffix: '-import',
+      fileName: 'custom-face',
+    },
+    timeline: {
+      label: 'Face timeline',
+      play: 'Preview all',
+      pause: 'Pause',
+      selectedPreview: 'Preview selected',
+      totalFrames: 'Total frames {{count}}',
+      totalDuration: 'Total duration {{duration}} ms',
+      selected: '{{count}} selected',
+      current: 'Frame {{current}} / {{total}}',
+      insert: 'Insertion point',
+      selectFrame: 'Select frame {{index}}',
+      framePreview: 'Preview frame {{index}}',
+      frame: 'Frame {{index}}',
+      deleteFrame: 'Delete frame {{index}}',
+      keepOne: 'Keep at least one frame',
+      addFrame: 'Add frame',
+      addFrameHint: 'Copy the current frame and append it',
+      addFrameOptions: 'Choose how to add a frame',
+      copyFrame: 'Copy current frame',
+      blankFrame: 'Create blank frame',
+    },
+    rulers: {
+      horizontal: 'Horizontal scale',
+      vertical: 'Vertical scale',
+      horizontalGuide: 'Horizontal guide',
+      verticalGuide: 'Vertical guide',
+      addHorizontal: 'Add horizontal guide',
+      addVertical: 'Add vertical guide',
+      horizontalRow: 'Horizontal guide · row',
+      verticalColumn: 'Vertical guide · column',
+      coordinate: 'Guide coordinate',
+      delete: 'Delete guide',
+      close: 'Close',
+    },
+    assets: {
+      label: 'Asset library',
+      close: 'Close asset library',
+      groupTab: 'Current group assets',
+      publicTab: 'Public assets',
+      filter: 'Filter by tag',
+      clearFilter: 'Clear filter',
+      tags: 'Tags: {{tags}}',
+      rename: 'Rename',
+      confirmRename: 'Confirm',
+      tag: 'Tags',
+      confirmTags: 'Confirm tags',
+      delete: 'Delete',
+      empty: 'No assets',
+      saveGroup: 'Save to current group',
+      savePublic: 'Save as public asset',
+      deleteConfirm: 'Delete personal asset “{{name}}”?',
+      name: 'New personal asset name',
+      tagInput: 'Asset tags',
+      preview: '{{name}} preview',
+    },
+    canvasOverlay: {
+      pendingImport: 'Pending import',
+      pendingImportPreview: 'Pending import {{width}} × {{height}}',
+      magnifierArea: 'Magnified area',
+      currentPixel: 'Current pixel',
+      originalSelection: 'Original selection',
+      selection: 'Current selection',
+      selectionPivot: 'Rotation pivot',
+      eraserArea: 'Erase area',
+      toolPreview: 'Tool preview',
+      penPreview: 'Pen path preview',
+      pixelGrid: 'Pixel grid',
+    },
+    workbench: {
+      initialStatus: 'Choose a tool and work on the canvas.',
+      toolHints: {
+        select:
+          'Drag on the canvas to create a selection, then use selection actions on the right.',
+        brush: 'Click a pixel to toggle its highlighted state.',
+        eraser: 'Adjust the erase area, then drag and release to apply it.',
+        line: 'Press to set the start, drag to preview, and release to apply.',
+        rectangle: 'Drag to preview the rectangle, then release to apply.',
+        circle: 'Drag a bounding box; preview and final ellipse use the same bounds.',
+        triangle: 'The first click fixes the vertex; drag to adjust the base.',
+        pen: 'Click points to create a path, then finish with double-click or the button.',
+      },
+      constraints: {
+        line: 'Constrain to horizontal, vertical, or 45°',
+        rectangle: 'Constrain to a square',
+        circle: 'Constrain to a circle',
+        triangle: 'Constrain to an isosceles triangle',
+      },
+      back: 'Back to groups',
+      save: 'Save',
+      saving: 'Saving...',
+      importSvg: 'Import SVG',
+      importImage: 'Import Image',
+      assets: 'Assets',
+      groupName: 'Group name',
+      applyGroupName: 'Apply group name',
+      modified: 'Unsaved changes',
+      saved: 'Saved',
+      saveFailed: 'Save failed: {{error}}',
+      saveSuccess: 'Face group saved.',
+      saveConflict: 'Save conflict: the face group changed on disk.',
+      reloadSuccess: 'Disk version reloaded; local unsaved changes were discarded.',
+      reloadFailed: 'Reload failed: {{error}}',
+      discardFailed: 'Failed to discard changes: {{error}}',
+      closeFailed: 'Failed to close editor: {{error}}',
+      imagePixelizerOpen: 'The image import window is open. Close it before leaving the editor.',
+      imageVectorizerOpen: 'The image to SVG window is open. Close it before leaving the editor.',
+      switchFace: 'Switched face and loaded its first frame.',
+      frameAdded: 'Copied the current frame and appended it to the timeline.',
+      blankFrameAdded: 'Created a blank frame and appended it to the timeline.',
+      faceRenamed: 'Renamed to “{{name}}”.',
+      maxFaces: 'A group can contain up to 15 faces.',
+      newFace: 'New face',
+      copyFace: 'Copy face',
+      addedFace: 'Added “{{name}}”.',
+      copySuffix: 'copy',
+      copiedFace: 'Copied as “{{name}}”.',
+      emptyFaceName: 'Face name cannot be empty.',
+      duplicateFaceName: 'Face names must be unique within a group.',
+      minFaces: 'A group must keep at least one face.',
+      deleteFaceConfirm: 'Delete face “{{name}}”?',
+      groupNameChanged: 'Group name changed to “{{name}}”.',
+      frameApplied: 'Temporary object applied to the current frame.',
+      copiedSelection: 'Selection copied. You can paste it after switching frames.',
+      selectionShape: 'Selection Shape',
+      selectionShapeRectangle: 'Rectangle',
+      selectionShapeCircle: 'Circle',
+      selectionCreated: 'Selected a {{width}} × {{height}} pixel area.',
+      imageApplied: 'Image loaded onto the canvas. Adjust it and confirm to apply.',
+      imageImportSizeMismatch:
+        'The imported image result does not match the current canvas. Import it again.',
+      assetApplied: 'Personal asset loaded onto the canvas. Adjust it and confirm to apply.',
+      assetSaved: 'Current frame saved as a personal asset.',
+      svgApplied: 'SVG loaded onto the canvas. Adjust its position and confirm the import.',
+      currentFace: 'Current face',
+      selectFace: 'Select face',
+      faceName: 'Face name',
+      currentFrame: 'Frame {{current}} / {{total}}',
+      applyName: 'Apply name',
+      defaultFace: 'Default',
+      setDefault: 'Set as default face',
+      deleteFace: 'Delete face',
+      frameName: 'Frame',
+      frameDuration: 'Frame duration',
+      resolutionFaces: 'Resolution {{width}} × {{height}} · faces {{count}} / 15',
+      toolProperties: 'Tool properties',
+      currentTool: 'Current tool: {{tool}}',
+      outline: 'Outline',
+      filled: 'Filled',
+      eraseArea: 'Erase area: {{size}} × {{size}}',
+      start: 'Start: {{point}}',
+      end: 'End: ' + '{{point}}',
+      bounds: 'Bounds: {{width}} × {{height}}',
+      selectionInfo: 'Selection: {{x}},{{y}} · {{width}} × {{height}}',
+      moveSection: 'Move',
+      rotationSection: 'Rotate',
+      selectionActions: 'Selection actions',
+      cancelSelection: 'Cancel selection',
+      moveStep: 'Selection move step',
+      rotationPivot: 'Rotation pivot: {{x}},{{y}}',
+      setRotationPivot: 'Set rotation pivot',
+      pickRotationPivot: 'Choose a rotation pivot on the canvas',
+      rotationDegrees: 'Rotation angle',
+      decreaseRotation: 'Decrease rotation angle',
+      increaseRotation: 'Increase rotation angle',
+      rotateClockwise: 'Rotate clockwise 90°',
+      rotateCounterclockwise: 'Rotate counterclockwise 90°',
+      confirmTransform: 'Confirm transform',
+      cancelTransform: 'Cancel transform',
+      confirmRotation: 'Confirm rotation',
+      cancelRotation: 'Cancel rotation',
+      up: 'Move selection up',
+      left: 'Move selection left',
+      down: 'Move selection down',
+      right: 'Move selection right',
+      confirmMove: 'Confirm move',
+      copy: 'Copy',
+      paste: 'Paste',
+      pasteHint: 'Paste at the top-left of the current selection',
+      clipboardEmpty: 'Clipboard is empty. Copy a selection first.',
+      selectTarget: 'Select a paste target area first.',
+      clear: 'Clear',
+      highlight: 'Highlight',
+      dim: 'Turn off',
+      cancelMove: 'Cancel move',
+      cancel: 'Cancel',
+      selectHint: 'Drag on the canvas to create a selection.',
+      points: 'Points: {{count}}',
+      finishPath: 'Finish path',
+      cancelPath: 'Cancel path',
+      saveConflictTitle: 'Save conflict detected',
+      saveConflictDescription:
+        'The face group changed on disk. Reloading discards local changes; overwriting replaces the disk version with the local version.',
+      reloadDisk: 'Reload disk version',
+      overwrite: 'Overwrite',
+      leaveTitle: 'Save unfinished changes?',
+      leaveDescription:
+        'The current face group has unsaved changes. The editor stays open if saving fails.',
+      discard: 'Discard changes',
+      saveAndClose: 'Save and close',
+      pendingTitle: 'Asset pending confirmation',
+      pendingDescription:
+        'Drag on the canvas to adjust its position, then confirm to write it to the current frame.',
+      pendingScale: 'Scale: {{scale}}',
+      pendingScaleLabel: 'Pending asset scale',
+      copyFirst: 'Copy a selection first',
+      cancelApply: 'Cancel apply',
+      confirmApply: 'Apply',
+      pasteTarget: 'Select a paste target area first.',
+    },
+    imagePixelizer: {
+      title: 'Image Import',
+      selectImage: 'Choose Image',
+      selectedFile: 'Selected image: {{name}}',
+      pastedImage: 'Pasted image',
+      preview: 'Pixel preview',
+      pasteHint: 'You can paste an image directly from the clipboard',
+      parameters: 'Parameters',
+      sourceGroup: 'Source',
+      sourceHint:
+        'Image mode uses the existing import flow. Text mode first renders a transparent bitmap and then converts it.',
+      sourceImage: 'Image',
+      sourceText: 'Text',
+      paletteGroup: 'Color mode',
+      transformGroup: 'Image position',
+      toneGroup: 'Tone',
+      textGroup: 'Text content',
+      textLayoutGroup: 'Text layout',
+      textContent: 'Text content',
+      textContentHint:
+        'Supports multiple lines. Overflow does not block conversion; adjust with scale and position.',
+      textTooLongWarning: 'This text is long and may affect conversion performance.',
+      textTruncatedWarning:
+        'Text was too long and has been truncated for the current canvas and font size.',
+      fontFamily: 'Font',
+      fontFamilyHint: 'Uses system font presets without bundling or importing font files.',
+      fontSans: 'Sans',
+      fontSerif: 'Serif',
+      fontMono: 'Mono',
+      fontCjkSans: 'CJK sans',
+      fontSize: 'Font size',
+      fontSizeHint:
+        'Controls source text size. Use image scale to adjust the whole object afterward.',
+      letterSpacing: 'Letter spacing',
+      letterSpacingHint: 'Controls horizontal spacing between characters, scaled by font size.',
+      fontWeight: 'Weight',
+      fontWeightHint: 'Uses normal or bold weight for the whole text block.',
+      fontWeightNormal: 'Normal',
+      fontWeightBold: 'Bold',
+      textAlign: 'Align',
+      textAlignHint: 'Controls horizontal alignment inside the text source.',
+      alignLeft: 'Left',
+      alignCenter: 'Center',
+      alignRight: 'Right',
+      lineHeight: 'Line height',
+      lineHeightHint: 'Controls vertical spacing between text lines.',
+      textWrap: 'Auto wrap',
+      textWrapHint: 'Wraps text by source width while preserving explicit line breaks.',
+      textPadding: 'Padding',
+      textPaddingHint: 'Controls spacing between text and transparent source edges.',
+      mode: 'Conversion mode',
+      modeMono: 'Monochrome',
+      modeColor: 'Color',
+      modeHint:
+        'Monochrome outputs pixels that can be applied directly, while color mode is for previewing and tuning.',
+      colorCount: 'Color count',
+      colorCountHint:
+        'In color mode this limits the preview palette size; monochrome mode ignores it.',
+      threshold: 'Threshold',
+      thresholdHint: 'Lower thresholds keep more bright pixels; higher thresholds tighten edges.',
+      contrast: 'Contrast',
+      contrastHint:
+        'Higher contrast spreads light and dark values apart; lower contrast softens the result.',
+      brightness: 'Brightness',
+      brightnessHint: 'Higher brightness lifts the whole image; lower brightness darkens it.',
+      scale: 'Scale',
+      scaleHint: 'Enlarge or shrink how much of the source image occupies the pixel canvas.',
+      rotation: 'Rotation',
+      rotationHint: 'Rotate around the image object center from -180° to 180°.',
+      offsetX: 'Horizontal position',
+      offsetXHint: 'Move the image left or right to align it on the pixel canvas.',
+      offsetY: 'Vertical position',
+      offsetYHint: 'Move the image up or down to align it on the pixel canvas.',
+      dither: 'Dither',
+      ditherHint: 'Enable noise-based blending to simulate more shades during preview.',
+      invert: 'Invert',
+      invertHint: 'Invert flips the on/off relationship for opposite-toned source images.',
+      outputInfo: 'Output info',
+      outputReady: 'Ready',
+      outputPending: 'Waiting for image',
+      sourceSize: 'Source size {{width}} × {{height}}',
+      previewMode: 'Preview mode: {{mode}}',
+      apply: 'Apply',
+      discard: 'Close',
+      clear: 'Clear canvas',
+      reset: 'Reset',
+      resetAll: 'Reset settings',
+      resetTransform: 'Reset image position',
+      center: 'Center',
+      resetGroup: 'Reset {{group}}',
+      canvasSize: 'Canvas {{width}} × {{height}}',
+      originalImage: 'Original preview',
+      hoverHint: 'Hover to enlarge the original image',
+    },
+    canvas: {
+      label: 'Custom face canvas {{width}} × {{height}}',
+      coordinate: 'Coordinates {{x}}, {{y}} · ',
+      scale: 'Scale {{scale}}×',
+      emptyFrame: 'Blank frame',
+    },
+    magnifier: {
+      show: 'Magnify area',
+      hide: 'Hide magnifier',
+      title: 'Magnified area {{scale}}×',
+      panelLabel: 'Magnified canvas',
+      canvasLabel: 'Magnified pixel canvas',
+      close: 'Close magnifier',
+      closePanel: 'Close magnifier window',
+      pointer: 'Current pixel',
+      mode: {
+        follow: 'Following',
+        locked: 'Locked',
+      },
+      modeAction: {
+        follow: 'Lock magnified area',
+        locked: 'Unlock magnified area',
+      },
+      modeText: {
+        follow: 'Lock',
+        locked: 'Unlock',
+      },
+      range: '{{startX}},{{startY}} to {{endX}},{{endY}}',
+    },
+    faceImport: {
+      action: 'Import single face',
+      title: 'Import single face',
+      description:
+        'The face is added to the current group as a new face and never overwrites an existing face.',
+      source: 'Source: {{name}}',
+      details: '{{width}} × {{height}} · {{frames}} frames · {{duration}} ms',
+      name: 'Imported face name',
+      confirm: 'Import as new face',
+      importing: 'Reading face file...',
+      profileMismatch:
+        'Import failed: resolution mismatch (source: {{sourceWidth}} × {{sourceHeight}}; current group: {{targetWidth}} × {{targetHeight}}).',
+      capacityReached: 'The current group already has {{max}} faces and cannot import another one.',
+      duplicate:
+        'The current group already contains identical face content. You can still import a copy.',
+      invertImage: 'Invert image highlights',
+      invertImageHint:
+        'Only the detected image content is inverted; transparent background stays off.',
+      imported: 'Imported “{{name}}”. It has not been saved yet.',
+    },
+    svgImport: {
+      title: 'Import SVG',
+      filterName: 'SVG image',
+      mergeLabel: 'Merge into current frame',
+      replaceLabel: 'Replace current frame',
+      description:
+        'Convert SVG using native static rendering into monochrome pixels. Transparent backgrounds and opaque foregrounds are recommended; opaque backgrounds are also lit.',
+      read: 'Reading...',
+      selectFile: 'Choose SVG file',
+      importImage: 'Create from image',
+      metadata:
+        'Source {{width}} × {{height}} · {{elements}} elements · target {{targetWidth}} × {{targetHeight}}',
+      noFile: 'Choose an SVG file',
+      updating: 'Updating preview...',
+      mode: 'Import mode',
+      merge: 'Merge',
+      replace: 'Replace',
+      x: 'Horizontal position X',
+      y: 'Vertical offset',
+      offsetXLabel: 'Horizontal offset',
+      offsetYLabel: 'Vertical offset',
+      scaleLabel: 'Scale',
+      rotationLabel: 'Rotation',
+      thresholdLabel: 'Pixel coverage threshold',
+      recognitionMode: 'Pixel recognition',
+      alphaRecognition: 'By transparency',
+      alphaRecognitionLabel: 'Recognize pixels by transparency',
+      alphaRecognitionHint: 'For transparent-background artwork; brightness is ignored.',
+      brightnessRecognition: 'By brightness',
+      brightnessRecognitionLabel: 'Recognize pixels by brightness',
+      brightnessRecognitionHint:
+        'For white-background dark artwork; darker pixels become highlights while transparent pixels stay off.',
+      decrease: 'Decrease {{field}}',
+      increase: 'Increase {{field}}',
+      center: 'Center',
+      topLeft: 'Top left',
+      reset: 'Reset',
+      offsetX: 'Horizontal offset: {{value}}',
+      offsetY: 'Vertical offset: {{value}}',
+      scale: 'Scale: {{value}}',
+      rotation: 'Rotation: {{value}}°',
+      threshold: 'Pixel coverage threshold: {{value}}',
+      thresholdHint: 'Lower values preserve more fine lines; higher values tighten edges.',
+      activePixels: 'Highlighted pixels: {{count}}',
+      clipped: 'Content outside the screen was clipped',
+      cancel: 'Cancel',
+      apply: 'Apply to current frame',
+      preview: 'SVG preview {{width}} × {{height}}',
+    },
+    imageVectorizer: {
+      title: 'Image to SVG',
+      selectImage: 'Choose Image',
+      selectedFile: 'Selected image: {{name}}',
+      paste: 'Paste Image',
+      pastedImage: 'Pasted image',
+      originalImage: 'Original preview',
+      svgPreview: 'SVG preview',
+      sourceSize: 'Source size {{width}} × {{height}}',
+      workingSize: 'Working size {{width}} × {{height}}',
+      svgSize: 'SVG size {{width}} × {{height}}',
+      ready: 'Ready',
+      waiting: 'Waiting for image',
+      transformGroup: 'Image preprocessing',
+      transformGroupHint: 'Adjust the source image before tracing it into SVG.',
+      modeGroup: 'Vector mode',
+      modeGroupHint: 'Switch between monochrome and color tracing.',
+      traceGroup: 'Trace parameters',
+      traceGroupHint: 'Control detail, layering, and noise removal during tracing.',
+      pathGroup: 'Path parameters',
+      pathGroupHint: 'Control path splitting and SVG precision.',
+      mode: 'Conversion mode',
+      modeBinary: 'Binary',
+      modeColor: 'Color',
+      modeHint: 'Monochrome suits line-art, while color keeps color blocks.',
+      scale: 'Scale',
+      scaleHint: 'Resize the source image before tracing.',
+      offsetX: 'Horizontal offset',
+      offsetXHint:
+        'Drag or fine tune the converted image horizontally on the preprocessing canvas.',
+      offsetY: 'Vertical offset',
+      offsetYHint: 'Drag or fine tune the converted image vertically on the preprocessing canvas.',
+      rotationDeg: 'Rotation',
+      rotationDegHint: 'Rotate the source image before tracing.',
+      brightness: 'Brightness',
+      brightnessHint: 'Lighten or darken the source image before tracing.',
+      contrast: 'Contrast',
+      contrastHint: 'Increase or reduce the light/dark separation before tracing.',
+      invert: 'Invert',
+      invertHint: 'Invert the brightness relationship before tracing.',
+      filterSpeckle: 'Speckle filter',
+      filterSpeckleHint: 'Remove isolated noise speckles and reduce fragments.',
+      colorPrecision: 'Color precision',
+      colorPrecisionHint: 'Lower values simplify the color palette and the result.',
+      layerDifference: 'Layer difference',
+      layerDifferenceHint: 'Set the minimum difference between color layers.',
+      cornerThreshold: 'Corner threshold',
+      cornerThresholdHint: 'Higher values keep more sharp corners.',
+      lengthThreshold: 'Length threshold',
+      lengthThresholdHint: 'Control whether short segments stay separate.',
+      maxIterations: 'Max iterations',
+      maxIterationsHint: 'Limit the number of refinement passes; higher is slower.',
+      spliceThreshold: 'Splice threshold',
+      spliceThresholdHint: 'Control whether nearby path segments merge.',
+      pathPrecision: 'Path precision',
+      pathPrecisionHint: 'Control how many decimal places path coordinates keep.',
+      exportSvg: 'Save SVG',
+      sendToSvg: 'Send to SVG import window',
+      close: 'Close',
+      reset: 'Reset',
+      pasteHint: 'You can paste a static image directly from the clipboard.',
+      unsupportedFile: 'Only image files are supported.',
+      staticOnly: 'Only static images are supported; GIF is not supported.',
+      clipboardUnsupported: 'This environment cannot read clipboard images.',
+      clipboardEmpty: 'No usable image was found on the clipboard.',
+    },
+    faceExport: {
+      item: 'Export editable face',
+      gif: 'Export GIF',
+      png: 'Export current frame as PNG',
+      dialog: {
+        title: 'Export GIF',
+        description:
+          'Scale the pixel canvas by an integer factor while keeping hard edges and the original aspect ratio.',
+        scale: 'Export scale',
+        scaleValue: '{{scale}}×',
+        invert: 'Invert colors (white on black becomes black on white)',
+        transparentBackground: 'Transparent background (remove background color)',
+        frames: 'Frame selection',
+        allFrames: 'Export all frames',
+        customFrames: 'Custom frame selection',
+        selectAll: 'Select all',
+        deselectAll: 'Deselect all',
+        selectedCount: '{{count}} frame(s) selected',
+        to: 'to',
+        sourceSize: 'Source size',
+        outputSize: 'Export size',
+        limit: 'The maximum is 8×. Larger GIFs can require more time and storage.',
+        confirm: 'Choose save location',
+      },
+      pngDialog: {
+        title: 'Export current frame as PNG',
+        description: 'Export the currently displayed frame as a PNG image.',
+        scale: 'Export scale',
+        scaleValue: '{{scale}}×',
+        invert: 'Invert colors (white on black becomes black on white)',
+        transparentBackground: 'Transparent background (remove background color)',
+        sourceSize: 'Source size',
+        outputSize: 'Export size',
+        limit: 'The maximum is 8×.',
+        confirm: 'Choose save location',
+      },
+      itemSuccess: 'Exported a face file that can be imported again.',
+      gifSuccess: 'Exported GIF with {{frames}} frames and {{duration}} ms playback.',
+      pngSuccess: 'Exported PNG image.',
+      quantized:
+        'GIF uses 10 ms timing. Frame delays are rounded; exported playback is {{duration}} ms.',
+      exporting: 'Exporting current face...',
+      failed: 'Export failed: {{error}}',
+    },
   },
   devices: {
     title: 'Device Management',
-    description: 'Manage hardware devices, transport connections, device channels, and test actions.',
+    description:
+      'Manage hardware devices, transport connections, device channels, and test actions.',
+    customFaces: {
+      manage: 'Device Screen Custom Face Manager',
+      openHint: 'Open the custom face editor',
+      openedHint: 'The custom face editor is already open',
+      unsupportedHint: 'The selected device does not support face displays',
+      installTitle: 'Custom Face Install',
+      installDescription:
+        'Choose a local face group and install it to the device custom slot after resolution and firmware capability checks pass.',
+      groupLabel: 'Face group',
+      noGroups: 'No face groups',
+      reloadGroups: 'Refresh face groups',
+      install: 'Install to selected device',
+      installing: 'Installing...',
+      installSuccessTitle: 'Custom face installed',
+      installSuccessDescription: 'Wrote "{{name}}" into the device custom slot.',
+      installedGroup: 'Installed: {{groupId}}, {{bytes}} bytes.',
+      activeSourceLabel: 'Active source: {{source}}',
+      activeSourceBuiltin: 'Built-in',
+      activeSourceCustom: 'Custom',
+      activateBuiltin: 'Switch to built-in',
+      activateCustom: 'Activate custom',
+      activationSuccessTitle: 'Face source switched',
+      activationSuccessDescription: 'Current active source is now {{source}}.',
+      preflightFailed: 'This face group cannot be installed: {{reasons}}',
+      preflightReasonSeparator: ', ',
+      preflightReasons: {
+        'profile-not-deployable': 'This face group resolution is not deployable yet',
+        'display-face-unsupported': 'The device does not declare face display support',
+        'display-size-missing': 'The device is missing display resolution information',
+        'display-size-mismatch': 'The device display resolution does not match the face group',
+        'custom-face-capability-missing': 'The firmware does not declare custom face capability',
+        'protocol-version-mismatch': 'The firmware custom face protocol version does not match',
+        'profile-code-mismatch': 'The firmware custom face profile does not match the face group',
+        'custom-face-size-mismatch':
+          'The firmware custom face resolution does not match the face group',
+        'frame-limit-exceeded': 'The face frame count exceeds the firmware limit',
+        'framebuffer-size-mismatch': 'The face frame data size does not match the resolution',
+      },
+      reloadFailed: 'Failed to refresh face groups: {{error}}',
+      installFailed: 'Install failed: {{error}}',
+      activationFailed: 'Failed to switch active source: {{error}}',
+    },
     unknownDevice: 'Unknown Device',
     unknownBoard: 'Unknown Board',
     status: {
       disconnected: 'Disconnected',
       connecting: 'Connecting',
       connected: 'Connected',
-      error: 'Error'
+      error: 'Error',
     },
     list: {
       title: 'Device Instances',
@@ -1048,11 +1777,12 @@ export const enMessages = {
       removeBlockedDescription:
         'Remove or rebind the related device channel action in AI Event Mapping before removing this device.',
       referencedRule: 'Referenced rule: {{rule}}',
-      openRules: 'Open AI Event Mapping'
+      openRules: 'Open AI Event Mapping',
     },
     discovery: {
       title: 'Device Discovery',
-      description: 'Scan candidate resources manually. A handshake is sent only when you identify a device.',
+      description:
+        'Scan candidate resources manually. A handshake is sent only when you identify a device.',
       scan: 'Scan Device Resources',
       scanning: 'Scanning...',
       identify: 'Identify Device',
@@ -1071,8 +1801,8 @@ export const enMessages = {
         identifying: 'Identifying',
         identified: 'Identified',
         matched: 'Matched',
-        failed: 'Failed'
-      }
+        failed: 'Failed',
+      },
     },
     connection: {
       title: 'Connection Management',
@@ -1092,7 +1822,7 @@ export const enMessages = {
       selectedTransport: 'Current Transport',
       availablePorts: 'Available Transports',
       matchedPort: 'Matched',
-      emptyPorts: 'No scan results yet. Scan transport resources.'
+      emptyPorts: 'No scan results yet. Scan transport resources.',
     },
     transportMonitor: {
       title: 'Device Transport Monitor',
@@ -1119,12 +1849,12 @@ export const enMessages = {
         command: 'Command',
         channel: 'Channel',
         control: 'Control',
-        error: 'Error Code'
+        error: 'Error Code',
       },
       direction: {
         outbound: 'Down',
         inbound: 'Up',
-        system: 'System'
+        system: 'System',
       },
       category: {
         command: 'Command',
@@ -1132,7 +1862,7 @@ export const enMessages = {
         'input-event': 'Input Event',
         heartbeat: 'Heartbeat',
         connection: 'Connection',
-        error: 'Error'
+        error: 'Error',
       },
       status: {
         pending: 'Pending',
@@ -1141,8 +1871,8 @@ export const enMessages = {
         timeout: 'Timeout',
         error: 'Error',
         skipped: 'Skipped',
-        stopped: 'Stopped'
-      }
+        stopped: 'Stopped',
+      },
     },
     operation: {
       connectingTitle: 'Connecting device',
@@ -1153,7 +1883,8 @@ export const enMessages = {
       portLabel: 'Transport',
       cancelConnection: 'Cancel connection',
       cancelling: 'Cancelling...',
-      blockedHint: 'This connection attempt was cancelled. Auto connect will pause briefly for this device.'
+      blockedHint:
+        'This connection attempt was cancelled. Auto connect will pause briefly for this device.',
     },
     identity: {
       title: 'Device Identity',
@@ -1163,9 +1894,11 @@ export const enMessages = {
       resetting: 'Resetting...',
       errorTitle: 'Device Identity Operation Failed',
       confirmTitle: 'Reset Device ID?',
-      confirmDescription: 'The app will generate a new random device ID and write it to the connected device EEPROM.',
-      confirmWarning: 'After reset, this board will identify with a new device ID. Make sure the connected device is the one you want to reset.',
-      confirmReset: 'Reset ID'
+      confirmDescription:
+        'The app will generate a new random device ID and write it to the connected device EEPROM.',
+      confirmWarning:
+        'After reset, this board will identify with a new device ID. Make sure the connected device is the one you want to reset.',
+      confirmReset: 'Reset ID',
     },
     channels: {
       title: 'Device Channels',
@@ -1189,16 +1922,17 @@ export const enMessages = {
       configureInput: 'Configure {{channel}} input action',
       configureInputShort: 'Configure',
       modeSwitchBlockedTitle: 'Channel is used by an output rule and cannot switch to input.',
-      modeSwitchBlockedDescription: 'Remove or update the output rule that uses this channel, then switch the channel mode.',
+      modeSwitchBlockedDescription:
+        'Remove or update the output rule that uses this channel, then switch the channel mode.',
       referencedChannel: 'Channel: {{channel}}',
       referencedRule: 'Referenced rule: {{rule}}',
       modeFixedInput: 'Fixed Input',
       modeValue: {
         output: 'Output',
-        input: 'Input'
+        input: 'Input',
       },
       emptyAvailable: 'No available channel remains for the current board.',
-      guide: 'Guide'
+      guide: 'Guide',
     },
     channelKind: {
       'digital-output': 'Digital Output',
@@ -1207,7 +1941,7 @@ export const enMessages = {
       display: 'Display',
       buzzer: 'Buzzer',
       relay: 'Relay',
-      'button-input': 'Button Input'
+      'button-input': 'Button Input',
     },
     inputBinding: {
       title: 'Input Action',
@@ -1220,27 +1954,33 @@ export const enMessages = {
       keyboardHint: 'Click a key on the keyboard, or capture a real key press for quick input.',
       captureShortcut: 'Capture Key',
       stopCapture: 'Stop Capture',
-      captureHint: 'Press the key or combo to trigger. Default shortcuts are blocked while capturing.',
-      unsupportedKey: 'This key is not supported yet. Use letters, numbers, function keys, arrow keys, or common control keys.',
+      captureHint:
+        'Press the key or combo to trigger. Default shortcuts are blocked while capturing.',
+      unsupportedKey:
+        'This key is not supported yet. Use letters, numbers, function keys, arrow keys, or common control keys.',
       unconfigured: 'Not configured',
       disabled: 'Disabled',
       disabledShortcut: '{{shortcut}} (disabled)',
-      focusScopeHint: 'The shortcut is sent to the currently focused app. Background apps may not receive it.',
+      focusScopeHint:
+        'The shortcut is sent to the currently focused app. Background apps may not receive it.',
       key: {
-        space: 'Space'
+        space: 'Space',
       },
       validation: {
         primaryRequired: 'Choose one primary key.',
         comboNeedsOnePrimary: 'A combo can contain only one non-modifier primary key.',
-        comboNeedsModifier: 'A combo must include at least one modifier key.'
-      }
+        comboNeedsModifier: 'A combo must include at least one modifier key.',
+      },
     },
     inputTest: {
       title: 'Button Input Test',
-      description: 'Review shortcuts bound to device input channels and compare highlighted keys when pressing the real device button.',
+      description:
+        'Review shortcuts bound to device input channels and compare highlighted keys when pressing the real device button.',
       recentEvent: 'Recently received',
-      disabledHint: 'This button action is disabled. The device may still report input events, but it will not trigger the shortcut: {{shortcut}}.',
-      unconfiguredHint: 'This input channel has no shortcut yet. Configure its input action from the device channel table first.'
+      disabledHint:
+        'This button action is disabled. The device may still report input events, but it will not trigger the shortcut: {{shortcut}}.',
+      unconfiguredHint:
+        'This input channel has no shortcut yet. Configure its input action from the device channel table first.',
     },
     channelAction: {
       activate: 'Activate',
@@ -1253,7 +1993,8 @@ export const enMessages = {
       beep: 'Beep',
       tone: 'Tone',
       pattern: 'Pattern',
-      'set-color': 'Set Color'
+      'display-face': 'Screen Face',
+      'set-color': 'Set Color',
     },
     testAction: {
       title: 'Test Action',
@@ -1275,12 +2016,27 @@ export const enMessages = {
       ready: 'Ready to send a test action.',
       skipped: 'Device is not connected. Test action skipped.',
       sent: 'Test action sent.',
-      failed: 'Failed to send test action.'
+      failed: 'Failed to send test action.',
     },
     deviceExtension: {
       title: 'Device Extensions',
-      description: 'Send device-level test commands for extension capabilities declared by the current device.',
+      description:
+        'Send device-level test commands for extension capabilities declared by the current device.',
       display: 'Display Test',
+      builtinFaceTest: 'Built-in face test',
+      customFaceTest: 'Custom face test',
+      displayFace: 'Screen Face',
+      customFace: 'Custom face',
+      customFacePreview: 'Custom face preview',
+      customFaceNotInstalled: 'No custom face group is installed on this device.',
+      customFaceNeedsActivation:
+        'A custom face group is installed on this device. Activate it before testing.',
+      customFaceTestRequiresActivation: 'Activate the custom face before testing.',
+      customFaceMissingLocalGroup:
+        'The device has an installed custom face group, but this computer cannot find it: {{groupId}}. Import or sync the group before testing.',
+      displayFaceDurationMs: 'Duration (ms)',
+      testDisplayFace: 'Test Face',
+      testCustomFace: 'Test custom face',
       buzzerPatterns: 'Buzzer Patterns',
       testRuntime: 'Test Runtime',
       clearDisplay: 'Clear Display',
@@ -1292,22 +2048,24 @@ export const enMessages = {
         send: 'Test Event Overlay',
         defaultTitle: 'CC Notice Test',
         defaultMessage: 'Test message',
-        asciiNote: 'This entry only verifies the screen event overlay and serial command path. Use English, numbers, and common symbols.',
-        asciiValidation: 'This screen does not support non-ASCII text yet. Use English, numbers, or common symbols.'
+        asciiNote:
+          'This entry only verifies the screen event overlay and serial command path. Use English, numbers, and common symbols.',
+        asciiValidation:
+          'This screen does not support non-ASCII text yet. Use English, numbers, or common symbols.',
       },
       status: {
         notice: 'Notice',
         success: 'Success',
         working: 'Working',
         warning: 'Warning',
-        error: 'Error'
+        error: 'Error',
       },
       pattern: {
         notice: 'Notice',
         success: 'Success',
         warning: 'Warning',
         error: 'Error',
-        working: 'Working'
+        working: 'Working',
       },
       statusPayload: {
         successTitle: 'Task Done',
@@ -1317,7 +2075,7 @@ export const enMessages = {
         warningTitle: 'Attention Needed',
         warningMessage: 'Check the current task state',
         errorTitle: 'Task Failed',
-        errorMessage: 'Check the desktop app error details'
+        errorMessage: 'Check the desktop app error details',
       },
       statusPayloadCompact: {
         successTitle: 'Done',
@@ -1327,14 +2085,14 @@ export const enMessages = {
         warningTitle: 'Warning',
         warningMessage: 'Check',
         errorTitle: 'Failed',
-        errorMessage: 'Error'
+        errorMessage: 'Error',
       },
       runtimePayload: {
         title: 'Working',
         message: 'E/O 12/34',
         line1: 'Last codex hook',
-        line2: 'OK 33 / Err 1'
-      }
+        line2: 'OK 33 / Err 1',
+      },
     },
     runtime: {
       title: 'Runtime Status',
@@ -1351,11 +2109,11 @@ export const enMessages = {
         'up-to-date': 'Up to Date',
         'update-available': 'Update Available',
         incompatible: 'Protocol Incompatible',
-        unsupported: 'Firmware Version Not Recognized'
+        unsupported: 'Firmware Version Not Recognized',
       },
       lastAck: 'Last ACK',
       lastError: 'Last Error',
-      lastSentAt: 'Last Sent At'
+      lastSentAt: 'Last Sent At',
     },
     heartbeat: {
       title: 'Heartbeat Status',
@@ -1368,9 +2126,9 @@ export const enMessages = {
         healthy: 'Healthy',
         stale: 'Stale',
         lost: 'Lost',
-        unsupported: 'Current firmware does not support heartbeat'
-      }
-    }
+        unsupported: 'Current firmware does not support heartbeat',
+      },
+    },
   },
   hardwareGuides: {
     open: 'Guide',
@@ -1379,7 +2137,7 @@ export const enMessages = {
       title: 'Hardware Wiring Guide',
       summary: 'The current channel does not have a dedicated wiring guide.',
       detail:
-        'Check the board pinout, voltage and current limits, and peripheral module documentation before sending a test action.'
+        'Check the board pinout, voltage and current limits, and peripheral module documentation before sending a test action.',
     },
     sections: {
       suitableHardware: 'Suitable Hardware',
@@ -1389,7 +2147,7 @@ export const enMessages = {
       electricalNotices: 'Electrical Notes',
       actions: 'Supported Actions',
       testSteps: 'Test Steps',
-      faq: 'FAQ'
+      faq: 'FAQ',
     },
     pinout: {
       title: 'RP2040 Pico Pinout',
@@ -1404,7 +2162,7 @@ export const enMessages = {
         chipDatasheet: 'Chip Datasheet',
         stm32duinoDocs: 'STM32duino Docs',
         picoDatasheet: 'Pico Datasheet',
-        rp2040Datasheet: 'RP2040 Datasheet'
+        rp2040Datasheet: 'RP2040 Datasheet',
       },
       legend: {
         gpio: 'GPIO',
@@ -1414,8 +2172,8 @@ export const enMessages = {
         power: 'Power',
         system: 'System Control',
         analog: 'Analog Reference',
-        reference: 'Reference/Reserved'
-      }
+        reference: 'Reference/Reserved',
+      },
     },
     electrical: {
       gpioVoltage: 'GPIO output logic level: 3.3V.',
@@ -1432,7 +2190,7 @@ export const enMessages = {
       ws2812Power:
         'Power WS2812/SK6812 LEDs from an external supply sized for the LED count; never power them from GPIO.',
       ws2812Level:
-        'For 5V addressable strips, use 3.3V-to-5V level shifting for long wires or unstable setups.'
+        'For 5V addressable strips, use 3.3V-to-5V level shifting for long wires or unstable setups.',
     },
     arduinoTinyAvr: {
       notices: {
@@ -1441,126 +2199,135 @@ export const enMessages = {
         pwmPins:
           'D3/D5/D6/D9/D10 support breathe and PWM-style actions. Other digital output pins only support normal on/off, blink, or pulse actions.',
         reservedPins:
-          'D11-D13, A0-A5, and Nano A6/A7 are currently shown only as board pin information and do not create output channels.'
-      }
+          'D11-D13, A0-A5, and Nano A6/A7 are currently shown only as board pin information and do not create output channels.',
+      },
     },
     stm32BluePill: {
       notices: {
         smallMcuScope:
           'Scoped to the STM32F103C6T6 minimum resource profile, exposing stable digital output with onboard USB CDC for app communication.',
-        swdPins: 'PA13/PA14 are SWD debug and flashing pins, so they are not used as output channels.'
-      }
+        swdPins:
+          'PA13/PA14 are SWD debug and flashing pins, so they are not used as output channels.',
+      },
     },
     digitalOutput: {
       title: 'Digital Output Wiring Guide',
       summary: 'Suitable for simple LEDs, relay inputs, and low-voltage digital trigger modules.',
       hardware: {
         led: 'Single-color LEDs or LED indicator modules with current limiting.',
-        relay: 'Low-voltage relay modules, optocoupler input modules, or other digital trigger inputs.'
+        relay:
+          'Low-voltage relay modules, optocoupler input modules, or other digital trigger inputs.',
       },
       scenarios: {
         status: 'Represent running, completed, failed, and other binary or blinking states.',
-        trigger: 'Trigger an external low-voltage module switch input.'
+        trigger: 'Trigger an external low-voltage module switch input.',
       },
       wiring: {
         pin: 'Connect the GPIO output to the module signal input. Bare LEDs need a suitable series resistor.',
-        ground: 'The peripheral GND must share ground with the board GND.'
+        ground: 'The peripheral GND must share ground with the board GND.',
       },
       notices: {
         resistor: 'Bare LEDs must use a current-limiting resistor to avoid GPIO over-current.',
-        current: 'Do not drive high-current loads directly. Relay coils and LED strips need driver modules.'
+        current:
+          'Do not drive high-current loads directly. Relay coils and LED strips need driver modules.',
       },
       tests: {
         connect: 'Power off before wiring, then connect the board and open the device page.',
-        activate: 'Send activate or blink and confirm the level semantics match the peripheral response.'
+        activate:
+          'Send activate or blink and confirm the level semantics match the peripheral response.',
       },
       faq: {
-        inverted: 'If output is inverted, check the channel active level or whether the peripheral is low-level triggered.'
-      }
+        inverted:
+          'If output is inverted, check the channel active level or whether the peripheral is low-level triggered.',
+      },
     },
     pwmOutput: {
       title: 'PWM Output Wiring Guide',
       summary: 'Suitable for outputs needing brightness, duty cycle, or simple fade control.',
       hardware: {
         led: 'Dimmable LED modules or current-limited LEDs.',
-        driver: 'MOSFET/transistor driver modules for higher-current loads.'
+        driver: 'MOSFET/transistor driver modules for higher-current loads.',
       },
       scenarios: {
         brightness: 'Show different state intensity by brightness.',
-        fade: 'Use pulse or fade-like effects for softer notifications.'
+        fade: 'Use pulse or fade-like effects for softer notifications.',
       },
       wiring: {
         pin: 'Connect the PWM GPIO to the module signal input. Power the load according to module documentation.',
-        ground: 'The driver module and board must share ground.'
+        ground: 'The driver module and board must share ground.',
       },
       notices: {
         driver: 'High-current LEDs or strips must use an external driver, not direct GPIO drive.',
-        frequency: 'If visible flicker appears, tune PWM frequency or use a different driver.'
+        frequency: 'If visible flicker appears, tune PWM frequency or use a different driver.',
       },
       tests: {
         duty: 'Start with a low duty cycle and increase gradually to confirm brightness changes.',
-        clear: 'Send clear and confirm output returns to the default duty cycle.'
+        clear: 'Send clear and confirm output returns to the default duty cycle.',
       },
       faq: {
-        flicker: 'Visible flicker is usually related to frequency, power, or the driver module.'
-      }
+        flicker: 'Visible flicker is usually related to frequency, power, or the driver module.',
+      },
     },
     buzzer: {
       title: 'Buzzer Wiring Guide',
       summary: 'Suitable for failures, permission prompts, and long-task completion audio alerts.',
       hardware: {
         active: 'Active buzzer modules, usually controlled by a digital level.',
-        passive: 'Passive buzzer modules that can use tone actions for frequency output.'
+        passive: 'Passive buzzer modules that can use tone actions for frequency output.',
       },
       scenarios: {
         failure: 'Signal errors, failures, or situations requiring manual attention.',
-        permission: 'Short prompts for permission requests or task completion.'
+        permission: 'Short prompts for permission requests or task completion.',
       },
       wiring: {
         pin: 'Connect the GPIO output to the buzzer module signal input.',
-        ground: 'Connect buzzer module GND to board GND.'
+        ground: 'Connect buzzer module GND to board GND.',
       },
       notices: {
-        current: 'Use a driver module when buzzer current is high; do not power it directly from GPIO.',
-        volume: 'Use short test durations first to avoid continuous beeping.'
+        current:
+          'Use a driver module when buzzer current is high; do not power it directly from GPIO.',
+        volume: 'Use short test durations first to avoid continuous beeping.',
       },
       tests: {
         beep: 'Send beep and confirm the module emits a short sound.',
-        tone: 'For passive buzzers, send tone and confirm frequency changes.'
+        tone: 'For passive buzzers, send tone and confirm frequency changes.',
       },
       faq: {
         silent:
-          'If silent, check buzzer type, active/passive action matching, power, and shared ground.'
-      }
+          'If silent, check buzzer type, active/passive action matching, power, and shared ground.',
+      },
     },
     addressableLed: {
       title: 'Addressable LED Wiring Guide',
-      summary: 'Suitable for WS2812, SK6812, and similar single-wire addressable LED strips or rings.',
+      summary:
+        'Suitable for WS2812, SK6812, and similar single-wire addressable LED strips or rings.',
       hardware: {
         strip: 'WS2812/SK6812 LED strips, pixel boards, or matrix panels.',
-        ring: 'NeoPixel-compatible LED rings or compact status arrays.'
+        ring: 'NeoPixel-compatible LED rings or compact status arrays.',
       },
       scenarios: {
         richStatus: 'Show richer color, brightness, and multi-state notifications.',
-        multiDevice: 'For multi-device or display-like hardware status output.'
+        multiDevice: 'For multi-device or display-like hardware status output.',
       },
       wiring: {
         data: 'Connect GPIO data to DIN. A small series resistor near the LED input is recommended.',
-        power: 'Use a suitable external power supply for the LED count; never power strips from GPIO.',
-        ground: 'External power GND, LED GND, and board GND must be common.'
+        power:
+          'Use a suitable external power supply for the LED count; never power strips from GPIO.',
+        ground: 'External power GND, LED GND, and board GND must be common.',
       },
       notices: {
         power: 'Full brightness can draw high current; start with low brightness and few LEDs.',
-        level: 'Some 5V strips may need level shifting because 3.3V data is not always stable.'
+        level: 'Some 5V strips may need level shifting because 3.3V data is not always stable.',
       },
       tests: {
         color: 'Start with a low-brightness single-color test to confirm color and pixel order.',
-        brightness: 'Increase brightness gradually and watch for power instability.'
+        brightness: 'Increase brightness gradually and watch for power instability.',
       },
       faq: {
-        colorOrder: 'Wrong colors usually mean RGB/GRB order differs; adjust it in channel settings.'
-      }
-    }
+        colorOrder:
+          'Wrong colors usually mean RGB/GRB order differs; adjust it in channel settings.',
+      },
+    },
   },
   firmware: {
     title: 'Firmware Management',
@@ -1582,48 +2349,52 @@ export const enMessages = {
       arduinoAvr: 'Arduino AVR',
       stm32: 'STM32',
       seeedSamd: 'Seeed SAMD',
-      unknown: 'Other Boards'
+      unknown: 'Other Boards',
     },
     capabilityTiers: {
       full: {
         label: 'Full capability',
         description:
-          'Suitable for Pico-class boards with broader output support for common notification scenarios.'
+          'Suitable for Pico-class boards with broader output support for common notification scenarios.',
       },
       lightweight: {
         label: 'Lightweight capability',
         description:
-          'Suitable for 32U4 Arduino boards with common output support. Arduino CLI is required before flashing.'
+          'Suitable for 32U4 Arduino boards with common output support. Arduino CLI is required before flashing.',
       },
       minimal: {
         label: 'Minimal capability',
         description:
-          'Suitable for entry-level AVR boards such as Uno / Nano, with a smaller set of stable output channels.'
+          'Suitable for entry-level AVR boards such as Uno / Nano, with a smaller set of stable output channels.',
       },
       extended: {
         label: 'Extended device capability',
         description:
-          'Suitable for integrated devices with a screen, buttons, onboard buzzer, and sensors, with output channels modeled separately from device-level features.'
+          'Suitable for integrated devices with a screen, buttons, onboard buzzer, and sensors, with output channels modeled separately from device-level features.',
       },
       oled096: {
         description:
-          'For Raspberry Pi Pico with a 0.96-inch 128x64 I2C OLED, keeping common output channels while adding device-level display status output.'
+          'For Raspberry Pi Pico with a 0.96-inch 128x64 I2C OLED, keeping common output channels while adding device-level display status output.',
       },
       oled091: {
         description:
-          'For Raspberry Pi Pico with a 0.91-inch 128x32 I2C OLED, using GP20/GP21 for the display while keeping GP22 as a normal output channel.'
+          'For Raspberry Pi Pico with a 0.91-inch 128x32 I2C OLED, using GP20/GP21 for the display while keeping GP22 as a normal output channel.',
+      },
+      oled128: {
+        description:
+          'For Raspberry Pi Pico with a 1.5-inch 128x128 I2C SH1107 OLED, keeping the common output channels while adding more screen space for facial expressions.',
       },
       stm32SmallMcu: {
         description:
-          'Scoped to the STM32F103C6T6 minimum resource profile, with stable digital output, onboard USB CDC serial, and memory-heavy features disabled.'
+          'Scoped to the STM32F103C6T6 minimum resource profile, with stable digital output, onboard USB CDC serial, and memory-heavy features disabled.',
       },
       unknown: {
         label: 'Unknown capability',
-        description: 'This board does not have an explicit capability tier note yet.'
-      }
+        description: 'This board does not have an explicit capability tier note yet.',
+      },
     },
     recommendationReason: {
-      pico: 'Pico uses UF2 volume copy flashing, making flashing and recovery simpler. It is recommended as the first option.'
+      pico: 'Pico uses UF2 volume copy flashing, making flashing and recovery simpler. It is recommended as the first option.',
     },
     wiring: {
       pin: 'Pin',
@@ -1641,93 +2412,127 @@ export const enMessages = {
         oledSda: 'OLED I2C SDA',
         oledScl: 'OLED I2C SCL',
         oledReset: 'OLED reset',
-        oledPower: 'OLED power'
+        oledPower: 'OLED power',
       },
       wires: {
-        digitalOutput: 'Connect the output pin to an LED, relay module, or driver input. Share GND with the board.',
-        pwmOutput: 'Connect to a PWM-capable LED or driver input for brightness, breathing, or pulse effects.',
-        ws2812: 'Connect to strip DIN. Power the strip for its LED count and share GND with the board.',
-        buzzer: 'Connect to an active or passive buzzer signal pin. Use a driver module for higher current buzzers.',
-        onboardBuzzer: 'No external wiring is required; firmware drives the Wio Terminal onboard buzzer.',
-        builtInDisplay: 'No external wiring is required; firmware uses the Wio Terminal built-in LCD.',
+        digitalOutput:
+          'Connect the output pin to an LED, relay module, or driver input. Share GND with the board.',
+        pwmOutput:
+          'Connect to a PWM-capable LED or driver input for brightness, breathing, or pulse effects.',
+        ws2812:
+          'Connect to strip DIN. Power the strip for its LED count and share GND with the board.',
+        buzzer:
+          'Connect to an active or passive buzzer signal pin. Use a driver module for higher current buzzers.',
+        onboardBuzzer:
+          'No external wiring is required; firmware drives the Wio Terminal onboard buzzer.',
+        builtInDisplay:
+          'No external wiring is required; firmware uses the Wio Terminal built-in LCD.',
         oled096Sda: 'Connect to OLED D1 / SDA.',
         oled096Scl: 'Connect to OLED D0 / SCL.',
         oled091Sda: 'Connect to OLED SDA.',
         oled091Scl: 'Connect to OLED SCL.',
+        oled128Sda: 'Connect to OLED SDA.',
+        oled128Scl: 'Connect to OLED SCL.',
         oledReset: 'Connect to OLED RES / RST. Firmware sends one reset pulse after power-up.',
-        oledPower: 'Connect OLED VCC to 3V3 and GND to board GND.'
+        oledPower: 'Connect OLED VCC to 3V3 and GND to board GND.',
       },
       noticeItems: {
-        rp2040Voltage: 'RP2040 GPIO logic level is 3.3V. Do not feed 5V signals directly into GPIO.',
-        arduinoVoltage: 'Uno / Nano GPIO logic level is 5V. Confirm compatibility before connecting 3.3V peripherals.',
-        proMicroVoltage: 'This Pro Micro firmware targets the 5V/16MHz variant. GPIO logic level is 5V; confirm compatibility before connecting 3.3V peripherals.',
-        sharedGround: 'External modules must share GND with the board, otherwise signal levels are unreliable.',
-        driverForLoad: 'Relays, motors, and high-power LED strips should use a driver module or separate power supply instead of GPIO power.',
-        oledI2cAddress: 'OLED I2C address depends on the module hardware. Firmware probes 0x3C and 0x3D.',
-        stm32Voltage: 'STM32F103 Blue Pill GPIO logic level is 3.3V. Do not feed 5V signals directly into GPIO.'
+        rp2040Voltage:
+          'RP2040 GPIO logic level is 3.3V. Do not feed 5V signals directly into GPIO.',
+        arduinoVoltage:
+          'Uno / Nano GPIO logic level is 5V. Confirm compatibility before connecting 3.3V peripherals.',
+        proMicroVoltage:
+          'This Pro Micro firmware targets the 5V/16MHz variant. GPIO logic level is 5V; confirm compatibility before connecting 3.3V peripherals.',
+        sharedGround:
+          'External modules must share GND with the board, otherwise signal levels are unreliable.',
+        driverForLoad:
+          'Relays, motors, and high-power LED strips should use a driver module or separate power supply instead of GPIO power.',
+        oledI2cAddress:
+          'OLED I2C address depends on the module hardware. Firmware probes 0x3C and 0x3D.',
+        stm32Voltage:
+          'STM32F103 Blue Pill GPIO logic level is 3.3V. Do not feed 5V signals directly into GPIO.',
       },
       guides: {
         rp2040Pico: {
           title: 'Raspberry Pi Pico Wiring',
-          summary: 'The standard Pico software experience exposes digital output and buzzer channels. GP0, GP1, and GP2 are enabled by default.',
+          summary:
+            'The standard Pico software experience exposes digital output and buzzer channels. GP0, GP1, and GP2 are enabled by default.',
           reserved: {
             usb: 'USB serial is used for app communication and does not require extra GPIO wiring.',
-            system: 'RUN, 3V3_EN, ADC_VREF, and similar system/reference pins are shown only as board information.'
-          }
+            system:
+              'RUN, 3V3_EN, ADC_VREF, and similar system/reference pins are shown only as board information.',
+          },
         },
         rp2040PicoOled096: {
           title: 'Pico + OLED 0.96-inch 128x64 Wiring',
           summary: 'This firmware uses GP20/GP21 for the I2C OLED and GP22 for display reset.',
           reserved: {
             i2c: 'GP20 and GP21 are reserved for OLED I2C and are not normal digital output channels.',
-            reset: 'GP22 is reserved for OLED RES/RST and is not a normal digital output channel.'
-          }
+            reset: 'GP22 is reserved for OLED RES/RST and is not a normal digital output channel.',
+          },
         },
         rp2040PicoOled091: {
           title: 'Pico + OLED 0.91-inch 128x32 Wiring',
-          summary: 'This firmware uses GP20/GP21 for the I2C OLED. The software exposes normal digital output, buzzer, and display output entries.',
+          summary:
+            'This firmware uses GP20/GP21 for the I2C OLED. The software exposes normal digital output, buzzer, and display output entries.',
           reserved: {
-            i2c: 'GP20 and GP21 are reserved for OLED I2C and are not normal digital output channels.'
-          }
+            i2c: 'GP20 and GP21 are reserved for OLED I2C and are not normal digital output channels.',
+          },
+        },
+        rp2040PicoOled128x128: {
+          title: 'Pico + OLED 1.5-inch 128x128 Wiring',
+          summary:
+            'This firmware uses GP20/GP21 for the I2C OLED. The software exposes normal digital output, buzzer, and display output entries.',
+          reserved: {
+            i2c: 'GP20 and GP21 are reserved for OLED I2C and are not normal digital output channels.',
+          },
         },
         arduinoUno: {
           title: 'Arduino Uno Wiring',
           summary: 'The Uno software experience exposes D2-D10 as stable digital output channels.',
           reserved: {
-            serial: 'D0/D1 are hardware serial RX/TX pins and are not output channels.'
-          }
+            serial: 'D0/D1 are hardware serial RX/TX pins and are not output channels.',
+          },
         },
         arduinoNano: {
           title: 'Arduino Nano Wiring',
-          summary: 'The Nano software experience exposes D2-D10 as stable digital output channels. New and old bootloader targets only change flashing parameters.',
+          summary:
+            'The Nano software experience exposes D2-D10 as stable digital output channels. New and old bootloader targets only change flashing parameters.',
           reserved: {
-            serialAnalog: 'D0/D1 are hardware serial RX/TX pins. D11-D13 and A0-A7 are currently board information only.'
-          }
+            serialAnalog:
+              'D0/D1 are hardware serial RX/TX pins. D11-D13 and A0-A7 are currently board information only.',
+          },
         },
         sparkfunProMicro32u4: {
           title: 'SparkFun Pro Micro 32U4 Wiring',
-          summary: 'This firmware targets the 5V/16MHz Pro Micro and exposes common header digital outputs, breathing on D3/D5/D6/D9/D10, and a D9 buzzer channel.',
+          summary:
+            'This firmware targets the 5V/16MHz Pro Micro and exposes common header digital outputs, breathing on D3/D5/D6/D9/D10, and a D9 buzzer channel.',
           reserved: {
             usb: 'The onboard USB port is used for both app communication and flashing. No extra USB-TTL wiring is needed at runtime.',
-            unrouted: 'D13, D22, and D23 are not on common Pro Micro headers. D17/RX_LED is an onboard LED pad. These pins are not normal external output channels.',
-            sharedD9: 'D9 can be used as digital output/PWM breathing or as the buzzer channel. Wire only one peripheral type to it at a time.'
-          }
+            unrouted:
+              'D13, D22, and D23 are not on common Pro Micro headers. D17/RX_LED is an onboard LED pad. These pins are not normal external output channels.',
+            sharedD9:
+              'D9 can be used as digital output/PWM breathing or as the buzzer channel. Wire only one peripheral type to it at a time.',
+          },
         },
         wioTerminal: {
           title: 'Wio Terminal Wiring',
-          summary: 'The Wio Terminal firmware supports Grove/header digital outputs, onboard buzzer, built-in display, and button inputs.',
+          summary:
+            'The Wio Terminal firmware supports Grove/header digital outputs, onboard buzzer, built-in display, and button inputs.',
           reserved: {
-            onboard: 'Built-in LCD, buzzer, and buttons need no external wiring. External modules still need shared GND through Grove or header pins.'
-          }
+            onboard:
+              'Built-in LCD, buzzer, and buttons need no external wiring. External modules still need shared GND through Grove or header pins.',
+          },
         },
         stm32BluePill: {
           title: 'STM32F103C8T6/C6T6 Blue Pill Wiring',
-          summary: 'The Blue Pill firmware exposes PA0-PA7, PB0/PB1, and PB10/PB11 as digital output channels.',
+          summary:
+            'The Blue Pill firmware exposes PA0-PA7, PB0/PB1, and PB10/PB11 as digital output channels.',
           reserved: {
-            swd: 'PA13/PA14 are SWD debug and flashing pins. They are shown as board information only and are not output channels.'
-          }
-        }
-      }
+            swd: 'PA13/PA14 are SWD debug and flashing pins. They are shown as board information only and are not output channels.',
+          },
+        },
+      },
     },
     flashGuides: {
       stm32BluePill: {
@@ -1755,8 +2560,9 @@ export const enMessages = {
         dependencyProgrammer:
           'If STM32_Programmer_CLI is not found, install STM32CubeProgrammer and make sure the app process can read that command path.',
         portTitle: 'Port Selection',
-        portHint: 'Select the /dev/cu.usbserial-* or equivalent serial port for the USB-TTL adapter.'
-      }
+        portHint:
+          'Select the /dev/cu.usbserial-* or equivalent serial port for the USB-TTL adapter.',
+      },
     },
     currentFirmware: 'Current Firmware',
     firmwareDescription: 'Device firmware information.',
@@ -1806,7 +2612,8 @@ export const enMessages = {
     bootselMissing: 'RPI-RP2 flash volume not detected',
     directFlashUnsupported: 'This firmware does not use the current flashing method.',
     directFlashUnsupportedTitle: 'Select a matching flashing method',
-    directFlashUnsupportedDescription: 'Choose the matching device and flashing target for this firmware type.',
+    directFlashUnsupportedDescription:
+      'Choose the matching device and flashing target for this firmware type.',
     refreshStatus: 'Refresh Status',
     flashBuiltIn: 'Flash Bundled Firmware',
     flashSelected: 'Flash selected firmware',
@@ -1817,203 +2624,203 @@ export const enMessages = {
     noteFormat: '• Firmware file format: .uf2',
     noteConnected: '• Make sure the device is connected before updating',
     noteBootsel: '• Hold BOOTSEL while plugging in the RP2040 Pico until the RPI-RP2 disk appears',
-    noteKeepConnected: '• Do not disconnect the device during flashing'
+    noteKeepConnected: '• Do not disconnect the device during flashing',
   },
   hookEvents: {
     codex: {
       sessionStart: {
         title: 'Session Started',
         description: 'Triggered when a Codex session starts or resumes.',
-        scenario: 'Use it to indicate that the AI has entered a working state.'
+        scenario: 'Use it to indicate that the AI has entered a working state.',
       },
       subagentStart: {
         title: 'Subagent Started',
         description: 'Triggered when Codex starts a subagent to process a task.',
-        scenario: 'Use it to observe subagent activity in complex tasks.'
+        scenario: 'Use it to observe subagent activity in complex tasks.',
       },
       preToolUse: {
         title: 'Before Tool Use',
         description: 'Triggered before Codex calls a command, file, or other tool.',
-        scenario: 'Use it to indicate that the AI is executing a concrete action.'
+        scenario: 'Use it to indicate that the AI is executing a concrete action.',
       },
       permissionRequest: {
         title: 'Permission Request',
         description: 'Triggered when Codex needs user approval for a tool call.',
-        scenario: 'Use it to prompt the user to handle authorization or confirmation.'
+        scenario: 'Use it to prompt the user to handle authorization or confirmation.',
       },
       postToolUse: {
         title: 'After Tool Use',
         description: 'Triggered after a Codex tool call completes.',
-        scenario: 'Use it to indicate that a command or tool operation has ended.'
+        scenario: 'Use it to indicate that a command or tool operation has ended.',
       },
       preCompact: {
         title: 'Before Compact',
         description: 'Triggered before Codex compacts context.',
-        scenario: 'Use it to observe state changes before context organization.'
+        scenario: 'Use it to observe state changes before context organization.',
       },
       postCompact: {
         title: 'After Compact',
         description: 'Triggered after Codex completes context compaction.',
-        scenario: 'Use it to observe context organization completion.'
+        scenario: 'Use it to observe context organization completion.',
       },
       userPromptSubmit: {
         title: 'User Prompt Submitted',
         description: 'Triggered when the user submits a new prompt to Codex.',
-        scenario: 'Use it to indicate that a new AI work cycle is about to begin.'
+        scenario: 'Use it to indicate that a new AI work cycle is about to begin.',
       },
       subagentStop: {
         title: 'Subagent Stopped',
         description: 'Triggered when a Codex subagent completes its work.',
-        scenario: 'Use it to observe subagent completion in complex tasks.'
+        scenario: 'Use it to observe subagent completion in complex tasks.',
       },
       stop: {
         title: 'Session Turn Ended',
         description: 'Triggered when the current Codex response or task turn ends.',
-        scenario: 'Use it to indicate that the current AI work has completed.'
-      }
+        scenario: 'Use it to indicate that the current AI work has completed.',
+      },
     },
     claudeCode: {
       sessionStart: {
         title: 'Session Started',
         description: 'Triggered when a Claude Code session starts.',
-        scenario: 'Use it to indicate that the AI has entered a working state.'
+        scenario: 'Use it to indicate that the AI has entered a working state.',
       },
       userPromptSubmit: {
         title: 'User Prompt Submitted',
         description: 'Triggered when the user submits a new prompt.',
-        scenario: 'Use it to indicate that a new AI work cycle is about to begin.'
+        scenario: 'Use it to indicate that a new AI work cycle is about to begin.',
       },
       userPromptExpansion: {
         title: 'Prompt Expanded',
         description: 'Triggered when Claude Code expands the user prompt.',
-        scenario: 'Use it to observe prompt expansion or rewriting.'
+        scenario: 'Use it to observe prompt expansion or rewriting.',
       },
       preToolUse: {
         title: 'Before Tool Use',
         description: 'Triggered before a tool call.',
-        scenario: 'Use it to indicate that the AI is executing a concrete action.'
+        scenario: 'Use it to indicate that the AI is executing a concrete action.',
       },
       postToolUse: {
         title: 'After Tool Use',
         description: 'Triggered after a tool call completes.',
-        scenario: 'Use it to indicate that a tool operation has ended.'
+        scenario: 'Use it to indicate that a tool operation has ended.',
       },
       postToolUseFailure: {
         title: 'Tool Use Failed',
         description: 'Triggered after a tool call fails.',
-        scenario: 'Use it to indicate that an AI operation failed.'
+        scenario: 'Use it to indicate that an AI operation failed.',
       },
       postToolBatch: {
         title: 'Tool Batch Completed',
         description: 'Triggered after a batch of tool calls completes.',
-        scenario: 'Use it to reduce notification frequency from per-tool events.'
+        scenario: 'Use it to reduce notification frequency from per-tool events.',
       },
       notification: {
         title: 'Notification',
         description: 'Triggered when Claude Code emits a notification.',
-        scenario: 'Use it to prompt the user to notice a state change.'
+        scenario: 'Use it to prompt the user to notice a state change.',
       },
       permissionRequest: {
         title: 'Permission Request',
         description: 'Triggered when user authorization is required.',
-        scenario: 'Use it to prompt the user to handle authorization.'
+        scenario: 'Use it to prompt the user to handle authorization.',
       },
       stop: {
         title: 'Stopped',
         description: 'Triggered when the current response or task ends.',
-        scenario: 'Use it to indicate that the current AI work has completed.'
+        scenario: 'Use it to indicate that the current AI work has completed.',
       },
       stopFailure: {
         title: 'Stop Failed',
         description: 'Triggered when the stop flow fails.',
-        scenario: 'Use it to indicate an error during task completion.'
+        scenario: 'Use it to indicate an error during task completion.',
       },
       subagentStart: {
         title: 'Subagent Started',
         description: 'Triggered when a subagent starts processing a task.',
-        scenario: 'Use it to observe subagent activity in complex tasks.'
+        scenario: 'Use it to observe subagent activity in complex tasks.',
       },
       subagentStop: {
         title: 'Subagent Stopped',
         description: 'Triggered when a subagent completes its work.',
-        scenario: 'Use it to observe subagent completion in complex tasks.'
+        scenario: 'Use it to observe subagent completion in complex tasks.',
       },
       taskCreated: {
         title: 'Task Created',
         description: 'Triggered when Claude Code creates a task.',
-        scenario: 'Use it to observe task splitting and queueing.'
+        scenario: 'Use it to observe task splitting and queueing.',
       },
       taskCompleted: {
         title: 'Task Completed',
         description: 'Triggered when a Claude Code task completes.',
-        scenario: 'Use it to observe task completion.'
+        scenario: 'Use it to observe task completion.',
       },
       preCompact: {
         title: 'Before Compact',
         description: 'Triggered before context compaction.',
-        scenario: 'Use it to observe state before context organization.'
+        scenario: 'Use it to observe state before context organization.',
       },
       postCompact: {
         title: 'After Compact',
         description: 'Triggered after context compaction.',
-        scenario: 'Use it to observe context organization completion.'
+        scenario: 'Use it to observe context organization completion.',
       },
       sessionEnd: {
         title: 'Session Ended',
         description: 'Triggered when a session ends.',
-        scenario: 'Use it to indicate that the AI session has ended.'
+        scenario: 'Use it to indicate that the AI session has ended.',
       },
       configChange: {
         title: 'Config Changed',
         description: 'Triggered when configuration changes.',
-        scenario: 'Use it to observe Claude Code configuration adjustments.'
+        scenario: 'Use it to observe Claude Code configuration adjustments.',
       },
       cwdChanged: {
         title: 'Directory Changed',
         description: 'Triggered when the working directory changes.',
-        scenario: 'Use it to observe working context switches.'
+        scenario: 'Use it to observe working context switches.',
       },
       fileChanged: {
         title: 'File Changed',
         description: 'Triggered when a file changes.',
-        scenario: 'Use it to observe file editing activity.'
+        scenario: 'Use it to observe file editing activity.',
       },
       permissionDenied: {
         title: 'Permission Denied',
         description: 'Triggered when a permission request is denied.',
-        scenario: 'Use it to indicate that limited permission prevents continued work.'
+        scenario: 'Use it to indicate that limited permission prevents continued work.',
       },
       teammateIdle: {
         title: 'Teammate Idle',
         description: 'Triggered when a teammate becomes idle.',
-        scenario: 'Use it for collaborative status indication.'
+        scenario: 'Use it for collaborative status indication.',
       },
       worktreeCreate: {
         title: 'Worktree Created',
         description: 'Triggered when a worktree is created.',
-        scenario: 'Use it to observe parallel workspace creation.'
+        scenario: 'Use it to observe parallel workspace creation.',
       },
       worktreeRemove: {
         title: 'Worktree Removed',
         description: 'Triggered when a worktree is removed.',
-        scenario: 'Use it to observe parallel workspace cleanup.'
+        scenario: 'Use it to observe parallel workspace cleanup.',
       },
       messageDisplay: {
         title: 'Message Displayed',
         description: 'Triggered when a message is displayed.',
-        scenario: 'Use it to observe important message presentation.'
+        scenario: 'Use it to observe important message presentation.',
       },
       elicitation: {
         title: 'Elicitation',
         description: 'Triggered when Claude Code asks for additional information.',
-        scenario: 'Use it to indicate that the user may need to provide more information.'
+        scenario: 'Use it to indicate that the user may need to provide more information.',
       },
       elicitationResult: {
         title: 'Elicitation Result',
         description: 'Triggered when elicitation produces a result.',
-        scenario: 'Use it to observe completion of the information request flow.'
-      }
-    }
+        scenario: 'Use it to observe completion of the information request flow.',
+      },
+    },
   },
   rules: {
     title: 'AI Event Mapping',
@@ -2026,7 +2833,7 @@ export const enMessages = {
       activateTitle: 'Activated',
       activateDescription: 'Profile "{{name}}" was activated.',
       deleteTitle: 'Deleted',
-      deleteDescription: 'Profile "{{name}}" was deleted.'
+      deleteDescription: 'Profile "{{name}}" was deleted.',
     },
     profile: {
       title: 'Profiles',
@@ -2045,8 +2852,10 @@ export const enMessages = {
       activateThis: 'Activate This Profile',
       createDialogTitle: 'New Profile',
       duplicateDialogTitle: 'Duplicate Profile',
-      createDialogDescription: 'Create a new profile. The profile ID will be generated automatically.',
-      duplicateDialogDescription: 'Duplicate configuration from "{{name}}". The profile ID will be generated automatically.',
+      createDialogDescription:
+        'Create a new profile. The profile ID will be generated automatically.',
+      duplicateDialogDescription:
+        'Duplicate configuration from "{{name}}". The profile ID will be generated automatically.',
       nameRequired: 'Profile name is required.',
       nameTooShort: 'Profile name must be at least 2 characters.',
       nameTooLong: 'Profile name cannot exceed 50 characters.',
@@ -2055,7 +2864,7 @@ export const enMessages = {
       idHint: 'Profile ID is generated from the name, such as focus-mode-a1b2c3d4.',
       templateLabel: 'Select Template',
       deleteDialogTitle: 'Delete profile?',
-      deleteDialogDescription: 'Profile "{{name}}" will be deleted. This action cannot be undone.'
+      deleteDialogDescription: 'Profile "{{name}}" will be deleted. This action cannot be undone.',
     },
     profilePackage: {
       import: 'Import Profile',
@@ -2095,7 +2904,7 @@ export const enMessages = {
         'full-match': 'Full Match',
         'partial-match': 'Partial Match',
         'board-mismatch': 'Board Mismatch',
-        unbound: 'Unbound'
+        unbound: 'Unbound',
       },
       statusHelp: {
         'full-match':
@@ -2105,50 +2914,53 @@ export const enMessages = {
         'board-mismatch':
           'The target board is different. The binding intent is preserved, but related device rules will be disabled.',
         unbound:
-          'No target device is selected. Related device rules will be disabled and can be adjusted later in output rules.'
-      }
+          'No target device is selected. Related device rules will be disabled and can be adjusted later in output rules.',
+      },
     },
     profileTemplates: {
       basic: {
         name: 'Basic Mapping Profile',
-        description: 'Preset common AI Hook mappings and basic output rules without enabling any Hook event.'
+        description:
+          'Preset common AI Hook mappings and basic output rules without enabling any Hook event.',
       },
       advanced: {
         name: 'Advanced Mapping Profile',
-        description: 'Preset extended AI Hook mappings and output rules without enabling any Hook event.'
+        description:
+          'Preset extended AI Hook mappings and output rules without enabling any Hook event.',
       },
       blank: {
         name: 'Blank Profile',
-        description: 'Start from an empty custom profile.'
-      }
+        description: 'Start from an empty custom profile.',
+      },
     },
     tabs: {
       visualWorkflow: 'Visual Setup',
       aiMapping: 'AI Event Mapping',
-      outputRules: 'Output Rules'
+      outputRules: 'Output Rules',
     },
     linkWorkflow: {
       title: 'Visual Setup',
       description: 'Configure Hook events, internal events, and outputs through a fixed flow.',
       noEnabledHookEvents: 'No Hook event is enabled in Hook Settings',
-      noEnabledHookEventsHint: 'Select the Hook events to receive in Hook Settings, then return here to configure the mapping chain.',
+      noEnabledHookEventsHint:
+        'Select the Hook events to receive in Hook Settings, then return here to configure the mapping chain.',
       openHookSettings: 'Open Hook Settings',
       status: {
         blocked: 'Blocked',
         empty: 'Empty',
         ready: 'Ready',
         configured: 'Configured',
-        warning: 'Check'
+        warning: 'Check',
       },
       canvas: {
         internalOverviewTitle: 'Internal Event Overview',
         internalOverviewDescription: 'Review internal events currently in use.',
         outputOverviewTitle: 'Output Rules',
-        outputOverviewDescription: 'Review outputs that can be triggered.'
+        outputOverviewDescription: 'Review outputs that can be triggered.',
       },
       toolNode: {
         enabledCount: '{{count}} Hooks enabled',
-        mappedCount: '{{mapped}}/{{total}}'
+        mappedCount: '{{mapped}}/{{total}}',
       },
       inspector: {
         hookMapping: 'Hook Mapping',
@@ -2158,14 +2970,11 @@ export const enMessages = {
         internalReferences: 'Internal Event References',
         editAiMapping: 'Edit AI Mapping',
         openOutputRules: 'Open Output Rules',
-        toolDialogDescription:
-          'Review mapping status for enabled Hook events from this AI tool.',
-        internalDialogDescription:
-          'Review internal events currently used by AI Hooks.',
+        toolDialogDescription: 'Review mapping status for enabled Hook events from this AI tool.',
+        internalDialogDescription: 'Review internal events currently used by AI Hooks.',
         outputDialogDescription: 'Review output configuration for internal events.',
         noInternalReferences: 'No internal event is referenced by Hook mappings yet.',
-        noOutputInternalEvents:
-          'Finish Hook-to-internal-event mapping before configuring outputs.',
+        noOutputInternalEvents: 'Finish Hook-to-internal-event mapping before configuring outputs.',
         referenceCount: '{{count}} Hook mapping references',
         hookReferences: 'Referenced Hooks',
         viewHookReferences: 'View Hook references for {{event}}',
@@ -2184,13 +2993,12 @@ export const enMessages = {
         internalEventSelectionHint: '{{title}}: {{scenario}}',
         enableOutput: 'Enable {{type}} output',
         disableOutput: 'Disable {{type}} output',
-        outputRulesDescription:
-          'Select an internal event to review the outputs it can trigger.',
+        outputRulesDescription: 'Select an internal event to review the outputs it can trigger.',
         internalEvent: 'Internal Event',
         outputStats: {
           total: 'Output Types',
           enabled: 'Enabled',
-          needsConfig: 'Needs Config'
+          needsConfig: 'Needs Config',
         },
         outputItems: 'Output Types',
         edit: 'Edit',
@@ -2199,13 +3007,13 @@ export const enMessages = {
         editOutput: 'Edit {{type}}',
         addOutputType: 'Add {{type}}',
         addAndConfigureOutput: 'Add and configure {{type}}',
-        addOutput: 'Add Output Type'
+        addOutput: 'Add Output Type',
       },
       outputStatus: {
         enabled: 'Enabled',
         disabled: 'Disabled',
         'needs-config': 'Needs Config',
-        'not-added': 'Not Added'
+        'not-added': 'Not Added',
       },
       summary: {
         deviceActions: '{{count}} actions · {{channels}}',
@@ -2213,15 +3021,16 @@ export const enMessages = {
         missingWebhookUrl: 'Missing Webhook URL',
         missingSoundFile: 'Missing audio file',
         systemNotification: 'System notification',
-        display: 'Display output'
-      }
+        display: 'Display output',
+      },
     },
     aiMapping: {
       title: 'AI Hook to Internal Event',
       description: 'Configure mappings from raw AI tool events to system internal events.',
       add: 'Add Mapping',
       warning: '{{count}} mapped Hook events are not enabled in Hook Settings:',
-      warningHint: 'Enable these events on the Hook Settings page, or they will not trigger outputs.',
+      warningHint:
+        'Enable these events on the Hook Settings page, or they will not trigger outputs.',
       empty: 'No AI mappings for the current tool.',
       createFirst: 'Create First Mapping',
       hookEvent: 'Hook Event',
@@ -2235,7 +3044,7 @@ export const enMessages = {
       enabledHookSourceHint: 'Available Hook events come from events enabled in Hook Settings.',
       hookEventPlaceholder: 'Select Hook Event',
       internalEventPlaceholder: 'Select Internal Event',
-      scenario: 'Scenario: {{scenario}}'
+      scenario: 'Scenario: {{scenario}}',
     },
     internalCatalog: {
       title: 'Internal Event Catalog',
@@ -2264,51 +3073,51 @@ export const enMessages = {
         invalidChars: 'The event ID prefix only allows English letters, digits, and dots.',
         edgeDot: 'The event ID prefix cannot start or end with a dot.',
         doubleDot: 'The event ID prefix cannot contain consecutive dots.',
-        duplicateSuffix: 'Enter only the prefix. The app appends .userDefined automatically.'
-      }
+        duplicateSuffix: 'Enter only the prefix. The app appends .userDefined automatically.',
+      },
     },
     internalEvents: {
       agentStarted: {
         title: 'AI Started',
         description:
           'The AI has started thinking and processing after the user submitted a prompt.',
-        scenario: 'Session start or user prompt submission'
+        scenario: 'Session start or user prompt submission',
       },
       agentWorking: {
         title: 'AI Working',
         description: 'The AI is actively processing a task.',
-        scenario: 'Subtask running, prompt expansion, or continued work after a tool call'
+        scenario: 'Subtask running, prompt expansion, or continued work after a tool call',
       },
       agentWaitingInput: {
         title: 'Waiting for Input',
         description: 'The AI is waiting for user input or permission.',
-        scenario: 'Permission request or manual confirmation'
+        scenario: 'Permission request or manual confirmation',
       },
       toolExecuting: {
         title: 'Tool Executing',
         description: 'The AI is calling a tool, such as reading files or running commands.',
-        scenario: 'PreToolUse event'
+        scenario: 'PreToolUse event',
       },
       agentCompleted: {
         title: 'Task Completed',
         description: 'The AI task ended normally.',
-        scenario: 'Stop event or session end'
+        scenario: 'Stop event or session end',
       },
       agentFailed: {
         title: 'Task Failed',
         description: 'The AI task failed or ended unexpectedly.',
-        scenario: 'Failure event or parsing error'
+        scenario: 'Failure event or parsing error',
       },
       notification: {
         title: 'System Notification',
         description: 'A system notification or message emitted by the AI tool.',
-        scenario: 'Claude Code Notification event'
+        scenario: 'Claude Code Notification event',
       },
       contextCompacting: {
         title: 'Context Compacting',
         description: 'The AI is compacting context to save memory.',
-        scenario: 'PreCompact event'
-      }
+        scenario: 'PreCompact event',
+      },
     },
     outputTypes: {
       deviceChannel: 'Device Channel',
@@ -2326,32 +3135,39 @@ export const enMessages = {
       desktopNotice: 'Desktop Notice',
       desktopNoticeDescription: 'Show a local always-on-top visual notice on the desktop',
       custom: 'Custom',
-      customDescription: 'Custom output configuration'
+      customDescription: 'Custom output configuration',
     },
     outputRules: {
       title: 'Output Rules',
-      description: 'Configure multiple output types for each internal event, such as device channels, buzzer, display, and notifications.',
+      description:
+        'Configure multiple output types for each internal event, such as device channels, buzzer, display, and notifications.',
       empty: 'No configurable internal events.',
       emptyHint: 'Configure AI Hook to internal event mappings in AI Event Mapping first.',
       generating: 'Generating rules...',
       outputTypeCount: '{{count}} output types',
       addOutputType: 'Add Output Type',
-      limitEnableMessage: 'This internal event can enable at most {{limit}} outputs. Disable another output first.',
-      limitAddMessage: 'This internal event already has {{limit}} enabled outputs. The new output was added disabled.',
+      limitEnableMessage:
+        'This internal event can enable at most {{limit}} outputs. Disable another output first.',
+      limitAddMessage:
+        'This internal event already has {{limit}} enabled outputs. The new output was added disabled.',
       enabled: 'Enabled',
       disabled: 'Disabled',
       pendingConfig: 'Needs Config',
       detailSettings: 'Details',
       enable: 'Enable',
-      summaryDeviceChannel: 'Device {{device}} · Channel {{channel}} · Action {{action}} · {{duration}}',
+      summaryDeviceChannel:
+        'Device {{device}} · Channel {{channel}} · Action {{action}} · {{duration}}',
       summaryDeviceChannelActions: '{{count}} device channel actions · {{channels}}',
       summaryNotification: 'Notification {{level}} · Title {{title}} · Throttle {{seconds}}s',
       summaryWebhook: '{{method}} · {{url}}',
       summarySound: '{{file}} · Volume {{volume}}%',
       summaryDisplay: '{{device}} · {{status}} · {{title}}',
-      summaryDesktopNotice: 'Desktop notice {{targets}} · {{effect}} · {{seconds}}s · {{restoreBehavior}}',
-      summaryDesktopNoticeTargets: 'Desktop notice {{count}} targets · {{targetTypes}} · {{highlight}} · {{seconds}}s · {{restoreBehavior}}',
-      summaryDesktopMascot: 'Desktop notice {{targets}} · Mascot · {{state}} · {{action}} · {{playbackWindow}} · Bubble {{bubble}} · {{seconds}}s · {{restoreBehavior}}',
+      summaryDesktopNotice:
+        'Desktop notice {{targets}} · {{effect}} · {{seconds}}s · {{restoreBehavior}}',
+      summaryDesktopNoticeTargets:
+        'Desktop notice {{count}} targets · {{targetTypes}} · {{highlight}} · {{seconds}}s · {{restoreBehavior}}',
+      summaryDesktopMascot:
+        'Desktop notice {{targets}} · Mascot · {{state}} · {{action}} · {{playbackWindow}} · Bubble {{bubble}} · {{seconds}}s · {{restoreBehavior}}',
       desktopNoticeLightbarCount: 'Lightbars {{count}}',
       desktopNoticeMascotCount: 'Mascots {{count}}',
       multipleTargets: 'Multiple targets',
@@ -2361,7 +3177,8 @@ export const enMessages = {
       unsetSound: 'Audio file not set',
       addDialogTitle: 'Add Output Type',
       addDialogDescription: 'Add a new output type for internal event {{internalEvent}}.',
-      allTypesConfigured: 'All available output types are already configured for this internal event.',
+      allTypesConfigured:
+        'All available output types are already configured for this internal event.',
       outputType: 'Output Type',
       outputTypePlaceholder: 'Select Output Type',
       alreadyConfigured: ' (configured)',
@@ -2382,27 +3199,34 @@ export const enMessages = {
       validationChannelRequired: 'Channel is required.',
       validationChannelActionRequired: 'Channel action is required.',
       validationChannelActionsRequired: 'Device channel output requires at least one action group.',
-      validationChannelActionsLimit: 'Each device channel output rule supports up to 10 action groups.',
-      validationDuplicateChannelAction: 'The same channel on the same device cannot be configured twice.',
+      validationChannelActionsLimit:
+        'Each device channel output rule supports up to 10 action groups.',
+      validationDuplicateChannelAction:
+        'The same channel on the same device cannot be configured twice.',
       validationDutyPercentRequired: 'Set Duty action requires duty.',
       validationFrequencyRequired: 'Beep or tone action requires frequency.',
       validationColorRequired: 'Set Color action requires color.',
       validationBrightnessRequired: 'Set Color action requires brightness.',
       validationIntervalRequired: 'Blink or breathe action requires interval.',
       validationPatternRequired: 'Pattern action requires a pattern.',
+      validationDisplayFaceTemplateRequired: 'Select a screen face.',
+      validationDisplayFaceTemplateUnsupported: 'This screen face is not supported.',
       validationDisplayDeviceRequired: 'Select a device that supports display output.',
       validationDisplayStatusRequired: 'Select a display status.',
       validationDisplayTitleRequired: 'Enter a display title template.',
       validationDisplayMessageRequired: 'Enter a display message template.',
       validationDesktopNoticeTargetRequired: 'Choose at least one enabled desktop notice instance.',
       validationDesktopNoticeDurationInvalid: 'Duration must be between 100 and 60000 ms.',
-      validationDesktopNoticeBreathingPeriodInvalid: 'Breathing period must be between 500 and 5000 ms.',
+      validationDesktopNoticeBreathingPeriodInvalid:
+        'Breathing period must be between 500 and 5000 ms.',
       validationDesktopNoticeColorInvalid: 'Color must use #RRGGBB format.',
-      validationDesktopNoticeColorStopsInvalid: 'The color stop count does not match the color mode.'
+      validationDesktopNoticeColorStopsInvalid:
+        'The color stop count does not match the color mode.',
     },
     desktopNotice: {
       addDialogTitle: 'Desktop notice instance',
-      addDialogReady: 'The first enabled instance will be selected by default. You can adjust it in details.',
+      addDialogReady:
+        'The first enabled instance will be selected by default. You can adjust it in details.',
       targets: 'Target Instances',
       noEnabledInstances: 'Create and enable a desktop notice instance in Settings first.',
       effect: 'Effect',
@@ -2423,7 +3247,7 @@ export const enMessages = {
         default: 'Use Action Default',
         loop: 'Loop',
         onceThenHold: 'Play Once Then Hold',
-        onceThenIdle: 'Play Once Then Idle'
+        onceThenIdle: 'Play Once Then Idle',
       },
       mascotPlaybackWindowMs: 'One-Shot Playback Window (ms)',
       mascotPlaybackWindowHint:
@@ -2439,9 +3263,12 @@ export const enMessages = {
       preview: 'Preview',
       actualPreview: 'Actual Preview',
       actualPreviewRunning: 'Previewing...',
-      actualPreviewDisabledHint: 'Select an enabled desktop notice instance before previewing the actual effect.',
-      actualPreviewFailed: 'Failed to preview the actual effect. Check the desktop notice instance settings.',
-      previewHint: 'Preview the current color and effect. Position and size are configured in the instance library.',
+      actualPreviewDisabledHint:
+        'Select an enabled desktop notice instance before previewing the actual effect.',
+      actualPreviewFailed:
+        'Failed to preview the actual effect. Check the desktop notice instance settings.',
+      previewHint:
+        'Preview the current color and effect. Position and size are configured in the instance library.',
       presetColors: 'Preset Colors',
       presetColorsSolidHint: 'Click to replace the current color',
       presetColorsGradientHint: 'Click to replace stop {{index}}',
@@ -2471,7 +3298,7 @@ export const enMessages = {
         useInstanceIdle: 'Use Instance Idle Behavior',
         hide: 'Hide When Expired',
         keepLast: 'Keep Last State',
-        dimPlaceholder: 'Restore Dim Placeholder'
+        dimPlaceholder: 'Restore Dim Placeholder',
       },
       effects: {
         solid: 'Solid',
@@ -2479,25 +3306,26 @@ export const enMessages = {
         blink: 'Blink',
         scan: 'Scan',
         fade: 'Fade',
-        edgeBreathing: 'Edge Breathing'
+        edgeBreathing: 'Edge Breathing',
       },
       edges: {
         auto: 'Auto',
         top: 'Top',
         bottom: 'Bottom',
         left: 'Left',
-        right: 'Right'
+        right: 'Right',
       },
       colorModes: {
         solid: 'Solid',
-        gradient: 'Gradient'
-      }
+        gradient: 'Gradient',
+      },
     },
     display: {
       device: 'Display Device',
       devicePlaceholder: 'Select a device with display output',
       template: 'Display Scene',
-      templateDescription: 'Select a display scene. The app renders matching status, title, and short content for the target device.',
+      templateDescription:
+        'Select a display scene. The app renders matching status, title, and short content for the target device.',
       templateAdvanced: 'Advanced Text Template',
       templateOptions: {
         notice: 'Notice',
@@ -2506,30 +3334,75 @@ export const enMessages = {
         taskSuccess: 'Task Done',
         taskWarning: 'Attention Needed',
         taskError: 'Task Failed',
-        waitingInput: 'Waiting for Input'
+        waitingInput: 'Waiting for Input',
       },
       status: 'Display Status',
       titleTemplate: 'Title Template',
       messageTemplate: 'Message Template',
-      variableHelp: 'Insert variables into the title or message; they are rendered from the event before display.',
+      variableHelp:
+        'Insert variables into the title or message; they are rendered from the event before display.',
       advancedCustom: 'Advanced custom display content',
-      asciiOnlyHint: 'The current Wio screen only guarantees readable English, numbers, symbols, and variables. Non-ASCII text will be replaced or omitted.',
-      validationAsciiOnly: 'This screen does not support non-ASCII text yet. Use English, numbers, symbols, or variables.',
-      validationUnknownVariable: 'This screen template contains an unsupported variable. Use the variable helper to insert available variables.',
+      asciiOnlyHint:
+        'The current Wio screen only guarantees readable English, numbers, symbols, and variables. Non-ASCII text will be replaced or omitted.',
+      validationAsciiOnly:
+        'This screen does not support non-ASCII text yet. Use English, numbers, symbols, or variables.',
+      validationUnknownVariable:
+        'This screen template contains an unsupported variable. Use the variable helper to insert available variables.',
       duration: 'Display Duration',
       duration5s: '5 sec',
       duration15s: '15 sec',
       duration30s: '30 sec',
       durationUntilNext: 'Until next display content',
       titleMaxChars: 'Max Title Chars',
-      messageMaxChars: 'Max Message Chars'
+      messageMaxChars: 'Max Message Chars',
+    },
+    displayFace: {
+      template: 'Screen Face',
+      intensity: 'Expression Intensity',
+      previewLabel: 'Pixel screen face preview',
+      previewUnavailable: 'This device has no valid screen resolution',
+      source: 'Face Source',
+      sourceBuiltin: 'Builtin Face',
+      sourceCustom: 'Custom Face',
+      reloadCustomFaces: 'Reload custom face list',
+      customGroup: 'Face Group',
+      customGroupPlaceholder: 'Select a face group',
+      customFace: 'Face',
+      customFacePlaceholder: 'Select a face',
+      customFaceCount: '{{count}} faces',
+      customPreview: 'Custom face preview',
+      customPreviewUnavailable: 'No custom face preview is available right now',
+      intensityOptions: {
+        subtle: 'Subtle',
+        standard: 'Standard',
+        strong: 'Strong',
+      },
+      templates: {
+        idleSleep: 'Sleeping',
+        idleBored: 'Bored',
+        workingFocus: 'Focused',
+        workingBusy: 'Busy',
+        waitingCall: 'Calling',
+        waitingWait: 'Waiting',
+        successHappy: 'Happy',
+        successSurprise: 'Surprised',
+        warningShock: 'Shocked',
+        warningSweat: 'Sweating',
+        errorAwkward: 'Awkward',
+        errorPanic: 'Panic',
+      },
     },
     deviceChannel: {
       defaultRp2040: 'Default RP2040 Pico',
       device: 'Device',
+      connectionStatus: {
+        connected: 'Connected',
+        'offline-config': 'Offline config',
+      },
       channelType: 'Channel Type',
       channel: 'Channel',
-      noConfiguredChannels: 'No enabled channels are available for this device. Add channels on the Devices page first.',
+      noConfiguredChannels:
+        'No enabled channels are available for this device. Add channels on the Devices page first.',
       action: 'Action',
       actionGroups: 'Action Groups',
       actionGroupTitle: 'Action Group {{index}}',
@@ -2565,8 +3438,9 @@ export const enMessages = {
         tone: 'Tone',
         pattern: 'Pattern',
         'display-status': 'Display Status',
-        'set-color': 'Set Color'
-      }
+        'display-face': 'Screen Face',
+        'set-color': 'Set Color',
+      },
     },
     duration: {
       customDurationSeconds: 'Custom Duration (seconds)',
@@ -2579,25 +3453,28 @@ export const enMessages = {
         10000: '10 sec',
         20000: '20 sec',
         30000: '30 sec',
-        60000: '60 sec'
-      }
+        60000: '60 sec',
+      },
     },
     notification: {
       copiedVariable: 'Variable Copied',
-      variableHelp: 'Insert variables into the title and body. They are replaced with event content before sending.',
-      focusWarning: 'System notifications may not appear because of notification permission, Focus, or Do Not Disturb settings.',
+      variableHelp:
+        'Insert variables into the title and body. They are replaced with event content before sending.',
+      focusWarning:
+        'System notifications may not appear because of notification permission, Focus, or Do Not Disturb settings.',
       level: 'Notification Level',
       levels: {
         info: 'Info',
         warning: 'Warning',
         error: 'Error',
-        success: 'Success'
+        success: 'Success',
       },
       sound: 'Notification Sound',
       sounds: {
-        default: 'System Default'
+        default: 'System Default',
       },
-      macosSoundHint: 'Notification sound is controlled by the OS notification center. Use Sound output for custom audio.',
+      macosSoundHint:
+        'Notification sound is controlled by the OS notification center. Use Sound output for custom audio.',
       title: 'Notification Title',
       titlePlaceholder: 'For example: AI tool status update',
       titleMaxChars: 'Title Max Characters',
@@ -2608,18 +3485,19 @@ export const enMessages = {
       unsetBody: 'Notification body not set',
       previewCount: 'Title {{titleLength}} / {{titleMax}} · Body {{bodyLength}} / {{bodyMax}}',
       bodyMaxChars: 'Body Max Characters',
-      throttleSeconds: 'Notification Throttle Seconds'
+      throttleSeconds: 'Notification Throttle Seconds',
     },
     webhook: {
       copiedVariable: 'Variable Copied',
-      variableHelp: 'The request body supports variable replacement and is rendered to final JSON before sending.',
+      variableHelp:
+        'The request body supports variable replacement and is rendered to final JSON before sending.',
       sensitiveDataWarning:
         'Webhook sends configured headers and body to an external URL. Confirm the target service is trusted before inserting variables such as prompt, tool response, or working directory.',
       method: 'HTTP Method',
       headers: 'Headers (JSON, optional)',
       body: 'Body (JSON, optional)',
       bodyMaxChars: 'Body Max Characters',
-      currentTemplate: 'Current template {{length}} / {{max}}'
+      currentTemplate: 'Current template {{length}} / {{max}}',
     },
     sound: {
       loadFailed: 'Failed to Load Audio List',
@@ -2631,7 +3509,7 @@ export const enMessages = {
       sources: {
         builtIn: 'Built-in Audio',
         user: 'User Directory',
-        custom: 'Custom Path'
+        custom: 'Custom Path',
       },
       builtIn: 'Built-in Audio',
       chooseBuiltIn: 'Select Built-in Audio',
@@ -2645,72 +3523,73 @@ export const enMessages = {
       preview: 'Preview',
       volumePercent: 'Volume Percent',
       maxDurationMs: 'Max Playback Milliseconds',
-      throttleSeconds: 'Sound Throttle Seconds'
+      throttleSeconds: 'Sound Throttle Seconds',
     },
     variables: {
       helper: 'Variable Helper',
       openHelper: 'Open variable helper',
       button: 'Variables',
-      description: 'Public variables come from context or safe summaries and do not require debug. Large fields are trimmed automatically.',
+      description:
+        'Public variables come from context or safe summaries and do not require debug. Large fields are trimmed automatically.',
       expandAll: 'Show all variables',
       insertAria: 'Insert {{label}} variable',
       copyAria: 'Copy {{label}} variable',
       sources: {
         context: 'Context',
         summary: 'Summary',
-        largeSummary: 'Trimmed Summary'
+        largeSummary: 'Trimmed Summary',
       },
       internalEvent: {
         label: 'Internal Event',
-        description: 'Unified event name after software-side conversion.'
+        description: 'Unified event name after software-side conversion.',
       },
       model: {
         label: 'Model',
-        description: 'Model name parsed from the Hook payload.'
+        description: 'Model name parsed from the Hook payload.',
       },
       lastAssistantMessage: {
         label: 'Task Summary',
         description: 'Assistant summary at task completion. Output keeps at most 10240 characters.',
-        example: 'Code changes and validation are complete.'
+        example: 'Code changes and validation are complete.',
       },
       prompt: {
         label: 'User Prompt',
         description: 'The prompt field from UserPromptSubmit events.',
-        example: 'Please review this change.'
+        example: 'Please review this change.',
       },
       toolResponse: {
         label: 'Tool Response',
         description: 'The tool_response field from PostToolUse events. This is often large.',
-        example: 'Command completed with exit code 0.'
+        example: 'Command completed with exit code 0.',
       },
       pwd: {
         label: 'Working Directory',
-        description: 'Current working directory cwd parsed from the Hook payload.'
+        description: 'Current working directory cwd parsed from the Hook payload.',
       },
       sessionId: {
         label: 'Session ID',
-        description: 'Session identifier parsed from the Hook payload.'
+        description: 'Session identifier parsed from the Hook payload.',
       },
       permissionMode: {
         label: 'Permission Mode',
-        description: 'Permission mode parsed from the Hook payload.'
+        description: 'Permission mode parsed from the Hook payload.',
       },
       source: {
         label: 'Source',
-        description: 'AI tool source identifier.'
+        description: 'AI tool source identifier.',
       },
       event: {
         label: 'Hook Event',
-        description: 'Raw AI tool Hook event name.'
+        description: 'Raw AI tool Hook event name.',
       },
       timestamp: {
         label: 'Event Time',
-        description: 'Time when relay submitted the event.'
+        description: 'Time when relay submitted the event.',
       },
       toolName: {
         label: 'Tool Name',
-        description: 'Tool name or identifier parsed from the Hook payload.'
-      }
-    }
-  }
+        description: 'Tool name or identifier parsed from the Hook payload.',
+      },
+    },
+  },
 };

@@ -4,6 +4,18 @@ import { HardwareRule } from '../../api/tauriApi';
 import type { DesktopNoticeInstance } from '@/domain/desktopNotice';
 import { OutputTypeAddDialog } from './OutputTypeAddDialog';
 
+vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+  clearRect: vi.fn(),
+  fillRect: vi.fn(),
+  imageSmoothingEnabled: true,
+  fillStyle: '',
+} as unknown as CanvasRenderingContext2D);
+vi.stubGlobal(
+  'requestAnimationFrame',
+  vi.fn(() => 1)
+);
+vi.stubGlobal('cancelAnimationFrame', vi.fn());
+
 const existingRules: HardwareRule[] = [
   {
     id: 'agent-completed-system-notification-output',
@@ -188,6 +200,58 @@ describe('OutputTypeAddDialog', () => {
     expect(screen.getByRole('button', { name: '添加' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: '添加' }));
     expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  test('shows custom face refresh button when adding a display face output', () => {
+    const onReloadCustomFaceLibrary = vi.fn();
+    render(
+      <OutputTypeAddDialog
+        internalEvent="agent.running"
+        existingRules={[]}
+        deviceOptions={[
+          {
+            value: 'desk-wio',
+            label: 'desk-wio',
+            connectionStatus: 'offline-config',
+            boardId: 'seeed-wio-terminal',
+            deviceExtensions: {
+              display: {
+                status: true,
+                face: true,
+                faceStyleVersion: 'no-brow-warm-v1',
+                faceTemplates: ['working-focus'],
+                clear: true,
+                pixelWidth: 320,
+                pixelHeight: 240,
+                faceRendererProfile: 'wio-320x240-v1',
+                statuses: ['notice', 'working', 'success', 'warning', 'error'],
+                titleMaxChars: 39,
+                messageMaxChars: 95,
+              },
+              buzzer: null,
+              inputs: null,
+            },
+            channels: [
+              {
+                value: 'display',
+                label: '屏幕',
+                kind: 'display',
+                supportedActions: ['display-face'],
+                hardwareGuideId: null,
+              },
+            ],
+          },
+        ]}
+        customFaceLibrary={{ groups: [], groupById: {} }}
+        onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
+        onCancel={vi.fn()}
+        onAdd={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '刷新自定义表情列表' }));
+
+    expect(onReloadCustomFaceLibrary).toHaveBeenCalledTimes(1);
   });
 
   test('adds webhook output with default configuration and leaves details to rule card', () => {

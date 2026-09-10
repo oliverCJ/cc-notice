@@ -1,6 +1,6 @@
 [package]
 name = "cc-notice"
-version = "1.1.1"
+version = "1.2.1"
 description = "AI coding status notice desktop application"
 edition = "2021"
 default-run = "cc-notice"
@@ -9,13 +9,22 @@ default-run = "cc-notice"
 name = "cc_notice"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[profile.dev]
+debug = "line-tables-only"
+
 [dependencies]
 anyhow = "1"
+base64 = "0.22"
+fs2 = "0.4"
+gif = "0.13"
+hex = "0.4"
+image = "0.23"
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
+sha2 = "0.10"
 serialport = "4"
 signal-hook = "0.3"
 tauri = { version = "2", features = ["protocol-asset", "tray-icon", "image-png", "macos-private-api"] }
@@ -28,11 +37,15 @@ time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
 tokio = { version = "1", features = ["time"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
+unicode-normalization = "0.1"
 tiny_http = "0.12"
 uuid = { version = "1", features = ["v4"] }
+visioncortex = "0.8.0"
+vtracer = "0.6.5"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem"] }
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Storage_FileSystem"] }
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

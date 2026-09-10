@@ -58,7 +58,8 @@ const appConfig: AppConfigView = {
   activeProfileId: 'daily-coding',
   hookEventSelections: { bySource: {} },
   hookConfigTargets: [],
-  desktopNoticeInstances: []
+  desktopNoticeInstances: [],
+  devices: []
 };
 
 const dailyProfileState: ProfileFrontendState = {

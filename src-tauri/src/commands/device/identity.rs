@@ -3,6 +3,7 @@ use crate::core::boards::StableUidPolicy;
 use crate::core::device::DeviceRuntimeState;
 use crate::AppState;
 
+use super::connection::refresh_custom_face_status_after_device_info;
 use super::firmware_lookup::bundled_firmware_artifact_for_state;
 
 pub(crate) fn reset_device_identity_impl(
@@ -63,17 +64,24 @@ pub(crate) fn reset_device_identity_impl(
     };
     let query_session_id = prepared_query.session_id;
     let query_result = prepared_query.worker.query_device_info_line();
-    let verified_state = state
-        .device_runtime_registry
-        .lock()
-        .map_err(|error| error.to_string())?
-        .complete_device_info_query(&device_id, query_session_id, &artifact, query_result)?;
+    let verified_state = {
+        let mut registry = state
+            .device_runtime_registry
+            .lock()
+            .map_err(|error| error.to_string())?;
+        registry.complete_device_info_query(
+            &device_id,
+            query_session_id,
+            &artifact,
+            query_result,
+        )?
+    };
     if verified_state.device_uid.as_deref() != Some(new_device_uid.as_str()) {
         return Err("device_info response did not confirm reset device_uid".to_string());
     }
 
     persist_device_uid(state, &device_id, &new_device_uid)?;
-    Ok(verified_state)
+    Ok(refresh_custom_face_status_after_device_info(state, &device_id).unwrap_or(verified_state))
 }
 
 fn unique_short_device_uid(state: &AppState, board_id: &str) -> Result<String, String> {

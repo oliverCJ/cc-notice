@@ -406,9 +406,21 @@ pub struct DeviceDisplayCapabilities {
     pub lines: bool,
     #[serde(default)]
     pub runtime: bool,
+    #[serde(default)]
+    pub face: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub face_style_version: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub face_renderer_profile: Option<String>,
+    #[serde(default)]
+    pub face_templates: Vec<String>,
     pub clear: bool,
     #[serde(default)]
     pub size_class: DeviceDisplaySizeClass,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pixel_width: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pixel_height: Option<u32>,
     #[serde(default)]
     pub statuses: Vec<String>,
     pub title_max_chars: u32,
@@ -511,6 +523,8 @@ pub enum DeviceChannelActionType {
     Tone,
     Pattern,
     DisplayStatus,
+    #[serde(alias = "displayFace", alias = "display_face")]
+    DisplayFace,
     SetColor,
 }
 
@@ -527,6 +541,10 @@ pub struct DeviceChannelAction {
     pub color: Option<String>,
     pub brightness_percent: Option<u8>,
     pub pattern: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_face_template_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_face_intensity: Option<String>,
     pub priority: u8,
 }
 
@@ -538,6 +556,7 @@ pub enum DeviceExtensionActionType {
     DisplayLines,
     DisplayRuntime,
     DisplayClear,
+    DisplayFace,
     BuzzerPattern,
     DeviceControl,
 }
@@ -553,6 +572,16 @@ pub struct DeviceExtensionAction {
     pub message: Option<String>,
     pub icon: Option<String>,
     pub lines: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub face_template: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub face_intensity: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_face_group_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_face_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub duration_ms: Option<u64>,
     pub pattern: Option<String>,
     pub control: Option<String>,
     pub active: Option<bool>,
@@ -599,6 +628,7 @@ pub struct DeviceRuntimeState {
     pub transport: Option<DeviceTransportConfig>,
     pub channels: Vec<DeviceChannel>,
     pub firmware_info: Option<DeviceFirmwareInfo>,
+    pub custom_face_status: DeviceCustomFaceStatus,
     pub bundled_firmware_version: Option<String>,
     pub firmware_status: DeviceFirmwareStatus,
     pub firmware_check_error: Option<String>,
@@ -626,6 +656,7 @@ impl DeviceRuntimeState {
             transport: None,
             channels: Vec::new(),
             firmware_info: None,
+            custom_face_status: DeviceCustomFaceStatus::default(),
             bundled_firmware_version: None,
             firmware_status: DeviceFirmwareStatus::Unknown,
             firmware_check_error: None,
@@ -645,6 +676,69 @@ impl DeviceRuntimeState {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceCustomFaceCapabilities {
+    pub protocol_version: u16,
+    pub profile_code: u16,
+    pub pixel_width: u16,
+    pub pixel_height: u16,
+    pub max_faces: u8,
+    pub max_frames_per_face: u8,
+    pub max_group_bytes: u32,
+    pub chunk_bytes: u16,
+    pub incremental_update: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum DeviceCustomFaceErrorCode {
+    CustomFaceCapabilityInvalid,
+    CustomFaceStatusTimeout,
+    CustomFaceStorageError,
+    CustomFaceStatusInvalid,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum DeviceCustomFaceStatusState {
+    Unknown,
+    Empty,
+    Installed,
+    Unavailable,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceInstalledCustomFaceGroup {
+    pub profile_code: u16,
+    pub group_id: String,
+    pub group_runtime_hash: String,
+    pub default_face_id: String,
+    pub face_count: u8,
+    pub encoded_bytes: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceCustomFaceStatus {
+    pub state: DeviceCustomFaceStatusState,
+    pub installed: Option<DeviceInstalledCustomFaceGroup>,
+    pub error_code: Option<DeviceCustomFaceErrorCode>,
+    pub last_confirmed_at: Option<String>,
+}
+
+impl Default for DeviceCustomFaceStatus {
+    fn default() -> Self {
+        Self {
+            state: DeviceCustomFaceStatusState::Unknown,
+            installed: None,
+            error_code: None,
+            last_confirmed_at: None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DeviceRuntimeErrorCode {
@@ -653,6 +747,7 @@ pub enum DeviceRuntimeErrorCode {
     DeviceNotConnected,
     DeviceChannelNotConfigured,
     DeviceChannelActionUnsupported,
+    DeviceCustomFaceOutputMismatch,
     DeviceIoWorkerStopped,
     DeviceActionTimeout,
     DeviceInfoTimeout,
@@ -683,6 +778,23 @@ pub struct DeviceFirmwareInfo {
     pub device_uid: String,
     pub firmware_version: String,
     pub protocol_version: u16,
+    pub custom_face: Option<DeviceCustomFaceCapabilities>,
+    pub custom_face_error: Option<DeviceCustomFaceErrorCode>,
+    pub custom_face_active: Option<DeviceCustomFaceActiveState>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum DeviceCustomFaceActiveSource {
+    Builtin,
+    Custom,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceCustomFaceActiveState {
+    pub source: DeviceCustomFaceActiveSource,
+    pub group_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -821,6 +933,8 @@ mod tests {
             color: Some("#00ff88".to_string()),
             brightness_percent: Some(30),
             pattern: None,
+            display_face_template_id: None,
+            display_face_intensity: None,
             priority: 80,
         };
 

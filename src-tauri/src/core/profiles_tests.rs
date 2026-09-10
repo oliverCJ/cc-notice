@@ -511,6 +511,74 @@ fn validate_accepts_device_channel_rule_with_multiple_actions() {
 }
 
 #[test]
+fn validate_accepts_builtin_display_face_rule() {
+    let mut profile = NoticeProfile::daily_coding();
+    profile.hardware_rules.clear();
+    let rule = device_channel_rule_with_actions(
+        "agent-completed-display-face",
+        "agent.completed",
+        vec![device_channel_action(
+            "action-1",
+            "desk-pico",
+            "display",
+            DeviceChannelActionType::DisplayFace,
+        )],
+    );
+    profile.hardware_rules.push(rule);
+
+    assert_eq!(Ok(()), profile.validate());
+}
+
+#[test]
+fn validate_accepts_custom_display_face_rule() {
+    let mut profile = NoticeProfile::daily_coding();
+    profile.hardware_rules.clear();
+    let mut action = device_channel_action(
+        "action-1",
+        "desk-pico",
+        "display",
+        DeviceChannelActionType::DisplayFace,
+    );
+    action.custom_face_group_id = Some("2133e686-77f5-4a29-923b-10d65211ca94".to_string());
+    action.custom_face_id = Some("face-1".to_string());
+    profile.hardware_rules.push(device_channel_rule_with_actions(
+        "agent-completed-display-face",
+        "agent.completed",
+        vec![action],
+    ));
+
+    assert_eq!(Ok(()), profile.validate());
+}
+
+#[test]
+fn validate_rejects_custom_display_face_rule_without_template() {
+    let mut profile = NoticeProfile::daily_coding();
+    profile.hardware_rules.clear();
+    let mut action = device_channel_action(
+        "action-1",
+        "desk-pico",
+        "display",
+        DeviceChannelActionType::DisplayFace,
+    );
+    action.display_face_template_id = None;
+    action.custom_face_group_id = Some("2133e686-77f5-4a29-923b-10d65211ca94".to_string());
+    action.custom_face_id = Some("face-1".to_string());
+    profile.hardware_rules.push(device_channel_rule_with_actions(
+        "agent-completed-display-face",
+        "agent.completed",
+        vec![action],
+    ));
+
+    let error = profile
+        .validate()
+        .expect_err("custom display-face rule without template should be rejected");
+
+    assert!(
+        error.contains("display-face action requires display_face_template_id")
+    );
+}
+
+#[test]
 fn validate_rejects_device_channel_action_without_device_id() {
     let mut profile = NoticeProfile::daily_coding();
     let mut rule = device_channel_rule(
@@ -1809,6 +1877,18 @@ fn device_channel_action(
         } else {
             None
         },
+        display_face_template_id: if action == DeviceChannelActionType::DisplayFace {
+            Some("idle-sleep".to_string())
+        } else {
+            None
+        },
+        display_face_intensity: if action == DeviceChannelActionType::DisplayFace {
+            Some("standard".to_string())
+        } else {
+            None
+        },
+        custom_face_group_id: None,
+        custom_face_id: None,
         display_template_id: None,
         display_accent: None,
         display_icon: None,

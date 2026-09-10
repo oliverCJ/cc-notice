@@ -20,6 +20,9 @@ describe('boardCatalog', () => {
     expect(getBoardDisplayName('rp2040-pico-oled-091')).toBe(
       'Raspberry Pi Pico + OLED 0.91" 128x32'
     );
+    expect(getBoardDisplayName('rp2040-pico-oled-128x128')).toBe(
+      'Raspberry Pi Pico + OLED 1.5" 128x128 SH1107'
+    );
   });
 
   it('marks board identity persistence consistently with registration strategy', () => {
@@ -32,6 +35,7 @@ describe('boardCatalog', () => {
     expect(getBoardIdentityLabel('seeed-wio-terminal')).toBe('stable-uid');
     expect(getBoardIdentityLabel('rp2040-pico-oled-096')).toBe('stable-uid');
     expect(getBoardIdentityLabel('rp2040-pico-oled-091')).toBe('stable-uid');
+    expect(getBoardIdentityLabel('rp2040-pico-oled-128x128')).toBe('stable-uid');
   });
 
   it('exposes pico oled 0.96 display capability without exposing oled reserved pins as digital outputs', () => {
@@ -61,6 +65,29 @@ describe('boardCatalog', () => {
     expect(channels.some((channel) => channel.id === 'pin.gp26')).toBe(true);
   });
 
+  it('exposes pico oled 128x128 display capability without exposing oled reserved pins as digital outputs', () => {
+    const channels = getBoardAvailableChannels('rp2040-pico-oled-128x128');
+    const extensions = getBoardDeviceExtensions('rp2040-pico-oled-128x128');
+
+    expect(extensions?.display).toEqual(
+      expect.objectContaining({
+        status: true,
+        lines: true,
+        runtime: true,
+        clear: true,
+        sizeClass: 'medium',
+        titleMaxChars: 16,
+        messageMaxChars: 16,
+        textEncoding: 'ascii',
+        faceRendererProfile: 'oled-128x128-v1'
+      })
+    );
+    expect(channels.some((channel) => channel.id === 'pin.gp20')).toBe(false);
+    expect(channels.some((channel) => channel.id === 'pin.gp21')).toBe(false);
+    expect(channels.some((channel) => channel.id === 'pin.gp22')).toBe(true);
+    expect(channels.some((channel) => channel.id === 'pin.gp0')).toBe(true);
+  });
+
   it('exposes pico oled 0.91 display capability while keeping gp22 as a digital output', () => {
     const channels = getBoardAvailableChannels('rp2040-pico-oled-091');
     const extensions = getBoardDeviceExtensions('rp2040-pico-oled-091');
@@ -84,6 +111,39 @@ describe('boardCatalog', () => {
     expect(channels.some((channel) => channel.id.startsWith('pwm.'))).toBe(false);
     expect(channels.some((channel) => channel.id.startsWith('ws2812.'))).toBe(false);
     expect(channels.some((channel) => channel.id === 'buzzer.gp18')).toBe(true);
+  });
+
+  it('declares display face capability for screen devices', () => {
+    expect(getBoardDeviceExtensions('seeed-wio-terminal')?.display?.face).toBe(true);
+    expect(getBoardDeviceExtensions('rp2040-pico-oled-091')?.display?.face).toBe(true);
+    expect(getBoardDeviceExtensions('rp2040-pico-oled-096')?.display?.face).toBe(true);
+    expect(getBoardDeviceExtensions('rp2040-pico-oled-128x128')?.display?.face).toBe(true);
+    expect(getBoardDeviceExtensions('rp2040-pico')?.display?.face).toBeUndefined();
+  });
+
+  it.each([
+    ['rp2040-pico-oled-096', 128, 64],
+    ['rp2040-pico-oled-091', 128, 32],
+    ['rp2040-pico-oled-128x128', 128, 128],
+    ['seeed-wio-terminal', 320, 240]
+  ])(
+    'declares real display resolution for %s',
+    (boardId, pixelWidth, pixelHeight) => {
+      expect(getBoardDeviceExtensions(boardId)?.display).toEqual(
+        expect.objectContaining({ pixelWidth, pixelHeight })
+      );
+    }
+  );
+
+  it.each([
+    ['rp2040-pico-oled-091', 'oled-128x32-v1'],
+    ['rp2040-pico-oled-096', 'oled-128x64-v1'],
+    ['rp2040-pico-oled-128x128', 'oled-128x128-v1'],
+    ['seeed-wio-terminal', 'wio-320x240-v1']
+  ])('declares renderer profile for %s', (boardId, faceRendererProfile) => {
+    expect(getBoardDeviceExtensions(boardId)?.display).toEqual(
+      expect.objectContaining({ faceRendererProfile })
+    );
   });
 
   it('exposes pattern action on Pico buzzer channels without board-level buzzer extension', () => {

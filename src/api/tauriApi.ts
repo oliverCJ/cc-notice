@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import type {
   CustomMascotScanResult,
   DesktopMascotPlayMode,
-  DesktopMascotState
+  DesktopMascotState,
 } from '@/domain/desktopMascot';
 import type {
   DesktopNoticeColorMode,
@@ -12,11 +12,65 @@ import type {
   DesktopNoticeRestoreBehavior,
   DesktopNoticeRuleTarget,
   DesktopNoticeRuleEffect,
-  DesktopNoticeWindowPayload
+  DesktopNoticeWindowPayload,
 } from '@/domain/desktopNotice';
 
 export async function openExternalUrl(url: string): Promise<void> {
   await invoke('open_external_url', { url });
+}
+
+export type AppUpdateStatus = 'up-to-date' | 'update-available';
+
+export type AppUpdateCheckResult = {
+  currentVersion: string;
+  latestVersion: string;
+  status: AppUpdateStatus;
+  releaseName: string;
+  releaseBody: string;
+  publishedAt: string | null;
+  releaseUrl: string;
+};
+
+export function checkForAppUpdate() {
+  return invoke<AppUpdateCheckResult>('check_for_app_update');
+}
+
+export type StorageUsageStatus = 'ok' | 'missing' | 'unreadable';
+
+export type StorageUsageEntry = {
+  path: string;
+  status: StorageUsageStatus;
+  bytes: number;
+  fileCount: number;
+  directoryCount: number;
+};
+
+export type StorageUsageSnapshot = {
+  cache: StorageUsageEntry;
+  logs: StorageUsageEntry;
+};
+
+export type StorageCleanupStatus = 'cleaned' | 'missing' | 'partial' | 'failed';
+
+export type StorageCleanupEntry = {
+  path: string;
+  status: StorageCleanupStatus;
+  removedBytes: number;
+  removedFiles: number;
+  error?: string | null;
+};
+
+export type StorageCleanupResult = {
+  cache: StorageCleanupEntry;
+  logs: StorageCleanupEntry;
+};
+
+export async function getStorageUsageSnapshot(): Promise<StorageUsageSnapshot> {
+  return invoke<StorageUsageSnapshot>('storage_usage_snapshot');
+}
+
+export async function clearStorage(): Promise<StorageCleanupResult> {
+  return invoke<StorageCleanupResult>('clear_storage');
 }
 
 export type SubmitRelayEventRequest = {
@@ -233,6 +287,7 @@ export type AppConfig = {
   hookEventSelections: HookEventSelections;
   hookConfigTargets: HookConfigTarget[];
   desktopNoticeInstances: DesktopNoticeInstance[];
+  devices: DeviceInstance[];
 };
 
 export type AppConfigSaveResult = {
@@ -241,11 +296,7 @@ export type AppConfigSaveResult = {
 };
 
 export type ResetConfigurationScope =
-  | 'app-settings'
-  | 'hook-settings'
-  | 'profile-mappings'
-  | 'devices'
-  | 'all';
+  'app-settings' | 'hook-settings' | 'profile-mappings' | 'devices' | 'all';
 
 export type ResetConfigurationResult = {
   config: AppConfig;
@@ -284,7 +335,7 @@ export type HookConfigTargetScope = 'global' | 'project';
 export type HookConfigTarget = {
   id: string;
   scope: HookConfigTargetScope;
-  source: 'codex' | 'claude-code';
+  source: string;
   label: string;
   projectPath?: string | null;
   enabled: boolean;
@@ -299,9 +350,18 @@ export type HookConfigTargetStatus = HookConfigTarget & {
 };
 
 export type HookEventFrontendState = {
+  tools?: AiToolFrontendDefinition[];
   catalog: HookEventDefinition[];
   selected: HookEventSelections;
   targets: HookConfigTargetStatus[];
+  legacyTargets?: HookConfigTargetStatus[];
+};
+
+export type AiToolFrontendDefinition = {
+  source: string;
+  displayName: string;
+  globalConfigPath: string;
+  canCreateProjectTarget: boolean;
 };
 
 export type HookConfigWritePreview = {
@@ -334,13 +394,7 @@ export type HardwareOutputType =
   | 'desktop-notice'
   | 'custom';
 export type DeviceTransportKind =
-  | 'serial'
-  | 'usb-hid'
-  | 'usb-bulk'
-  | 'tcp'
-  | 'websocket'
-  | 'mqtt'
-  | 'ble-gatt';
+  'serial' | 'usb-hid' | 'usb-bulk' | 'tcp' | 'websocket' | 'mqtt' | 'ble-gatt';
 export type DeviceConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 export type DeviceOperationKind =
   | 'manual-connect'
@@ -372,6 +426,7 @@ export type DeviceChannelActionType =
   | 'tone'
   | 'pattern'
   | 'display-status'
+  | 'display-face'
   | 'set-color';
 
 export type DigitalOutputConfig = {
@@ -441,21 +496,10 @@ export type DeviceInputEvent = {
 export type DeviceTransportMonitorDirection = 'outbound' | 'inbound' | 'system';
 
 export type DeviceTransportMonitorCategory =
-  | 'command'
-  | 'ack'
-  | 'input-event'
-  | 'heartbeat'
-  | 'connection'
-  | 'error';
+  'command' | 'ack' | 'input-event' | 'heartbeat' | 'connection' | 'error';
 
 export type DeviceTransportMonitorStatus =
-  | 'pending'
-  | 'sent'
-  | 'ok'
-  | 'timeout'
-  | 'error'
-  | 'skipped'
-  | 'stopped';
+  'pending' | 'sent' | 'ok' | 'timeout' | 'error' | 'skipped' | 'stopped';
 
 export type DeviceTransportMonitorEvent = {
   id: string;
@@ -539,11 +583,7 @@ export type DeviceCandidateHandshakeInfo = {
 export type DeviceIdentityPersistence = 'persisted' | 'fallback';
 
 export type DeviceDiscoveryStatus =
-  | 'unidentified'
-  | 'identifying'
-  | 'identified'
-  | 'matched'
-  | 'failed';
+  'unidentified' | 'identifying' | 'identified' | 'matched' | 'failed';
 
 export type DeviceChannelAction = {
   deviceId: string;
@@ -565,23 +605,13 @@ export type DeviceExtensionActionType =
   | 'display-lines'
   | 'display-runtime'
   | 'display-clear'
+  | 'display-face'
   | 'buzzer-pattern'
   | 'device-control';
 
-export type DeviceExtensionStatus =
-  | 'idle'
-  | 'working'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'notice';
+export type DeviceExtensionStatus = 'idle' | 'working' | 'success' | 'warning' | 'error' | 'notice';
 
-export type DeviceBuzzerPattern =
-  | 'notice'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'working';
+export type DeviceBuzzerPattern = 'notice' | 'success' | 'warning' | 'error' | 'working';
 
 export type DeviceExtensionAction = {
   deviceId: string;
@@ -591,6 +621,11 @@ export type DeviceExtensionAction = {
   message?: string | null;
   icon?: string | null;
   lines?: string[] | null;
+  faceTemplate?: string | null;
+  faceIntensity?: 'subtle' | 'standard' | 'strong' | null;
+  customFaceGroupId?: string | null;
+  customFaceId?: string | null;
+  durationMs?: number | null;
   pattern?: DeviceBuzzerPattern | null;
   control?: 'mute' | null;
   active?: boolean | null;
@@ -610,6 +645,7 @@ export type DeviceRuntimeErrorCode =
   | 'DEVICE_NOT_CONNECTED'
   | 'DEVICE_CHANNEL_NOT_CONFIGURED'
   | 'DEVICE_CHANNEL_ACTION_UNSUPPORTED'
+  | 'DEVICE_CUSTOM_FACE_OUTPUT_MISMATCH'
   | 'DEVICE_IO_WORKER_STOPPED'
   | 'DEVICE_ACTION_TIMEOUT'
   | 'DEVICE_INFO_TIMEOUT'
@@ -630,6 +666,7 @@ export type DeviceRuntimeState = {
   transport?: DeviceTransportConfig | null;
   channels: DeviceChannel[];
   firmwareInfo?: DeviceFirmwareInfo | null;
+  customFaceStatus: DeviceCustomFaceStatus;
   bundledFirmwareVersion?: string | null;
   firmwareStatus: DeviceFirmwareStatus;
   firmwareCheckError?: string | null;
@@ -658,8 +695,14 @@ export type DeviceDisplayCapabilities = {
   card?: boolean;
   lines?: boolean;
   runtime?: boolean;
+  face?: boolean;
+  faceStyleVersion?: string | null;
+  faceRendererProfile?: string | null;
+  faceTemplates?: string[];
   clear: boolean;
   sizeClass?: 'compact' | 'small' | 'medium' | 'large';
+  pixelWidth?: number | null;
+  pixelHeight?: number | null;
   statuses: string[];
   titleMaxChars: number;
   messageMaxChars: number;
@@ -684,21 +727,58 @@ export type DeviceFirmwareInfo = {
   deviceUid: string;
   firmwareVersion: string;
   protocolVersion: number;
+  customFace?: DeviceCustomFaceCapabilities | null;
+  customFaceError?: DeviceCustomFaceErrorCode | null;
+  customFaceActive?: DeviceCustomFaceActiveState | null;
+};
+
+export type DeviceCustomFaceActiveSource = 'builtin' | 'custom';
+
+export type DeviceCustomFaceActiveState = {
+  source: DeviceCustomFaceActiveSource;
+  groupId?: string | null;
+};
+
+export type DeviceCustomFaceCapabilities = {
+  protocolVersion: number;
+  profileCode: number;
+  pixelWidth: number;
+  pixelHeight: number;
+  maxFaces: number;
+  maxFramesPerFace: number;
+  maxGroupBytes: number;
+  chunkBytes: number;
+  incrementalUpdate: boolean;
+};
+
+export type DeviceCustomFaceErrorCode =
+  | 'custom-face-capability-invalid'
+  | 'custom-face-status-timeout'
+  | 'custom-face-storage-error'
+  | 'custom-face-status-invalid';
+
+export type DeviceCustomFaceStatusState = 'unknown' | 'empty' | 'installed' | 'unavailable';
+
+export type DeviceInstalledCustomFaceGroup = {
+  profileCode: number;
+  groupId: string;
+  groupRuntimeHash: string;
+  defaultFaceId: string;
+  faceCount: number;
+  encodedBytes: number;
+};
+
+export type DeviceCustomFaceStatus = {
+  state: DeviceCustomFaceStatusState;
+  installed?: DeviceInstalledCustomFaceGroup | null;
+  errorCode?: DeviceCustomFaceErrorCode | null;
+  lastConfirmedAt?: string | null;
 };
 
 export type DeviceFirmwareStatus =
-  | 'unknown'
-  | 'up-to-date'
-  | 'update-available'
-  | 'incompatible'
-  | 'unsupported';
+  'unknown' | 'up-to-date' | 'update-available' | 'incompatible' | 'unsupported';
 
-export type DeviceHeartbeatStatus =
-  | 'unknown'
-  | 'healthy'
-  | 'stale'
-  | 'lost'
-  | 'unsupported';
+export type DeviceHeartbeatStatus = 'unknown' | 'healthy' | 'stale' | 'lost' | 'unsupported';
 
 export type DevicePortDescriptor = {
   id: string;
@@ -838,6 +918,10 @@ export type DeviceChannelRuleAction = {
   displayMessageTemplate?: string | null;
   displayTitleMaxChars?: number | null;
   displayMessageMaxChars?: number | null;
+  displayFaceTemplateId?: string | null;
+  displayFaceIntensity?: 'subtle' | 'standard' | 'strong' | null;
+  customFaceGroupId?: string | null;
+  customFaceId?: string | null;
 };
 
 export type HardwareOutput = {
@@ -946,10 +1030,7 @@ export type ProfileFrontendState = {
 };
 
 export type ProfilePackageDeviceBindingStatus =
-  | 'full-match'
-  | 'partial-match'
-  | 'board-mismatch'
-  | 'unbound';
+  'full-match' | 'partial-match' | 'board-mismatch' | 'unbound';
 
 export type ProfilePackageDeviceRequirement = {
   ruleId: string;
@@ -1002,6 +1083,179 @@ export type ProfilePackageImportResult = {
   profileState: ProfileFrontendState;
   hookEventSelections: HookEventSelections;
   desktopNoticeInstances: DesktopNoticeInstance[];
+};
+
+export type CustomFaceColor = {
+  red: number;
+  green: number;
+  blue: number;
+};
+
+export type CustomFaceFrame = {
+  durationMs: number;
+  packedPixels: number[];
+};
+
+export type CustomFace = {
+  faceId: string;
+  name: string;
+  color: CustomFaceColor;
+  frames: CustomFaceFrame[];
+};
+
+export type CustomFaceGroup = {
+  schemaVersion: number;
+  groupId: string;
+  name: string;
+  displayProfileId: string;
+  revision: number;
+  defaultFaceId: string;
+  faces: CustomFace[];
+};
+
+export type CustomFaceGroupSummary = {
+  groupId: string;
+  name: string;
+  displayProfileId: string;
+  revision: number;
+  defaultFaceId: string;
+  faceCount: number;
+  libraryHash: string;
+};
+
+export type SaveCustomFaceGroupRequest = {
+  group: CustomFaceGroup;
+  expectedLibraryHash?: string | null;
+};
+
+export type SaveCustomFaceGroupResult = {
+  group: CustomFaceGroup;
+  libraryHash: string;
+  changed: boolean;
+};
+
+export type CustomFaceImportMode = 'update' | 'copy';
+export type CustomFaceImportStatus = 'new' | 'duplicate' | 'conflict';
+
+export type CustomFaceImportPreview = {
+  group: CustomFaceGroup;
+  libraryHash: string;
+  status: CustomFaceImportStatus;
+};
+
+export type CustomFaceImportRequest = {
+  path: string;
+  mode: CustomFaceImportMode;
+};
+
+export type CustomFaceItemImportPreview = {
+  face: CustomFace;
+  displayProfileId: string;
+  width: number;
+  height: number;
+  frameCount: number;
+  totalDurationMs: number;
+  contentHash: string;
+  sourceFaceId: string;
+};
+
+export type CustomFacePixelizeOptions = {
+  mode: 'mono' | 'color';
+  colorCount: number;
+  dither: boolean;
+  invert: boolean;
+  threshold: number;
+  contrast: number;
+  brightness: number;
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  rotationDeg: number;
+};
+
+export type CustomFacePixelizeRequest = {
+  profileWidth: number;
+  profileHeight: number;
+  imageBytes: number[];
+  options: CustomFacePixelizeOptions;
+};
+
+export type PrepareCustomFacePixelizerSourceRequest = {
+  profileWidth: number;
+  profileHeight: number;
+  imageBytes: number[];
+};
+
+export type PrepareCustomFacePixelizerSourceResult = {
+  sourceId: string;
+  sourceWidth: number;
+  sourceHeight: number;
+  workingWidth: number;
+  workingHeight: number;
+};
+
+export type CustomFacePixelizeSourceRequest = {
+  sourceId: string;
+  profileWidth: number;
+  profileHeight: number;
+  options: CustomFacePixelizeOptions;
+};
+
+export type CustomFacePixelizeResult = {
+  width: number;
+  height: number;
+  packedPixels: number[];
+  previewPixels: number[];
+  sourceWidth: number;
+  sourceHeight: number;
+};
+
+export type CustomFaceImageImportReadyPayload = {
+  packedPixels: number[];
+  sourceWidth: number;
+  sourceHeight: number;
+};
+
+export type ExportCustomFaceRequest = {
+  face: CustomFace;
+  displayProfileId: string;
+  path: string;
+};
+
+export type ExportCustomFaceGifRequest = ExportCustomFaceRequest & {
+  scale: number;
+  invert?: boolean;
+  transparentBackground?: boolean;
+  frameIndices?: number[];
+};
+
+export type ExportCustomFacePngRequest = {
+  packedPixels: number[];
+  displayProfileId: string;
+  path: string;
+  scale: number;
+  invert?: boolean;
+  transparentBackground?: boolean;
+};
+
+export type CustomFaceGifExportResult = {
+  frameDelaysMs: number[];
+  totalDurationMs: number;
+};
+
+export type PersonalCustomFaceAsset = {
+  assetId: string;
+  scope: 'public' | 'group';
+  groupId?: string | null;
+  name: string;
+  tags: string[];
+  profileId: string;
+  width: number;
+  height: number;
+  packedPixels: number[];
+  source: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type InternalEventDefinition = {
@@ -1080,13 +1334,13 @@ export function saveDesktopNoticeInstance(instance: DesktopNoticeInstance) {
 
 export function deleteDesktopNoticeInstance(instanceId: string) {
   return invoke<DesktopNoticeInstance[]>('delete_desktop_notice_instance', {
-    request: { instanceId }
+    request: { instanceId },
   });
 }
 
 export function previewDesktopNoticeInstance(instanceId: string) {
   return invoke<DesktopNoticeWindowPayload>('preview_desktop_notice_instance', {
-    request: { instanceId }
+    request: { instanceId },
   });
 }
 
@@ -1115,19 +1369,19 @@ export function previewDesktopNoticeRuleEffect(request: DesktopNoticeRuleEffectP
 
 export function hideDesktopNoticeInstance(instanceId: string) {
   return invoke<void>('hide_desktop_notice_instance', {
-    request: { instanceId }
+    request: { instanceId },
   });
 }
 
 export function getDesktopNoticeWindowPayload(instanceId: string) {
   return invoke<DesktopNoticeWindowPayload>('desktop_notice_window_payload', {
-    request: { instanceId }
+    request: { instanceId },
   });
 }
 
 export function saveDesktopNoticeWindowBounds(instanceId: string) {
   return invoke<DesktopNoticeInstance[]>('save_desktop_notice_window_bounds', {
-    request: { instanceId }
+    request: { instanceId },
   });
 }
 
@@ -1143,11 +1397,7 @@ export function saveProfile(profile: NoticeProfile) {
   return invoke<ProfileFrontendState>('save_profile', { profile });
 }
 
-export function createProfile(
-  profileId: string,
-  profileName: string,
-  template?: ProfileTemplate
-) {
+export function createProfile(profileId: string, profileName: string, template?: ProfileTemplate) {
   return invoke<ProfileFrontendState>('create_profile', { profileId, profileName, template });
 }
 
@@ -1155,7 +1405,7 @@ export function duplicateProfile(sourceProfileId: string, profileId: string, pro
   return invoke<ProfileFrontendState>('duplicate_profile', {
     sourceProfileId,
     profileId,
-    profileName
+    profileName,
   });
 }
 
@@ -1177,6 +1427,239 @@ export function previewProfilePackageImport(path: string) {
 
 export function importProfilePackage(request: ProfilePackageImportRequest) {
   return invoke<ProfilePackageImportResult>('import_profile_package', { request });
+}
+
+export function getCustomFaceGroups() {
+  return invoke<CustomFaceGroupSummary[]>('custom_face_groups');
+}
+
+export function getCustomFaceGroup(groupId: string) {
+  return invoke<CustomFaceGroup>('custom_face_group', { groupId });
+}
+
+export function saveCustomFaceGroup(request: SaveCustomFaceGroupRequest) {
+  return invoke<SaveCustomFaceGroupResult>('save_custom_face_group', { request });
+}
+
+export function deleteCustomFaceGroup(groupId: string, expectedLibraryHash: string) {
+  return invoke<void>('delete_custom_face_group', { groupId, expectedLibraryHash });
+}
+
+export function saveCustomFaceRecovery(group: CustomFaceGroup) {
+  return invoke<void>('save_custom_face_recovery', { group });
+}
+
+export function getCustomFaceRecovery(groupId: string) {
+  return invoke<CustomFaceGroup | null>('custom_face_recovery', { groupId });
+}
+
+export function clearCustomFaceRecovery(groupId: string) {
+  return invoke<void>('clear_custom_face_recovery', { groupId });
+}
+
+export function exportCustomFaceGroup(groupId: string, path: string) {
+  return invoke<void>('export_custom_face_group', { groupId, path });
+}
+
+export function previewCustomFaceGroupImport(path: string) {
+  return invoke<CustomFaceImportPreview>('preview_custom_face_group_import', { path });
+}
+
+export function importCustomFaceGroup(request: CustomFaceImportRequest) {
+  return invoke<SaveCustomFaceGroupResult>('import_custom_face_group', { request });
+}
+
+export function installCustomFaceGroupToDevice(deviceId: string, groupId: string) {
+  return invoke<DeviceRuntimeState>('install_custom_face_group_to_device', {
+    request: { deviceId, groupId },
+  });
+}
+
+export function setCustomFaceActiveSource(
+  deviceId: string,
+  source: DeviceCustomFaceActiveSource,
+  groupId?: string | null
+) {
+  return invoke<DeviceRuntimeState>('set_custom_face_active_source', {
+    request: { deviceId, source, groupId: groupId ?? null },
+  });
+}
+
+export function previewCustomFaceItemImport(path: string) {
+  return invoke<CustomFaceItemImportPreview>('preview_custom_face_item_import', { path });
+}
+
+export function exportCustomFaceItem(request: ExportCustomFaceRequest) {
+  return invoke<void>('export_custom_face_item', { request });
+}
+
+export function exportCustomFaceGif(request: ExportCustomFaceGifRequest) {
+  return invoke<CustomFaceGifExportResult>('export_custom_face_gif', { request });
+}
+
+export function exportCustomFacePng(request: ExportCustomFacePngRequest) {
+  return invoke<void>('export_custom_face_png', { request });
+}
+
+export function readCustomFaceSvg(path: string) {
+  return invoke<string>('read_custom_face_svg', { path });
+}
+
+export function getCustomFaceAssets() {
+  return invoke<PersonalCustomFaceAsset[]>('custom_face_assets');
+}
+export function saveCustomFaceAsset(asset: PersonalCustomFaceAsset) {
+  return invoke<PersonalCustomFaceAsset>('save_custom_face_asset', { asset });
+}
+export function deleteCustomFaceAsset(assetId: string) {
+  return invoke<void>('delete_custom_face_asset', { assetId });
+}
+
+export function openCustomFaceEditor() {
+  return invoke<void>('open_custom_face_editor');
+}
+
+export function focusCustomFaceEditor() {
+  return invoke<void>('focus_custom_face_editor');
+}
+
+export function closeCustomFaceEditor() {
+  return invoke<void>('close_custom_face_editor');
+}
+
+export type OpenCustomFaceImagePixelizerRequest = {
+  width: number;
+  height: number;
+};
+
+export function openCustomFaceImagePixelizer(request: OpenCustomFaceImagePixelizerRequest) {
+  return invoke<void>('open_custom_face_image_pixelizer', { request });
+}
+
+export function closeCustomFaceImagePixelizer() {
+  return invoke<void>('close_custom_face_image_pixelizer');
+}
+
+export function pixelizeCustomFaceImage(request: CustomFacePixelizeRequest) {
+  return invoke<CustomFacePixelizeResult>('pixelize_custom_face_image', { request });
+}
+
+export function prepareCustomFaceImagePixelizerSource(
+  request: PrepareCustomFacePixelizerSourceRequest
+) {
+  return invoke<PrepareCustomFacePixelizerSourceResult>(
+    'prepare_custom_face_image_pixelizer_source',
+    { request }
+  );
+}
+
+export function pixelizeCustomFaceImageSource(request: CustomFacePixelizeSourceRequest) {
+  return invoke<CustomFacePixelizeResult>('pixelize_custom_face_image_source', { request });
+}
+
+export function releaseCustomFaceImagePixelizerSource(sourceId: string) {
+  return invoke<boolean>('release_custom_face_image_pixelizer_source', { sourceId });
+}
+
+export function applyCustomFaceImageImport(payload: CustomFaceImageImportReadyPayload) {
+  return invoke<void>('apply_custom_face_image_import', { payload });
+}
+
+export type PrepareCustomFaceVectorizerSourceRequest = {
+  fileName: string;
+  imageBytes: number[];
+  targetWidth: number;
+  targetHeight: number;
+};
+
+export type PrepareCustomFaceVectorizerSourceResult = {
+  sourceId: string;
+  sourceWidth: number;
+  sourceHeight: number;
+  workingWidth: number;
+  workingHeight: number;
+};
+
+export type CustomFaceVectorizeMode = 'binary' | 'color';
+
+export type CustomFaceVectorizeOptions = {
+  mode: CustomFaceVectorizeMode;
+  filterSpeckle: number;
+  colorPrecision: number;
+  layerDifference: number;
+  cornerThreshold: number;
+  lengthThreshold: number;
+  maxIterations: number;
+  spliceThreshold: number;
+  pathPrecision: number;
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  rotationDeg: number;
+  invert: boolean;
+  brightness: number;
+  contrast: number;
+};
+
+export type CustomFaceVectorizeSourceRequest = {
+  sourceId: string;
+  options: CustomFaceVectorizeOptions;
+};
+
+export type CustomFaceVectorizeResult = {
+  svg: string;
+  width: number;
+  height: number;
+};
+
+export type VectorizedSvgTempFileResult = {
+  path: string;
+};
+
+export type OpenCustomFaceImageVectorizerRequest = {
+  width: number;
+  height: number;
+};
+
+export function openCustomFaceImageVectorizer(request: OpenCustomFaceImageVectorizerRequest) {
+  return invoke<void>('open_custom_face_image_vectorizer', { request });
+}
+
+export function closeCustomFaceImageVectorizer() {
+  return invoke<void>('close_custom_face_image_vectorizer');
+}
+
+export function prepareCustomFaceImageVectorizerSource(
+  request: PrepareCustomFaceVectorizerSourceRequest
+) {
+  return invoke<PrepareCustomFaceVectorizerSourceResult>(
+    'prepare_custom_face_image_vectorizer_source',
+    { request }
+  );
+}
+
+export function vectorizeCustomFaceImageVectorizerSource(
+  request: CustomFaceVectorizeSourceRequest
+) {
+  return invoke<CustomFaceVectorizeResult>('vectorize_custom_face_image_vectorizer_source', {
+    request,
+  });
+}
+
+export function releaseCustomFaceImageVectorizerSource(sourceId: string) {
+  return invoke<boolean>('release_custom_face_image_vectorizer_source', { sourceId });
+}
+
+export function writeCustomFaceVectorizedSvgTempFile(svg: string) {
+  return invoke<VectorizedSvgTempFileResult>('write_custom_face_vectorized_svg_temp_file', { svg });
+}
+
+export function emitCustomFaceOpenSvgPathEvent(path: string) {
+  return invoke<boolean>('emit_custom_face_open_svg_path_event', { path });
+}
+
+export function takeLatestVectorizedSvgTempFilePath() {
+  return invoke<string | null>('take_latest_vectorized_svg_temp_file_path');
 }
 
 export function getInternalEventCatalog() {
@@ -1269,13 +1752,13 @@ export function identifyDeviceCandidate(
   transport: DeviceTransportConfig
 ) {
   return invoke<DeviceCandidateResource>('identify_device_candidate', {
-    request: { resourceId, displayName, transport }
+    request: { resourceId, displayName, transport },
   });
 }
 
 export function registerIdentifiedDevice(resource: DeviceCandidateResource, label: string) {
   return invoke<DeviceRuntimeState>('register_identified_device', {
-    request: { resource, label }
+    request: { resource, label },
   });
 }
 
@@ -1283,8 +1766,8 @@ export function connectDevice(deviceId: string, transport?: DeviceTransportConfi
   return invoke<DeviceRuntimeState>('connect_device', {
     request: {
       deviceId,
-      transport: transport ?? null
-    }
+      transport: transport ?? null,
+    },
   });
 }
 
@@ -1322,19 +1805,19 @@ export function pingConnectedDevices() {
 
 export function openDeviceTransportMonitorWindow(deviceId: string) {
   return invoke<DeviceTransportMonitorSnapshot>('open_device_transport_monitor_window', {
-    deviceId
+    deviceId,
   });
 }
 
 export function getDeviceTransportMonitorSnapshot(deviceId: string) {
   return invoke<DeviceTransportMonitorSnapshot>('device_transport_monitor_snapshot', {
-    deviceId
+    deviceId,
   });
 }
 
 export function clearDeviceTransportMonitorEvents(deviceId: string) {
   return invoke<DeviceTransportMonitorSnapshot>('clear_device_transport_monitor_events', {
-    deviceId
+    deviceId,
   });
 }
 
@@ -1358,8 +1841,8 @@ export function updateDeviceChannels(deviceId: string, channels: DeviceChannel[]
   return invoke<DeviceRuntimeState>('update_device_channels', {
     request: {
       deviceId,
-      channels
-    }
+      channels,
+    },
   });
 }
 

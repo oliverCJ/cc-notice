@@ -64,6 +64,86 @@ templates:
         source: claude-code
         event: StopFailure
         internalEvent: agent.failed
+      - id: gemini-session-start
+        source: gemini-cli
+        event: SessionStart
+        internalEvent: agent.started
+      - id: gemini-before-agent
+        source: gemini-cli
+        event: BeforeAgent
+        internalEvent: agent.started
+      - id: gemini-before-tool
+        source: gemini-cli
+        event: BeforeTool
+        internalEvent: tool.executing
+      - id: gemini-after-tool
+        source: gemini-cli
+        event: AfterTool
+        internalEvent: agent.working
+      - id: gemini-notification
+        source: gemini-cli
+        event: Notification
+        internalEvent: agent.waiting_input
+      - id: gemini-after-agent
+        source: gemini-cli
+        event: AfterAgent
+        internalEvent: agent.completed
+      - id: cursor-session-start
+        source: cursor
+        event: sessionStart
+        internalEvent: agent.started
+      - id: cursor-before-submit-prompt
+        source: cursor
+        event: beforeSubmitPrompt
+        internalEvent: agent.started
+      - id: cursor-pre-tool-use
+        source: cursor
+        event: preToolUse
+        internalEvent: tool.executing
+      - id: cursor-post-tool-use
+        source: cursor
+        event: postToolUse
+        internalEvent: agent.working
+      - id: cursor-post-tool-use-failure
+        source: cursor
+        event: postToolUseFailure
+        internalEvent: agent.failed
+      - id: cursor-stop
+        source: cursor
+        event: stop
+        internalEvent: agent.completed
+      - id: copilot-session-start
+        source: github-copilot-cli
+        event: sessionStart
+        internalEvent: agent.started
+      - id: copilot-user-prompt
+        source: github-copilot-cli
+        event: userPromptSubmitted
+        internalEvent: agent.started
+      - id: copilot-pre-tool-use
+        source: github-copilot-cli
+        event: preToolUse
+        internalEvent: tool.executing
+      - id: copilot-post-tool-use
+        source: github-copilot-cli
+        event: postToolUse
+        internalEvent: agent.working
+      - id: copilot-post-tool-use-failure
+        source: github-copilot-cli
+        event: postToolUseFailure
+        internalEvent: agent.failed
+      - id: copilot-permission-request
+        source: github-copilot-cli
+        event: permissionRequest
+        internalEvent: agent.waiting_input
+      - id: copilot-agent-stop
+        source: github-copilot-cli
+        event: agentStop
+        internalEvent: agent.completed
+      - id: copilot-error
+        source: github-copilot-cli
+        event: errorOccurred
+        internalEvent: agent.failed
     hardwareRules:
       - id: agent-started-system-notification-output
         internalEvent: agent.started
@@ -259,6 +339,50 @@ templates:
         source: claude-code
         event: PostCompact
         internalEvent: agent.working
+      - id: gemini-session-end
+        source: gemini-cli
+        event: SessionEnd
+        internalEvent: agent.completed
+      - id: gemini-pre-compress
+        source: gemini-cli
+        event: PreCompress
+        internalEvent: context.compacting
+      - id: cursor-session-end
+        source: cursor
+        event: sessionEnd
+        internalEvent: agent.completed
+      - id: cursor-subagent-start
+        source: cursor
+        event: subagentStart
+        internalEvent: agent.working
+      - id: cursor-subagent-stop
+        source: cursor
+        event: subagentStop
+        internalEvent: agent.completed
+      - id: cursor-pre-compact
+        source: cursor
+        event: preCompact
+        internalEvent: context.compacting
+      - id: copilot-session-end
+        source: github-copilot-cli
+        event: sessionEnd
+        internalEvent: agent.completed
+      - id: copilot-subagent-start
+        source: github-copilot-cli
+        event: subagentStart
+        internalEvent: agent.working
+      - id: copilot-subagent-stop
+        source: github-copilot-cli
+        event: subagentStop
+        internalEvent: agent.completed
+      - id: copilot-pre-compact
+        source: github-copilot-cli
+        event: preCompact
+        internalEvent: context.compacting
+      - id: copilot-notification
+        source: github-copilot-cli
+        event: notification
+        internalEvent: notification
     hardwareRules:
       - id: agent-started-system-notification-output
         internalEvent: agent.started

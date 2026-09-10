@@ -68,27 +68,6 @@
       }
     },
     {
-      "target_id": "seeed-wio-terminal-default",
-      "board_id": "seeed-wio-terminal",
-      "firmware_version": "0.2.0",
-      "protocol_version": 2,
-      "visible": true,
-      "toolchain": "arduino-cli",
-      "artifact_name": "cc-notice-seeed-wio-terminal.bin",
-      "artifact_type": "bin",
-      "flash_strategy": "arduino_cli_upload",
-      "flash_volume_name": "",
-      "relative_path": "seeed-wio-terminal/cc-notice-seeed-wio-terminal.bin",
-      "upload": {
-        "fqbn": "Seeeduino:samd:seeed_wio_terminal",
-        "protocol": "sam-ba",
-        "speed": 921600,
-        "requires_1200bps_reset": true,
-        "bootloader_wait_ms": 8000,
-        "board_options": {}
-      }
-    },
-    {
       "target_id": "stm32f103cx-blue-pill-default",
       "board_id": "stm32f103cx-blue-pill",
       "firmware_version": "0.2.0",
@@ -136,19 +115,6 @@
       }
     },
     {
-      "target_id": "rp2040-pico-oled-091-128x32",
-      "board_id": "rp2040-pico-oled-091",
-      "firmware_version": "0.1.1",
-      "protocol_version": 2,
-      "visible": true,
-      "toolchain": "pico-sdk-cmake",
-      "artifact_name": "cc-notice-rp2040-pico-oled-091-128x32.uf2",
-      "artifact_type": "uf2",
-      "flash_strategy": "uf2_mount_copy",
-      "flash_volume_name": "RPI-RP2",
-      "relative_path": "rp2040-pico-oled-091/cc-notice-rp2040-pico-oled-091-128x32.uf2"
-    },
-    {
       "target_id": "rp2040-pico-default",
       "board_id": "rp2040-pico",
       "firmware_version": "0.1.5",
@@ -160,6 +126,53 @@
       "flash_strategy": "uf2_mount_copy",
       "flash_volume_name": "RPI-RP2",
       "relative_path": "rp2040-pico/cc-notice-rp2040-pico.uf2"
+    },
+    {
+      "target_id": "seeed-wio-terminal-default",
+      "board_id": "seeed-wio-terminal",
+      "firmware_version": "0.2.1",
+      "protocol_version": 2,
+      "visible": true,
+      "toolchain": "arduino-cli",
+      "artifact_name": "cc-notice-seeed-wio-terminal.bin",
+      "artifact_type": "bin",
+      "flash_strategy": "arduino_cli_upload",
+      "flash_volume_name": "",
+      "relative_path": "seeed-wio-terminal/cc-notice-seeed-wio-terminal.bin",
+      "upload": {
+        "fqbn": "Seeeduino:samd:seeed_wio_terminal",
+        "protocol": "sam-ba",
+        "speed": 921600,
+        "requires_1200bps_reset": true,
+        "bootloader_wait_ms": 8000,
+        "board_options": {}
+      }
+    },
+    {
+      "target_id": "rp2040-pico-oled-091-128x32",
+      "board_id": "rp2040-pico-oled-091",
+      "firmware_version": "0.1.2",
+      "protocol_version": 2,
+      "visible": true,
+      "toolchain": "pico-sdk-cmake",
+      "artifact_name": "cc-notice-rp2040-pico-oled-091-128x32.uf2",
+      "artifact_type": "uf2",
+      "flash_strategy": "uf2_mount_copy",
+      "flash_volume_name": "RPI-RP2",
+      "relative_path": "rp2040-pico-oled-091/cc-notice-rp2040-pico-oled-091-128x32.uf2"
+    },
+    {
+      "target_id": "rp2040-pico-oled-128x128-128x128",
+      "board_id": "rp2040-pico-oled-128x128",
+      "firmware_version": "0.2.1",
+      "protocol_version": 2,
+      "visible": true,
+      "toolchain": "pico-sdk-cmake",
+      "artifact_name": "cc-notice-rp2040-pico-oled-128x128-128x128.uf2",
+      "artifact_type": "uf2",
+      "flash_strategy": "uf2_mount_copy",
+      "flash_volume_name": "RPI-RP2",
+      "relative_path": "rp2040-pico-oled-128x128/cc-notice-rp2040-pico-oled-128x128-128x128.uf2"
     }
   ]
 }

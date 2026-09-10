@@ -18,6 +18,7 @@ const selectedState: DeviceRuntimeState = {
   bundledFirmwareVersion: null,
   firmwareStatus: 'unknown',
   firmwareCheckError: null,
+  customFaceStatus: { state: 'unknown', installed: null, errorCode: null },
   heartbeatStatus: 'unknown',
   heartbeatFailureCount: 0,
   lastHeartbeatAt: null,

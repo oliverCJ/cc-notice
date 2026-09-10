@@ -246,11 +246,22 @@ pub(crate) fn check_device_firmware_impl(
     };
     let session_id = prepared.session_id;
     let query_result = prepared.worker.query_device_info_line();
-    let result = state
-        .device_runtime_registry
-        .lock()
-        .map_err(|error| error.to_string())?
-        .complete_device_info_query(&device_id, session_id, &artifact, query_result);
+    let result = {
+        let mut registry = state
+            .device_runtime_registry
+            .lock()
+            .map_err(|error| error.to_string())?;
+        registry.complete_device_info_query(&device_id, session_id, &artifact, query_result)
+    };
+    let result = result.and_then(|base_state| {
+        if let Some(refreshed_state) =
+            refresh_custom_face_status_after_device_info(state, &device_id)
+        {
+            Ok(refreshed_state)
+        } else {
+            Ok(base_state)
+        }
+    });
     let elapsed_ms = started.elapsed().as_millis() as u64;
     if elapsed_ms >= 1_000 {
         tracing::warn!(device_id, elapsed_ms, "device firmware check was slow");
@@ -258,6 +269,55 @@ pub(crate) fn check_device_firmware_impl(
         tracing::info!(device_id, elapsed_ms, "device firmware check finished");
     }
     result
+}
+
+pub(crate) fn refresh_custom_face_status_after_device_info(
+    state: &AppState,
+    device_id: &str,
+) -> Option<DeviceRuntimeState> {
+    let prepared = {
+        let registry = match state.device_runtime_registry.lock() {
+            Ok(registry) => registry,
+            Err(error) => {
+                tracing::warn!(
+                    device_id,
+                    error = %error,
+                    "failed to lock registry before custom_face_status refresh"
+                );
+                return None;
+            }
+        };
+        match registry.prepare_custom_face_status_query(device_id) {
+            Ok(prepared) => prepared,
+            Err(_) => return None,
+        }
+    };
+
+    let session_id = prepared.session_id;
+    let result = prepared.worker.send_protocol_command(prepared.command);
+    match state.device_runtime_registry.lock() {
+        Ok(mut registry) => {
+            match registry.complete_custom_face_status_query(device_id, session_id, result) {
+                Ok(state) => Some(state),
+                Err(error) => {
+                    tracing::warn!(
+                        device_id,
+                        error,
+                        "failed to complete custom_face_status refresh"
+                    );
+                    None
+                }
+            }
+        }
+        Err(error) => {
+            tracing::warn!(
+                device_id,
+                error = %error,
+                "failed to lock registry after custom_face_status refresh"
+            );
+            None
+        }
+    }
 }
 
 pub(crate) fn disconnect_device_impl(

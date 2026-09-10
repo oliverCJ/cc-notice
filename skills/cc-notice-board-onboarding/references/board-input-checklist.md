@@ -123,6 +123,31 @@
 - 旧固件或能力声明滞后时，`display_card` / `display_lines` 是否能按设计降级到 `display_status`
 - I2C/SPI 屏幕无 ACK 或初始化失败时是否返回稳定错误码
 
+## 自定义表情固件能力
+
+只有明确计划让设备接收、保存和播放用户自定义动态表情时才填写本节；普通 `display.face`、屏幕分辨率或预设表情播放不能替代本节。
+
+必须确认：
+
+- 是否使用 `custom-face-device-protocol-v1` 作为设备能力、安装状态和 `custom_face_status` 的唯一协议真源
+- 是否使用 `custom-face-package-v1` 作为运行包、profile code、帧上限、RLE/XOR 编码和 manifest/blob 结构的唯一真源
+- 自定义表情 profile 是否为 `deployment=enabled`，profile code 是否和设备声明一致
+- 设备真实屏幕分辨率是否和 profile 宽高交叉校验，禁止只按 `display.face` 或屏幕尺寸猜测支持
+- 该板卡允许的 max faces、max frames per face、max group bytes 和 chunk bytes 是否来自契约或板卡实测容量
+- 固件命令/回复行缓冲是否至少 1024 字节；512 原始分块下是否仍有足够 SRAM 余量
+- 自定义表情 provider 是否只在完整安装、存储与播放闭环完成后由板卡入口注册
+- `device_info.custom_face` 是否只在 provider 正式启用后输出；未完成前是否省略能力
+- `custom_face_status` 是否能返回 empty、installed 或稳定错误；未完成前是否返回 `unsupported_command`
+- A/B 存储银行的起止地址、大小、擦除粒度、magic、generation、所有权判断和未知数据保护策略
+- A/B 写入是否先写候选银行、校验完成后再切换有效记录，失败或断电是否保留旧组
+- 断电后已安装组、空槽位、坏包回退和无效高 generation 记录是否已有真机验证
+- 官方固件升级、普通烧录或重启是否不会擦除自定义表情区域，除非执行明确的清理命令
+- 安装会话是否覆盖开始、分块写入、完成校验、取消、busy、超时和重复 chunk
+- 运行包验证是否覆盖 package hash、groupRuntimeHash、faceRuntimeHash、profile code、faceId、默认表情和帧 framebuffer 长度
+- 播放链路是否从已安装 A/B 银行读取自定义组，而不是继续播放编译期默认表情
+- 真机清理项是否只擦除本协议 magic 确认所有权的区域，禁止清理未知非 `0xFF` 数据
+- 能力开启后是否复测旧 `device_info`、`ping`、`display_status`、`display_face`、输出命令和通信监控
+
 ## 固件事实
 
 必须确认：

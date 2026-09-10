@@ -1,14 +1,19 @@
 use std::sync::{Arc, Mutex};
 
 use super::{DeviceInputEventCallback, DeviceRuntimeService};
-use crate::app_services::device_io_worker::{DeviceIoError, DeviceIoErrorCode};
+use crate::app_services::device_io_worker::{
+    DeviceIoCommandResult, DeviceIoError, DeviceIoErrorCode,
+};
 use crate::core::device::{
     ActiveLevel, DeviceChannel, DeviceChannelAction, DeviceChannelActionType,
-    DeviceConnectionStatus, DeviceExtensionAction, DeviceExtensionActionType, DeviceFirmwareStatus,
-    DeviceHeartbeatStatus, DeviceInstance, DeviceOperationKind, DeviceRuntimeErrorCode,
-    DeviceTransportConfig,
+    DeviceConnectionStatus, DeviceCustomFaceActiveSource, DeviceCustomFaceCapabilities,
+    DeviceCustomFaceErrorCode, DeviceCustomFaceStatus, DeviceCustomFaceStatusState,
+    DeviceExtensionAction, DeviceExtensionActionType, DeviceInstalledCustomFaceGroup,
+    DeviceFirmwareInfo, DeviceFirmwareStatus, DeviceHeartbeatStatus, DeviceInstance,
+    DeviceOperationKind, DeviceRuntimeErrorCode, DeviceTransportConfig,
 };
 use crate::core::firmware::FirmwareArtifact;
+use crate::core::protocol::ProtocolCommandV2;
 use crate::infrastructure::transports::mock::MockDeviceTransport;
 
 #[test]
@@ -188,6 +193,84 @@ fn connected_transport_reports_failed_when_action_ack_is_error() {
         result.error
     );
     assert_eq!(DeviceConnectionStatus::Connected, service.state().status);
+}
+
+#[test]
+fn custom_display_face_is_rejected_when_active_source_is_builtin() {
+    let device = test_device("desk-wio");
+    let transport = MockDeviceTransport::with_received_lines(vec![]);
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(transport));
+    service.state.firmware_info = Some(firmware_info_with_wio_custom_face_active());
+    service.state.custom_face_status = installed_custom_face_status("2133e686-77f5-4a29-923b-10d65211ca94");
+
+    let action = test_custom_display_face_action("desk-wio");
+    let result = service.send_extension_action(&action);
+
+    assert_eq!("failed", result.status);
+    assert_eq!(
+        Some(DeviceRuntimeErrorCode::DeviceCustomFaceOutputMismatch),
+        result.error_code
+    );
+    assert!(result.error.is_some());
+    assert!(service.sent_lines().is_empty());
+}
+
+#[test]
+fn custom_display_face_is_rejected_when_installed_group_mismatches_rule_group() {
+    let device = test_device("desk-wio");
+    let transport = MockDeviceTransport::with_received_lines(vec![]);
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(transport));
+    let mut firmware_info = firmware_info_with_wio_custom_face_active();
+    firmware_info.custom_face_active = Some(crate::core::device::DeviceCustomFaceActiveState {
+        source: DeviceCustomFaceActiveSource::Custom,
+        group_id: Some("2133e686-77f5-4a29-923b-10d65211ca94".to_string()),
+    });
+    service.state.firmware_info = Some(firmware_info);
+    service.state.custom_face_status =
+        installed_custom_face_status("2133e686-77f5-4a29-923b-10d65211ca94");
+
+    let mut action = test_custom_display_face_action("desk-wio");
+    action.custom_face_group_id = Some("10000000-0000-4000-8000-000000000001".to_string());
+    let result = service.send_extension_action(&action);
+
+    assert_eq!("failed", result.status);
+    assert_eq!(
+        Some(DeviceRuntimeErrorCode::DeviceCustomFaceOutputMismatch),
+        result.error_code
+    );
+    assert!(service.sent_lines().is_empty());
+}
+
+#[test]
+fn custom_display_face_is_sent_when_active_source_and_installed_group_match() {
+    let device = test_device("desk-wio");
+    let transport = MockDeviceTransport::with_received_lines(vec![
+        r#"{"ok":true,"v":2,"type":"display_face"}"#.to_string(),
+    ]);
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(transport));
+    let mut firmware_info = firmware_info_with_wio_custom_face_active();
+    firmware_info.custom_face_active = Some(crate::core::device::DeviceCustomFaceActiveState {
+        source: DeviceCustomFaceActiveSource::Custom,
+        group_id: Some("2133e686-77f5-4a29-923b-10d65211ca94".to_string()),
+    });
+    service.state.firmware_info = Some(firmware_info);
+    service.state.custom_face_status =
+        installed_custom_face_status("2133e686-77f5-4a29-923b-10d65211ca94");
+
+    let action = test_custom_display_face_action("desk-wio");
+    let result = service.send_extension_action(&action);
+
+    assert_eq!("sent", result.status);
+    assert_eq!(None, result.error);
+    assert_eq!(
+        vec![
+            "{\"v\":2,\"type\":\"display_face\",\"face\":\"idle-sleep\",\"intensity\":\"standard\",\"group_id\":\"2133e686-77f5-4a29-923b-10d65211ca94\",\"face_id\":\"face-1\",\"duration_ms\":5000}\n"
+        ],
+        service.sent_lines()
+    );
 }
 
 #[test]
@@ -758,6 +841,218 @@ fn device_info_timeout_uses_error_code_instead_of_message_text() {
 }
 
 #[test]
+fn serializes_custom_face_status_query_as_protocol_v2_line() {
+    assert_eq!(
+        "{\"v\":2,\"type\":\"custom_face_status\"}\n",
+        ProtocolCommandV2::custom_face_status()
+            .to_json_line()
+            .expect("custom face status query should serialize")
+    );
+}
+
+#[test]
+fn device_info_with_valid_capability_queries_custom_face_status() {
+    let device = test_device("desk-pico");
+    let transport = MockDeviceTransport::with_received_lines(vec![
+        r#"{"ok":true,"v":2,"type":"device_info","board_id":"rp2040-pico-oled-091","device_uid":"rp2040-pico-oled-091:0011223344556677","firmware_version":"0.1.2","protocol_version":2,"custom_face":{"protocol_version":1,"profile_code":1,"pixel_width":128,"pixel_height":32,"max_faces":15,"max_frames_per_face":20,"max_group_bytes":131072,"chunk_bytes":512,"incremental_update":true}}"#.to_string(),
+        r#"{"ok":true,"v":2,"type":"custom_face_status","state":"empty"}"#.to_string(),
+    ]);
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(transport));
+
+    service
+        .query_device_info(&bundled_artifact_for_board(
+            "rp2040-pico-oled-091",
+            "0.1.2",
+            2,
+        ))
+        .expect("device info should query custom face status");
+
+    assert_eq!(
+        vec![
+            "{\"v\":2,\"type\":\"device_info\"}\n",
+            "{\"v\":2,\"type\":\"custom_face_status\"}\n",
+        ],
+        service.sent_lines()
+    );
+    assert_eq!(
+        DeviceCustomFaceStatusState::Empty,
+        service.state().custom_face_status.state
+    );
+}
+
+#[test]
+fn invalid_or_missing_capability_does_not_query_custom_face_status() {
+    let device = test_device("desk-pico");
+    let transport = MockDeviceTransport::with_received_lines(vec![
+        r#"{"ok":true,"v":2,"type":"device_info","board_id":"rp2040-pico-oled-091","device_uid":"rp2040-pico-oled-091:0011223344556677","firmware_version":"0.1.2","protocol_version":2}"#.to_string(),
+    ]);
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(transport));
+
+    service
+        .query_device_info(&bundled_artifact_for_board(
+            "rp2040-pico-oled-091",
+            "0.1.2",
+            2,
+        ))
+        .expect("device info without capability should not query custom face status");
+
+    assert_eq!(
+        vec!["{\"v\":2,\"type\":\"device_info\"}\n"],
+        service.sent_lines()
+    );
+    assert_eq!(
+        DeviceCustomFaceStatusState::Unknown,
+        service.state().custom_face_status.state
+    );
+}
+
+#[test]
+fn custom_face_status_timeout_does_not_break_normal_connection() {
+    let device = test_device("desk-pico");
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(MockDeviceTransport::default()));
+    service.apply_firmware_info(
+        firmware_info_with_custom_face(),
+        &bundled_artifact_for_board("rp2040-pico-oled-091", "0.1.2", 2),
+    );
+    let prepared = service
+        .prepare_custom_face_status_query()
+        .expect("connected custom face device should prepare status query");
+
+    service
+        .complete_custom_face_status_query(
+            prepared.session_id,
+            Err(DeviceIoError::new(
+                DeviceIoErrorCode::ActionTimeout,
+                "localized custom face timeout",
+            )),
+        )
+        .expect("custom face timeout should be isolated");
+
+    let state = service.state();
+    assert_eq!(DeviceConnectionStatus::Connected, state.status);
+    assert_eq!(
+        DeviceCustomFaceStatusState::Unavailable,
+        state.custom_face_status.state
+    );
+    assert_eq!(
+        Some(DeviceCustomFaceErrorCode::CustomFaceStatusTimeout),
+        state.custom_face_status.error_code
+    );
+    assert_eq!(None, state.last_error);
+}
+
+#[test]
+fn disconnect_preserves_last_confirmed_custom_face_status() {
+    let device = test_device("desk-pico");
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(MockDeviceTransport::default()));
+    service.apply_firmware_info(
+        firmware_info_with_custom_face(),
+        &bundled_artifact_for_board("rp2040-pico-oled-091", "0.1.2", 2),
+    );
+    let prepared = service
+        .prepare_custom_face_status_query()
+        .expect("connected custom face device should prepare status query");
+
+    service
+        .complete_custom_face_status_query(
+            prepared.session_id,
+            Ok(DeviceIoCommandResult {
+                ack: Some(r#"{"ok":true,"v":2,"type":"custom_face_status","state":"installed","profile_code":1,"group_id":"10000000-0000-4000-8000-000000000001","group_runtime_hash":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","default_face_id":"20000000-0000-4000-8000-000000000001","face_count":12,"encoded_bytes":82416}"#.to_string()),
+            }),
+        )
+        .expect("installed custom face status should be accepted");
+    let confirmed_at = service.state().custom_face_status.last_confirmed_at.clone();
+
+    service.disconnect();
+
+    let state = service.state();
+    assert_eq!(DeviceConnectionStatus::Disconnected, state.status);
+    assert_eq!(
+        DeviceCustomFaceStatusState::Installed,
+        state.custom_face_status.state
+    );
+    assert_eq!(confirmed_at, state.custom_face_status.last_confirmed_at);
+}
+
+#[test]
+fn set_custom_face_active_source_updates_firmware_info_after_device_ack() {
+    let device = test_device("desk-wio");
+    let transport = MockDeviceTransport::with_received_lines(vec![
+        r#"{"ok":true,"v":2,"type":"set_custom_face_active_source"}"#.to_string(),
+    ]);
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(transport));
+    service.apply_firmware_info(
+        firmware_info_with_wio_custom_face_active(),
+        &bundled_artifact_for_board("seeed-wio-terminal", "0.2.1", 2),
+    );
+    let status_query = service
+        .prepare_custom_face_status_query()
+        .expect("connected custom face device should prepare status query");
+    service
+        .complete_custom_face_status_query(
+            status_query.session_id,
+            Ok(DeviceIoCommandResult {
+                ack: Some(r#"{"ok":true,"v":2,"type":"custom_face_status","state":"installed","profile_code":3,"group_id":"2133e686-77f5-4a29-923b-10d65211ca94","group_runtime_hash":"b7b9bc4dd2cf2f56600ac55d8bd68dfe2063c03b1eb4a781b006779675981fc8","default_face_id":"00000000-0000-4000-8000-000000000211","face_count":1,"encoded_bytes":1463}"#.to_string()),
+            }),
+        )
+        .expect("installed custom face status should be accepted");
+
+    let state = service.set_custom_face_active_source(DeviceCustomFaceActiveSource::Custom, Some(
+        "2133e686-77f5-4a29-923b-10d65211ca94".to_string(),
+    ))
+    .expect("custom face activation should succeed");
+
+    assert_eq!(
+        vec![
+            "{\"v\":2,\"type\":\"set_custom_face_active_source\",\"source\":\"custom\",\"group_id\":\"2133e686-77f5-4a29-923b-10d65211ca94\"}\n",
+        ],
+        service.sent_lines()
+    );
+    assert_eq!(
+        Some(DeviceCustomFaceActiveSource::Custom),
+        state.firmware_info.and_then(|info| info.custom_face_active).map(|active| active.source)
+    );
+}
+
+#[test]
+fn set_custom_face_active_source_rejects_custom_group_mismatch() {
+    let device = test_device("desk-wio");
+    let transport = MockDeviceTransport::default();
+    let mut service = DeviceRuntimeService::new(device);
+    service.connect_with_transport(Box::new(transport));
+    service.apply_firmware_info(
+        firmware_info_with_wio_custom_face_active(),
+        &bundled_artifact_for_board("seeed-wio-terminal", "0.2.1", 2),
+    );
+    let status_query = service
+        .prepare_custom_face_status_query()
+        .expect("connected custom face device should prepare status query");
+    service
+        .complete_custom_face_status_query(
+            status_query.session_id,
+            Ok(DeviceIoCommandResult {
+                ack: Some(r#"{"ok":true,"v":2,"type":"custom_face_status","state":"installed","profile_code":3,"group_id":"2133e686-77f5-4a29-923b-10d65211ca94","group_runtime_hash":"b7b9bc4dd2cf2f56600ac55d8bd68dfe2063c03b1eb4a781b006779675981fc8","default_face_id":"00000000-0000-4000-8000-000000000211","face_count":1,"encoded_bytes":1463}"#.to_string()),
+            }),
+        )
+        .expect("installed custom face status should be accepted");
+
+    let error = service
+        .set_custom_face_active_source(
+            DeviceCustomFaceActiveSource::Custom,
+            Some("2133e686-77f5-4a29-923b-10d65211ca95".to_string()),
+        )
+        .expect_err("mismatched custom group should be rejected");
+
+    assert_eq!("custom face active group does not match installed group", error);
+    assert_eq!(Vec::<String>::new(), service.sent_lines());
+}
+
+#[test]
 fn background_read_error_stops_worker_without_retrying_forever() {
     let device = test_device("desk-pico");
     let mut transport = MockDeviceTransport::default();
@@ -831,6 +1126,53 @@ fn set_device_uid_transport_error_records_error_code() {
     );
 }
 
+fn firmware_info_with_custom_face() -> DeviceFirmwareInfo {
+    DeviceFirmwareInfo {
+        board_id: "rp2040-pico-oled-091".to_string(),
+        device_uid: "rp2040-pico-oled-091:0011223344556677".to_string(),
+        firmware_version: "0.1.2".to_string(),
+        protocol_version: 2,
+        custom_face: Some(DeviceCustomFaceCapabilities {
+            protocol_version: 1,
+            profile_code: 1,
+            pixel_width: 128,
+            pixel_height: 32,
+            max_faces: 15,
+            max_frames_per_face: 20,
+            max_group_bytes: 131_072,
+            chunk_bytes: 512,
+            incremental_update: true,
+        }),
+        custom_face_error: None,
+        custom_face_active: None,
+    }
+}
+
+fn firmware_info_with_wio_custom_face_active() -> DeviceFirmwareInfo {
+    DeviceFirmwareInfo {
+        board_id: "seeed-wio-terminal".to_string(),
+        device_uid: "seeed-wio-terminal:0011223344556677".to_string(),
+        firmware_version: "0.2.1".to_string(),
+        protocol_version: 2,
+        custom_face: Some(DeviceCustomFaceCapabilities {
+            protocol_version: 1,
+            profile_code: 3,
+            pixel_width: 320,
+            pixel_height: 240,
+            max_faces: 15,
+            max_frames_per_face: 10,
+            max_group_bytes: 393_216,
+            chunk_bytes: 512,
+            incremental_update: true,
+        }),
+        custom_face_error: None,
+        custom_face_active: Some(crate::core::device::DeviceCustomFaceActiveState {
+            source: DeviceCustomFaceActiveSource::Builtin,
+            group_id: None,
+        }),
+    }
+}
+
 fn test_device(device_id: &str) -> DeviceInstance {
     DeviceInstance {
         id: device_id.to_string(),
@@ -894,6 +1236,8 @@ fn test_action(
         color: None,
         brightness_percent: None,
         pattern: None,
+        display_face_template_id: None,
+        display_face_intensity: None,
         priority: 50,
     }
 }
@@ -908,6 +1252,11 @@ fn test_display_card_action(device_id: &str) -> DeviceExtensionAction {
         message: Some("Codex / Finished".to_string()),
         icon: Some("check".to_string()),
         lines: Some(vec!["Codex".to_string(), "Finished".to_string()]),
+        face_template: None,
+        face_intensity: None,
+        custom_face_group_id: None,
+        custom_face_id: None,
+        duration_ms: None,
         pattern: None,
         control: None,
         active: None,
@@ -924,8 +1273,51 @@ fn test_display_lines_action(device_id: &str) -> DeviceExtensionAction {
         message: None,
         icon: None,
         lines: Some(vec!["Codex".to_string(), "Waiting".to_string()]),
+        face_template: None,
+        face_intensity: None,
+        custom_face_group_id: None,
+        custom_face_id: None,
+        duration_ms: None,
         pattern: None,
         control: None,
         active: None,
+    }
+}
+
+fn test_custom_display_face_action(device_id: &str) -> DeviceExtensionAction {
+    DeviceExtensionAction {
+        device_id: device_id.to_string(),
+        channel_id: None,
+        action: DeviceExtensionActionType::DisplayFace,
+        status: None,
+        title: None,
+        message: None,
+        icon: None,
+        lines: None,
+        face_template: Some("idle-sleep".to_string()),
+        face_intensity: Some("standard".to_string()),
+        custom_face_group_id: Some("2133e686-77f5-4a29-923b-10d65211ca94".to_string()),
+        custom_face_id: Some("face-1".to_string()),
+        duration_ms: Some(5000),
+        pattern: None,
+        control: None,
+        active: None,
+    }
+}
+
+fn installed_custom_face_status(group_id: &str) -> crate::core::device::DeviceCustomFaceStatus {
+    crate::core::device::DeviceCustomFaceStatus {
+        state: DeviceCustomFaceStatusState::Installed,
+        installed: Some(DeviceInstalledCustomFaceGroup {
+            profile_code: 3,
+            group_id: group_id.to_string(),
+            group_runtime_hash: "b7b9bc4dd2cf2f56600ac55d8bd68dfe2063c03b1eb4a781b006779675981fc8"
+                .to_string(),
+            default_face_id: "face-1".to_string(),
+            face_count: 2,
+            encoded_bytes: 1463,
+        }),
+        error_code: None,
+        last_confirmed_at: None,
     }
 }

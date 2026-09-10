@@ -378,6 +378,7 @@ mod tests {
             transport: Some(DeviceTransportConfig::serial(serial_port, 115200)),
             channels: Vec::new(),
             firmware_info: None,
+            custom_face_status: Default::default(),
             bundled_firmware_version: None,
             firmware_status: DeviceFirmwareStatus::Unknown,
             firmware_check_error: None,

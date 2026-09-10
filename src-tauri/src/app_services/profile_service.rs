@@ -790,6 +790,65 @@ mod tests {
     }
 
     #[test]
+    fn display_face_device_channel_rule_loads_without_repairing_profile() {
+        let root = temp_root("display-face-device-channel");
+        let profiles_dir = root.join("profiles");
+        std::fs::create_dir_all(&profiles_dir).expect("profiles dir should exist");
+        let mut value =
+            serde_json::to_value(NoticeProfile::daily_coding()).expect("profile should serialize");
+        value["hardwareRules"] = serde_json::json!([
+            {
+                "id": "agent-completed-display-face-output",
+                "internalEvent": "agent.completed",
+                "output": {
+                    "type": "device-channel",
+                    "channelActions": [
+                        {
+                            "id": "action-1",
+                            "deviceId": "rp2040-pico-oled-091-e66118604b648b21",
+                            "channelId": "display",
+                            "channelAction": "display-face",
+                            "durationMs": 10000,
+                            "displayFaceTemplateId": "success-happy",
+                            "displayFaceIntensity": "standard"
+                        }
+                    ],
+                    "durationMs": null,
+                    "text": null,
+                    "displayDeviceId": ""
+                },
+                "priority": 50,
+                "enabled": true
+            }
+        ]);
+        let profile_path = profiles_dir.join("daily-coding.json");
+        std::fs::write(
+            &profile_path,
+            serde_json::to_string_pretty(&value).expect("display face profile should serialize"),
+        )
+        .expect("display face profile should be written");
+
+        let service = ProfileService::from_config_root(root).expect("service should load");
+        let state = service.state();
+
+        assert_eq!("daily-coding", state.active_profile_id);
+        assert!(state
+            .active_profile
+            .hardware_rules
+            .iter()
+            .any(|rule| rule.id == "agent-completed-display-face-output"));
+        assert!(state.active_profile.validate().is_ok());
+        assert!(!has_backup_with_suffix(
+            &profile_path,
+            ".legacy.bak"
+        ));
+        assert!(!has_backup_with_suffix(
+            &profile_path,
+            ".invalid.json"
+        ));
+    }
+
+    #[test]
     fn invalid_hardware_rules_are_removed_and_valid_rules_are_kept() {
         let root = temp_root("invalid-hardware-rules");
         let profiles_dir = root.join("profiles");

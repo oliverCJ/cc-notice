@@ -5,11 +5,23 @@ import { DeviceChannelOutputFields } from './DeviceChannelOutputFields';
 import { getBoardAvailableChannels } from '@/domain/boards/boardCatalog';
 import { toChannelSelectOption } from './deviceChannelOptions';
 
+vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+  clearRect: vi.fn(),
+  fillRect: vi.fn(),
+  imageSmoothingEnabled: true,
+  fillStyle: '',
+} as unknown as CanvasRenderingContext2D);
+vi.stubGlobal(
+  'requestAnimationFrame',
+  vi.fn(() => 1)
+);
+vi.stubGlobal('cancelAnimationFrame', vi.fn());
+
 const output: HardwareOutput = {
   type: 'device-channel',
   durationMs: null,
   channelActions: [baseAction()],
-  text: null
+  text: null,
 };
 
 function baseAction(): DeviceChannelRuleAction {
@@ -23,14 +35,53 @@ function baseAction(): DeviceChannelRuleAction {
     dutyPercent: null,
     frequencyHz: null,
     color: null,
-    brightnessPercent: null
+    brightnessPercent: null,
   };
 }
 
 function outputWithAction(patch: Partial<DeviceChannelRuleAction>): HardwareOutput {
   return {
     ...output,
-    channelActions: [{ ...baseAction(), ...patch }]
+    channelActions: [{ ...baseAction(), ...patch }],
+  };
+}
+
+function customFaceLibraryFixture() {
+  return {
+    groups: [
+      {
+        groupId: 'custom-group-a',
+        name: '组A',
+        displayProfileId: 'custom-mono-320x240-v1',
+        revision: 1,
+        defaultFaceId: 'face-a',
+        faceCount: 1,
+        libraryHash: 'hash-a',
+      },
+    ],
+    groupById: {
+      'custom-group-a': {
+        schemaVersion: 1,
+        groupId: 'custom-group-a',
+        name: '组A',
+        displayProfileId: 'custom-mono-320x240-v1',
+        revision: 1,
+        defaultFaceId: 'face-a',
+        faces: [
+          {
+            faceId: 'face-a',
+            name: '默认',
+            color: { red: 255, green: 255, blue: 255 },
+            frames: [
+              {
+                durationMs: 5000,
+                packedPixels: Array.from({ length: 9600 }, () => 0),
+              },
+            ],
+          },
+        ],
+      },
+    },
   };
 }
 
@@ -70,20 +121,16 @@ describe('DeviceChannelOutputFields', () => {
           expect.objectContaining({
             deviceId: 'rp2040-pico-default',
             channelId: 'pin.gp2',
-            channelAction: 'blink'
-          })
-        ]
+            channelAction: 'blink',
+          }),
+        ],
       })
     );
   });
 
   test('uses board channel capabilities instead of fixed three channels', () => {
     render(
-      <DeviceChannelOutputFields
-        internalEvent="agent.running"
-        output={output}
-        onChange={vi.fn()}
-      />
+      <DeviceChannelOutputFields internalEvent="agent.running" output={output} onChange={vi.fn()} />
     );
 
     fireEvent.click(screen.getByRole('combobox', { name: '通道' }));
@@ -107,10 +154,10 @@ describe('DeviceChannelOutputFields', () => {
                 label: 'GP2 · Pin 4',
                 kind: 'digital-output',
                 supportedActions: ['activate', 'deactivate', 'blink', 'pulse'],
-                hardwareGuideId: 'digital-output'
-              }
-            ]
-          }
+                hardwareGuideId: 'digital-output',
+              },
+            ],
+          },
         ]}
         onChange={vi.fn()}
       />
@@ -120,6 +167,57 @@ describe('DeviceChannelOutputFields', () => {
 
     expect(screen.getByRole('option', { name: 'GP2 · Pin 4' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'GP28' })).not.toBeInTheDocument();
+  });
+
+  test('shows device connection status in device selector', () => {
+    render(
+      <DeviceChannelOutputFields
+        internalEvent="agent.running"
+        output={outputWithAction({
+          deviceId: 'desk-wio',
+          channelId: 'display',
+          channelAction: 'display-face',
+        })}
+        deviceOptions={[
+          {
+            value: 'desk-wio',
+            label: 'Desk Wio',
+            connectionStatus: 'connected',
+            boardId: 'seeed-wio-terminal',
+            channels: [
+              {
+                value: 'display',
+                label: '屏幕',
+                kind: 'display',
+                supportedActions: ['display-face'],
+                hardwareGuideId: null,
+              },
+            ],
+          },
+          {
+            value: 'offline-wio',
+            label: 'Offline Wio',
+            connectionStatus: 'offline-config',
+            boardId: 'seeed-wio-terminal',
+            channels: [
+              {
+                value: 'display',
+                label: '屏幕',
+                kind: 'display',
+                supportedActions: ['display-face'],
+                hardwareGuideId: null,
+              },
+            ],
+          },
+        ]}
+        onChange={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('combobox', { name: '设备' }));
+
+    expect(screen.getByRole('option', { name: /Desk Wio.*已连接/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Offline Wio.*离线配置/ })).toBeInTheDocument();
   });
 
   test('formats configured Pro Micro channels with board pin labels', () => {
@@ -132,15 +230,15 @@ describe('DeviceChannelOutputFields', () => {
         internalEvent="agent.running"
         output={outputWithAction({
           deviceId: 'desk-pro-micro',
-          channelId: 'pin.a0'
+          channelId: 'pin.a0',
         })}
         deviceOptions={[
           {
             value: 'desk-pro-micro',
             label: 'Desk Pro Micro',
             boardId: 'sparkfun-pro-micro-32u4',
-            channels: proMicroChannels
-          }
+            channels: proMicroChannels,
+          },
         ]}
         onChange={vi.fn()}
       />
@@ -161,24 +259,22 @@ describe('DeviceChannelOutputFields', () => {
           {
             value: 'rp2040-pico-default',
             label: 'RP2040 默认设备',
-            channels: []
-          }
+            channels: [],
+          },
         ]}
         onChange={vi.fn()}
       />
     );
 
     expect(screen.queryByRole('option', { name: 'GP28 · Pin 34' })).not.toBeInTheDocument();
-    expect(screen.getByText('当前设备尚未启用可用通道，请先到设备页添加通道。')).toBeInTheDocument();
+    expect(
+      screen.getByText('当前设备尚未启用可用通道，请先到设备页添加通道。')
+    ).toBeInTheDocument();
   });
 
   test('hides pwm and ws2812 channel types from default board capabilities', () => {
     render(
-      <DeviceChannelOutputFields
-        internalEvent="agent.running"
-        output={output}
-        onChange={vi.fn()}
-      />
+      <DeviceChannelOutputFields internalEvent="agent.running" output={output} onChange={vi.fn()} />
     );
 
     fireEvent.click(screen.getByRole('combobox', { name: '通道类型' }));
@@ -208,9 +304,9 @@ describe('DeviceChannelOutputFields', () => {
         channelActions: [
           expect.objectContaining({
             channelId: 'buzzer.gp18',
-            channelAction: 'beep'
-          })
-        ]
+            channelAction: 'beep',
+          }),
+        ],
       })
     );
   });
@@ -223,7 +319,7 @@ describe('DeviceChannelOutputFields', () => {
         output={outputWithAction({
           channelAction: 'blink',
           durationMs: 20000,
-          intervalMs: 800
+          intervalMs: 800,
         })}
         deviceOptions={[
           {
@@ -235,9 +331,9 @@ describe('DeviceChannelOutputFields', () => {
                 label: 'GP2 · Pin 4',
                 kind: 'digital-output',
                 supportedActions: ['activate', 'blink', 'pulse'],
-                hardwareGuideId: 'digital-output'
-              }
-            ]
+                hardwareGuideId: 'digital-output',
+              },
+            ],
           },
           {
             value: 'lab-pico',
@@ -248,10 +344,10 @@ describe('DeviceChannelOutputFields', () => {
                 label: 'GP4 · Pin 6',
                 kind: 'digital-output',
                 supportedActions: ['activate', 'blink', 'pulse'],
-                hardwareGuideId: 'digital-output'
-              }
-            ]
-          }
+                hardwareGuideId: 'digital-output',
+              },
+            ],
+          },
         ]}
         onChange={onChange}
       />
@@ -269,9 +365,9 @@ describe('DeviceChannelOutputFields', () => {
             channelId: 'pin.gp4',
             channelAction: 'blink',
             durationMs: 20000,
-            intervalMs: 800
-          })
-        ]
+            intervalMs: 800,
+          }),
+        ],
       })
     );
   });
@@ -284,7 +380,7 @@ describe('DeviceChannelOutputFields', () => {
         output={outputWithAction({
           channelAction: 'blink',
           durationMs: 20000,
-          intervalMs: 800
+          intervalMs: 800,
         })}
         deviceOptions={[
           {
@@ -296,9 +392,9 @@ describe('DeviceChannelOutputFields', () => {
                 label: 'GP2 · Pin 4',
                 kind: 'digital-output',
                 supportedActions: ['activate', 'blink', 'pulse'],
-                hardwareGuideId: 'digital-output'
-              }
-            ]
+                hardwareGuideId: 'digital-output',
+              },
+            ],
           },
           {
             value: 'relay-board',
@@ -309,10 +405,10 @@ describe('DeviceChannelOutputFields', () => {
                 label: 'GP6 · Pin 9',
                 kind: 'digital-output',
                 supportedActions: ['activate', 'deactivate'],
-                hardwareGuideId: 'digital-output'
-              }
-            ]
-          }
+                hardwareGuideId: 'digital-output',
+              },
+            ],
+          },
         ]}
         onChange={onChange}
       />
@@ -330,9 +426,9 @@ describe('DeviceChannelOutputFields', () => {
             channelId: 'pin.gp6',
             channelAction: 'activate',
             durationMs: 5000,
-            intervalMs: null
-          })
-        ]
+            intervalMs: null,
+          }),
+        ],
       })
     );
   });
@@ -344,7 +440,7 @@ describe('DeviceChannelOutputFields', () => {
         output={outputWithAction({
           channelId: 'pwm.gp15',
           channelAction: 'set-duty',
-          dutyPercent: 50
+          dutyPercent: 50,
         })}
         deviceOptions={[
           {
@@ -356,27 +452,25 @@ describe('DeviceChannelOutputFields', () => {
                 label: 'GP15 PWM',
                 kind: 'pwm-output',
                 supportedActions: ['set-duty', 'pulse', 'clear'],
-                hardwareGuideId: 'pwm-output'
-              }
-            ]
-          }
+                hardwareGuideId: 'pwm-output',
+              },
+            ],
+          },
         ]}
         onChange={vi.fn()}
       />
     );
 
-    expect(screen.getByText('当前设备尚未启用可用通道，请先到设备页添加通道。')).toBeInTheDocument();
+    expect(
+      screen.getByText('当前设备尚未启用可用通道，请先到设备页添加通道。')
+    ).toBeInTheDocument();
     expect(screen.queryByRole('spinbutton', { name: '占空比（%）' })).not.toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'PWM 输出' })).not.toBeInTheDocument();
   });
 
   test('hides ambiguous clear action for digital output channels', () => {
     render(
-      <DeviceChannelOutputFields
-        internalEvent="agent.running"
-        output={output}
-        onChange={vi.fn()}
-      />
+      <DeviceChannelOutputFields internalEvent="agent.running" output={output} onChange={vi.fn()} />
     );
 
     fireEvent.click(screen.getByRole('combobox', { name: '动作' }));
@@ -394,7 +488,7 @@ describe('DeviceChannelOutputFields', () => {
           channelId: 'ws2812.gp16',
           channelAction: 'set-color',
           color: '#33ccff',
-          brightnessPercent: 30
+          brightnessPercent: 30,
         })}
         deviceOptions={[
           {
@@ -406,16 +500,18 @@ describe('DeviceChannelOutputFields', () => {
                 label: 'GP16 · Pin 21',
                 kind: 'addressable-led',
                 supportedActions: ['set-color', 'clear'],
-                hardwareGuideId: 'addressable-led'
-              }
-            ]
-          }
+                hardwareGuideId: 'addressable-led',
+              },
+            ],
+          },
         ]}
         onChange={vi.fn()}
       />
     );
 
-    expect(screen.getByText('当前设备尚未启用可用通道，请先到设备页添加通道。')).toBeInTheDocument();
+    expect(
+      screen.getByText('当前设备尚未启用可用通道，请先到设备页添加通道。')
+    ).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: '可寻址 LED' })).not.toBeInTheDocument();
     expect(screen.queryByRole('option', { name: '设置颜色' })).not.toBeInTheDocument();
   });
@@ -428,7 +524,7 @@ describe('DeviceChannelOutputFields', () => {
           deviceId: 'desk-wio',
           channelId: 'buzzer.onboard',
           channelAction: 'beep',
-          frequencyHz: 2000
+          frequencyHz: 2000,
         })}
         deviceOptions={[
           {
@@ -438,7 +534,7 @@ describe('DeviceChannelOutputFields', () => {
             deviceExtensions: {
               display: null,
               buzzer: { patterns: ['notice', 'success', 'warning', 'error', 'working'] },
-              inputs: null
+              inputs: null,
             },
             channels: [
               {
@@ -446,10 +542,10 @@ describe('DeviceChannelOutputFields', () => {
                 label: 'Onboard buzzer',
                 kind: 'buzzer',
                 supportedActions: ['beep', 'tone', 'clear'],
-                hardwareGuideId: 'buzzer'
-              }
-            ]
-          }
+                hardwareGuideId: 'buzzer',
+              },
+            ],
+          },
         ]}
         onChange={vi.fn()}
       />
@@ -468,7 +564,7 @@ describe('DeviceChannelOutputFields', () => {
           deviceId: 'desk-pico',
           channelId: 'buzzer.gp19',
           channelAction: 'beep',
-          frequencyHz: 2000
+          frequencyHz: 2000,
         })}
         deviceOptions={[
           {
@@ -478,7 +574,7 @@ describe('DeviceChannelOutputFields', () => {
             deviceExtensions: {
               display: null,
               buzzer: null,
-              inputs: null
+              inputs: null,
             },
             channels: [
               {
@@ -486,10 +582,10 @@ describe('DeviceChannelOutputFields', () => {
                 label: 'GP19 Buzzer',
                 kind: 'buzzer',
                 supportedActions: ['beep', 'tone', 'pattern', 'clear'],
-                hardwareGuideId: 'buzzer'
-              }
-            ]
-          }
+                hardwareGuideId: 'buzzer',
+              },
+            ],
+          },
         ]}
         onChange={vi.fn()}
       />
@@ -500,7 +596,7 @@ describe('DeviceChannelOutputFields', () => {
     expect(screen.getByRole('option', { name: '提示音模式' })).toBeInTheDocument();
   });
 
-  test('shows display status action only for devices with display capability', () => {
+  test('hides display status action for screen face devices', () => {
     const onChange = vi.fn();
     render(
       <DeviceChannelOutputFields
@@ -511,7 +607,7 @@ describe('DeviceChannelOutputFields', () => {
           channelAction: 'display-status',
           displayStatus: 'notice',
           displayTitleTemplate: '{{source}}',
-          displayMessageTemplate: '{{last_assistant_message}}'
+          displayMessageTemplate: '{{last_assistant_message}}',
         })}
         deviceOptions={[
           {
@@ -521,16 +617,22 @@ describe('DeviceChannelOutputFields', () => {
             deviceExtensions: {
               display: {
                 status: true,
+                face: true,
+                faceStyleVersion: 'no-brow-warm-v1',
+                faceTemplates: ['working-focus'],
                 clear: true,
+                pixelWidth: 320,
+                pixelHeight: 240,
+                faceRendererProfile: 'wio-320x240-v1',
                 statuses: ['notice', 'working', 'success', 'warning', 'error'],
                 titleMaxChars: 39,
-                messageMaxChars: 95
+                messageMaxChars: 95,
               },
               buzzer: null,
-              inputs: null
+              inputs: null,
             },
-            channels: []
-          }
+            channels: [],
+          },
         ]}
         onChange={onChange}
       />
@@ -540,12 +642,305 @@ describe('DeviceChannelOutputFields', () => {
     fireEvent.click(screen.getByRole('option', { name: '显示屏' }));
 
     fireEvent.click(screen.getByRole('combobox', { name: '动作' }));
-    fireEvent.click(screen.getByRole('option', { name: '显示状态' }));
-
-    expect(screen.getByRole('button', { name: '打开变量助手' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: '显示状态' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '屏幕表情' })).toBeInTheDocument();
   });
 
-  test('shows display status action for Pico OLED 0.91 display devices', () => {
+  test('normalizes legacy display status action to display face for screen face devices', async () => {
+    const onChange = vi.fn();
+    render(
+      <DeviceChannelOutputFields
+        internalEvent="agent.running"
+        output={outputWithAction({
+          deviceId: 'desk-wio',
+          channelId: 'display',
+          channelAction: 'display-status',
+          displayStatus: 'notice',
+          displayTitleTemplate: '{{source}}',
+          displayMessageTemplate: '{{last_assistant_message}}',
+        })}
+        deviceOptions={[
+          {
+            value: 'desk-wio',
+            label: 'Desk Wio',
+            boardId: 'seeed-wio-terminal',
+            deviceExtensions: {
+              display: {
+                status: true,
+                face: true,
+                faceStyleVersion: 'no-brow-warm-v1',
+                faceTemplates: ['working-focus'],
+                clear: true,
+                pixelWidth: 320,
+                pixelHeight: 240,
+                faceRendererProfile: 'wio-320x240-v1',
+                statuses: ['notice', 'working', 'success', 'warning', 'error'],
+                titleMaxChars: 39,
+                messageMaxChars: 95,
+              },
+              buzzer: null,
+              inputs: null,
+            },
+            channels: [],
+          },
+        ]}
+        onChange={onChange}
+      />
+    );
+
+    await waitFor(() =>
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          channelActions: [
+            expect.objectContaining({
+              channelAction: 'display-face',
+              displayFaceTemplateId: expect.any(String),
+              displayFaceIntensity: 'standard',
+            }),
+          ],
+        })
+      )
+    );
+  });
+
+  test('shows display face action only when display declares face capability', () => {
+    render(
+      <DeviceChannelOutputFields
+        internalEvent="agent.running"
+        output={outputWithAction({
+          deviceId: 'desk-wio',
+          channelId: 'display',
+          channelAction: 'display-face',
+          displayFaceTemplateId: 'working-focus',
+          displayFaceIntensity: 'standard',
+        })}
+        deviceOptions={[
+          {
+            value: 'desk-wio',
+            label: 'Desk Wio',
+            boardId: 'seeed-wio-terminal',
+            deviceExtensions: {
+              display: {
+                status: true,
+                face: true,
+                faceStyleVersion: 'no-brow-warm-v1',
+                faceTemplates: ['working-focus'],
+                clear: true,
+                pixelWidth: 320,
+                pixelHeight: 240,
+                faceRendererProfile: 'wio-320x240-v1',
+                statuses: ['notice', 'working', 'success', 'warning', 'error'],
+                titleMaxChars: 39,
+                messageMaxChars: 95,
+              },
+              buzzer: null,
+              inputs: null,
+            },
+            channels: [],
+          },
+        ]}
+        onChange={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('combobox', { name: '通道类型' }));
+    fireEvent.click(screen.getByRole('option', { name: '显示屏' }));
+    fireEvent.click(screen.getByRole('combobox', { name: '动作' }));
+
+    expect(screen.getByRole('option', { name: '屏幕表情' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: '显示状态' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('option', { name: '屏幕表情' }));
+    fireEvent.click(screen.getByRole('combobox', { name: '屏幕表情' }));
+
+    expect(screen.getByRole('option', { name: '认真' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: '开心' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: '表情强度' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('pixel-display-canvas')).toHaveAttribute('width', '320');
+    expect(screen.getByTestId('pixel-display-canvas')).toHaveAttribute('height', '240');
+  });
+
+  test('allows custom face selection for offline-configured display devices with matching profile', () => {
+    render(
+      <DeviceChannelOutputFields
+        internalEvent="agent.running"
+        output={outputWithAction({
+          deviceId: 'desk-wio',
+          channelId: 'display',
+          channelAction: 'display-face',
+          displayFaceTemplateId: 'working-focus',
+          displayFaceIntensity: 'standard',
+          customFaceGroupId: 'custom-group-a',
+          customFaceId: 'face-a',
+        })}
+        deviceOptions={[
+          {
+            value: 'desk-wio',
+            label: 'Desk Wio',
+            connectionStatus: 'offline-config',
+            boardId: 'seeed-wio-terminal',
+            deviceExtensions: {
+              display: {
+                status: true,
+                face: true,
+                faceStyleVersion: 'no-brow-warm-v1',
+                faceTemplates: ['working-focus'],
+                clear: true,
+                pixelWidth: 320,
+                pixelHeight: 240,
+                faceRendererProfile: 'wio-320x240-v1',
+                statuses: ['notice', 'working', 'success', 'warning', 'error'],
+                titleMaxChars: 39,
+                messageMaxChars: 95,
+              },
+              buzzer: null,
+              inputs: null,
+            },
+            channels: [],
+          },
+        ]}
+        customFaceLibrary={customFaceLibraryFixture()}
+        onChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('combobox', { name: '表情组' })).toHaveTextContent('组A · 1 张');
+    expect(screen.getByRole('combobox', { name: '表情' })).toHaveTextContent('默认');
+  });
+
+  test('reloads custom face library from the face source selector', async () => {
+    const onReloadCustomFaceLibrary = vi.fn();
+    const { rerender } = render(
+      <DeviceChannelOutputFields
+        internalEvent="agent.running"
+        output={outputWithAction({
+          deviceId: 'desk-wio',
+          channelId: 'display',
+          channelAction: 'display-face',
+        })}
+        deviceOptions={[
+          {
+            value: 'desk-wio',
+            label: 'Desk Wio',
+            connectionStatus: 'offline-config',
+            boardId: 'seeed-wio-terminal',
+            deviceExtensions: {
+              display: {
+                status: true,
+                face: true,
+                faceStyleVersion: 'no-brow-warm-v1',
+                faceTemplates: ['working-focus'],
+                clear: true,
+                pixelWidth: 320,
+                pixelHeight: 240,
+                faceRendererProfile: 'wio-320x240-v1',
+                statuses: ['notice', 'working', 'success', 'warning', 'error'],
+                titleMaxChars: 39,
+                messageMaxChars: 95,
+              },
+              buzzer: null,
+              inputs: null,
+            },
+            channels: [],
+          },
+        ]}
+        customFaceLibrary={{ groups: [], groupById: {} }}
+        onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
+        onChange={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '刷新自定义表情列表' }));
+
+    expect(onReloadCustomFaceLibrary).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <DeviceChannelOutputFields
+        internalEvent="agent.running"
+        output={outputWithAction({
+          deviceId: 'desk-wio',
+          channelId: 'display',
+          channelAction: 'display-face',
+        })}
+        deviceOptions={[
+          {
+            value: 'desk-wio',
+            label: 'Desk Wio',
+            connectionStatus: 'offline-config',
+            boardId: 'seeed-wio-terminal',
+            deviceExtensions: {
+              display: {
+                status: true,
+                face: true,
+                faceStyleVersion: 'no-brow-warm-v1',
+                faceTemplates: ['working-focus'],
+                clear: true,
+                pixelWidth: 320,
+                pixelHeight: 240,
+                faceRendererProfile: 'wio-320x240-v1',
+                statuses: ['notice', 'working', 'success', 'warning', 'error'],
+                titleMaxChars: 39,
+                messageMaxChars: 95,
+              },
+              buzzer: null,
+              inputs: null,
+            },
+            channels: [],
+          },
+        ]}
+        customFaceLibrary={customFaceLibraryFixture()}
+        onReloadCustomFaceLibrary={onReloadCustomFaceLibrary}
+        onChange={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('combobox', { name: '表情来源' }));
+    const customSource = await screen.findByRole('option', { name: '自定义表情' });
+    expect(customSource).not.toHaveAttribute('data-disabled');
+  });
+
+  test('does not show display face action for text-only display capability', () => {
+    render(
+      <DeviceChannelOutputFields
+        internalEvent="agent.running"
+        output={outputWithAction({
+          deviceId: 'desk-display',
+          channelId: 'display',
+          channelAction: 'display-status',
+        })}
+        deviceOptions={[
+          {
+            value: 'desk-display',
+            label: 'Text Display',
+            boardId: 'text-display',
+            deviceExtensions: {
+              display: {
+                status: true,
+                face: false,
+                clear: true,
+                statuses: ['notice', 'working', 'success', 'warning', 'error'],
+                titleMaxChars: 39,
+                messageMaxChars: 95,
+              },
+              buzzer: null,
+              inputs: null,
+            },
+            channels: [],
+          },
+        ]}
+        onChange={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('combobox', { name: '通道类型' }));
+    fireEvent.click(screen.getByRole('option', { name: '显示屏' }));
+    fireEvent.click(screen.getByRole('combobox', { name: '动作' }));
+
+    expect(screen.queryByRole('option', { name: '屏幕表情' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('pixel-display-canvas')).not.toBeInTheDocument();
+  });
+
+  test('hides display status action for Pico OLED 0.91 face display devices', () => {
     render(
       <DeviceChannelOutputFields
         internalEvent="agent.running"
@@ -555,7 +950,7 @@ describe('DeviceChannelOutputFields', () => {
           channelAction: 'display-status',
           displayStatus: 'notice',
           displayTitleTemplate: '{{display.title}}',
-          displayMessageTemplate: '{{display.lines}}'
+          displayMessageTemplate: '{{display.lines}}',
         })}
         deviceOptions={[
           {
@@ -565,16 +960,19 @@ describe('DeviceChannelOutputFields', () => {
             deviceExtensions: {
               display: {
                 status: true,
+                face: true,
+                faceStyleVersion: 'no-brow-warm-v1',
+                faceTemplates: ['idle-sleep'],
                 clear: true,
                 statuses: ['notice', 'working', 'success', 'warning', 'error'],
                 titleMaxChars: 16,
-                messageMaxChars: 16
+                messageMaxChars: 16,
               },
               buzzer: null,
-              inputs: null
+              inputs: null,
             },
-            channels: []
-          }
+            channels: [],
+          },
         ]}
         onChange={vi.fn()}
       />
@@ -586,7 +984,8 @@ describe('DeviceChannelOutputFields', () => {
     fireEvent.click(screen.getByRole('option', { name: '显示屏' }));
     fireEvent.click(screen.getByRole('combobox', { name: '动作' }));
 
-    expect(screen.getByRole('option', { name: '显示状态' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: '显示状态' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '屏幕表情' })).toBeInTheDocument();
   });
 
   test('uses selected small display capability for display text limits', () => {
@@ -601,7 +1000,7 @@ describe('DeviceChannelOutputFields', () => {
           displayTitleTemplate: '{{source}}',
           displayMessageTemplate: '{{last_assistant_message}}',
           displayTitleMaxChars: 39,
-          displayMessageMaxChars: 95
+          displayMessageMaxChars: 95,
         })}
         deviceOptions={[
           {
@@ -614,13 +1013,13 @@ describe('DeviceChannelOutputFields', () => {
                 clear: true,
                 statuses: ['notice', 'working', 'success', 'warning', 'error'],
                 titleMaxChars: 16,
-                messageMaxChars: 16
+                messageMaxChars: 16,
               },
               buzzer: null,
-              inputs: null
+              inputs: null,
             },
-            channels: []
-          }
+            channels: [],
+          },
         ]}
         onChange={vi.fn()}
       />
@@ -643,7 +1042,7 @@ describe('DeviceChannelOutputFields', () => {
           displayTitleTemplate: '{{source}}',
           displayMessageTemplate: '{{last_assistant_message}}',
           displayTitleMaxChars: 39,
-          displayMessageMaxChars: 95
+          displayMessageMaxChars: 95,
         })}
         deviceOptions={[
           {
@@ -656,13 +1055,13 @@ describe('DeviceChannelOutputFields', () => {
                 clear: true,
                 statuses: ['notice', 'working', 'success', 'warning', 'error'],
                 titleMaxChars: 16,
-                messageMaxChars: 16
+                messageMaxChars: 16,
               },
               buzzer: null,
-              inputs: null
+              inputs: null,
             },
-            channels: []
-          }
+            channels: [],
+          },
         ]}
         onChange={onChange}
       />
@@ -674,9 +1073,9 @@ describe('DeviceChannelOutputFields', () => {
           channelActions: [
             expect.objectContaining({
               displayTitleMaxChars: 16,
-              displayMessageMaxChars: 16
-            })
-          ]
+              displayMessageMaxChars: 16,
+            }),
+          ],
         })
       );
     });
@@ -695,7 +1094,7 @@ describe('DeviceChannelOutputFields', () => {
           displayTitleTemplate: '{{display.title}}',
           displayMessageTemplate: '{{display.lines}}',
           displayTitleMaxChars: 39,
-          displayMessageMaxChars: 95
+          displayMessageMaxChars: 95,
         })}
         deviceOptions={[
           {
@@ -708,13 +1107,13 @@ describe('DeviceChannelOutputFields', () => {
                 clear: true,
                 statuses: ['notice', 'working', 'success', 'warning', 'error'],
                 titleMaxChars: 39,
-                messageMaxChars: 95
+                messageMaxChars: 95,
               },
               buzzer: null,
-              inputs: null
+              inputs: null,
             },
-            channels: []
-          }
+            channels: [],
+          },
         ]}
         onChange={vi.fn()}
       />
@@ -740,7 +1139,7 @@ describe('DeviceChannelOutputFields', () => {
           displayMessageTemplate: '{{display.lines}}',
           displayLinesTemplate: ['{{source}}', 'Finished'],
           displayTitleMaxChars: 39,
-          displayMessageMaxChars: 95
+          displayMessageMaxChars: 95,
         })}
         deviceOptions={[
           {
@@ -753,13 +1152,13 @@ describe('DeviceChannelOutputFields', () => {
                 clear: true,
                 statuses: ['notice', 'working', 'success', 'warning', 'error'],
                 titleMaxChars: 39,
-                messageMaxChars: 95
+                messageMaxChars: 95,
               },
               buzzer: null,
-              inputs: null
+              inputs: null,
             },
-            channels: []
-          }
+            channels: [],
+          },
         ]}
         onChange={vi.fn()}
       />
@@ -788,7 +1187,7 @@ describe('DeviceChannelOutputFields', () => {
           displayMessageTemplate: '{{display.lines}}',
           displayLinesTemplate: ['{{source}}', 'Check status'],
           displayTitleMaxChars: 39,
-          displayMessageMaxChars: 95
+          displayMessageMaxChars: 95,
         })}
         deviceOptions={[
           {
@@ -801,13 +1200,13 @@ describe('DeviceChannelOutputFields', () => {
                 clear: true,
                 statuses: ['notice', 'working', 'success', 'warning', 'error'],
                 titleMaxChars: 39,
-                messageMaxChars: 95
+                messageMaxChars: 95,
               },
               buzzer: null,
-              inputs: null
+              inputs: null,
             },
-            channels: []
-          }
+            channels: [],
+          },
         ]}
         onChange={onChange}
       />
@@ -824,9 +1223,9 @@ describe('DeviceChannelOutputFields', () => {
             displayStatus: 'working',
             displayTitleTemplate: '{{display.title}}',
             displayMessageTemplate: '{{display.lines}}',
-            displayLinesTemplate: ['{{source}}', 'Running']
-          })
-        ]
+            displayLinesTemplate: ['{{source}}', 'Running'],
+          }),
+        ],
       })
     );
   });
@@ -845,7 +1244,7 @@ describe('DeviceChannelOutputFields', () => {
           displayMessageTemplate: '{{display.lines}}',
           displayLinesTemplate: ['{{source}}', 'Finished'],
           displayTitleMaxChars: 39,
-          displayMessageMaxChars: 95
+          displayMessageMaxChars: 95,
         })}
         deviceOptions={[
           {
@@ -858,13 +1257,13 @@ describe('DeviceChannelOutputFields', () => {
                 clear: true,
                 statuses: ['notice', 'working', 'success', 'warning', 'error'],
                 titleMaxChars: 39,
-                messageMaxChars: 95
+                messageMaxChars: 95,
               },
               buzzer: null,
-              inputs: null
+              inputs: null,
             },
-            channels: []
-          }
+            channels: [],
+          },
         ]}
         onChange={vi.fn()}
       />
@@ -872,7 +1271,9 @@ describe('DeviceChannelOutputFields', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '高级自定义显示内容' }));
 
-    expect(screen.getByText('当前屏幕暂不支持中文，请使用英文、数字、符号或变量。')).toBeInTheDocument();
+    expect(
+      screen.getByText('当前屏幕暂不支持中文，请使用英文、数字、符号或变量。')
+    ).toBeInTheDocument();
   });
 
   test('fills safe defaults when action changes to blink', () => {
@@ -895,9 +1296,9 @@ describe('DeviceChannelOutputFields', () => {
           expect.objectContaining({
             channelAction: 'blink',
             durationMs: 5000,
-            intervalMs: 500
-          })
-        ]
+            intervalMs: 500,
+          }),
+        ],
       })
     );
   });
@@ -922,9 +1323,9 @@ describe('DeviceChannelOutputFields', () => {
           expect.objectContaining({
             channelAction: 'breathe',
             durationMs: 5000,
-            intervalMs: 1200
-          })
-        ]
+            intervalMs: 1200,
+          }),
+        ],
       })
     );
   });
@@ -937,39 +1338,39 @@ describe('DeviceChannelOutputFields', () => {
         output={outputWithAction({
           channelAction: 'blink',
           durationMs: 5000,
-          intervalMs: 500
+          intervalMs: 500,
         })}
         onChange={onChange}
       />
     );
 
     fireEvent.change(screen.getByRole('spinbutton', { name: '持续时间（毫秒）' }), {
-      target: { value: '9999999' }
+      target: { value: '9999999' },
     });
     fireEvent.change(screen.getByRole('spinbutton', { name: '闪烁间隔（毫秒）' }), {
-      target: { value: '1' }
+      target: { value: '1' },
     });
 
     expect(onChange).not.toHaveBeenCalledWith(
       expect.objectContaining({
-        channelActions: [expect.objectContaining({ durationMs: 600000 })]
+        channelActions: [expect.objectContaining({ durationMs: 600000 })],
       })
     );
     expect(onChange).not.toHaveBeenCalledWith(
       expect.objectContaining({
-        channelActions: [expect.objectContaining({ intervalMs: 100 })]
+        channelActions: [expect.objectContaining({ intervalMs: 100 })],
       })
     );
     fireEvent.blur(screen.getByRole('spinbutton', { name: '持续时间（毫秒）' }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
-        channelActions: [expect.objectContaining({ durationMs: 600000 })]
+        channelActions: [expect.objectContaining({ durationMs: 600000 })],
       })
     );
     fireEvent.blur(screen.getByRole('spinbutton', { name: '闪烁间隔（毫秒）' }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
-        channelActions: [expect.objectContaining({ intervalMs: 100 })]
+        channelActions: [expect.objectContaining({ intervalMs: 100 })],
       })
     );
   });
@@ -982,7 +1383,7 @@ describe('DeviceChannelOutputFields', () => {
         output={outputWithAction({
           channelId: 'pwm.gp2',
           channelAction: 'set-duty',
-          dutyPercent: 50
+          dutyPercent: 50,
         })}
         channelOptions={[
           {
@@ -1000,14 +1401,14 @@ describe('DeviceChannelOutputFields', () => {
                 pin: 2,
                 activeLevel: 'high',
                 defaultLevel: 'low',
-                allowBlink: true
+                allowBlink: true,
               },
               pwmOutput: null,
               buzzer: null,
               addressableLed: null,
               supportedActions: ['activate', 'deactivate', 'blink', 'pulse'],
-              hardwareGuideId: 'digital-output'
-            }
+              hardwareGuideId: 'digital-output',
+            },
           },
           {
             value: 'pwm.gp2',
@@ -1025,14 +1426,14 @@ describe('DeviceChannelOutputFields', () => {
                 pin: 2,
                 frequencyHz: 1000,
                 defaultDutyPercent: 0,
-                maxDutyPercent: 100
+                maxDutyPercent: 100,
               },
               buzzer: null,
               addressableLed: null,
               supportedActions: ['set-duty', 'pulse', 'clear'],
-              hardwareGuideId: 'pwm-output'
-            }
-          }
+              hardwareGuideId: 'pwm-output',
+            },
+          },
         ]}
         onChange={onChange}
       />
@@ -1058,10 +1459,10 @@ describe('DeviceChannelOutputFields', () => {
                 label: 'GP2 · Pin 4',
                 kind: 'digital-output',
                 supportedActions: ['activate', 'deactivate', 'blink', 'pulse'],
-                hardwareGuideId: 'digital-output'
-              }
-            ]
-          }
+                hardwareGuideId: 'digital-output',
+              },
+            ],
+          },
         ]}
         onChange={vi.fn()}
       />
@@ -1084,8 +1485,8 @@ describe('DeviceChannelOutputFields', () => {
             label: 'GP9 Custom',
             kind: 'digital-output',
             supportedActions: ['activate'],
-            hardwareGuideId: 'missing-guide'
-          }
+            hardwareGuideId: 'missing-guide',
+          },
         ]}
         onChange={vi.fn()}
       />

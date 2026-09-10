@@ -9,12 +9,14 @@ export const zhMessages = {
     devices: '设备',
     firmware: '固件',
     settings: '设置',
-    debug: 'Debug'
+    debug: 'Debug',
   },
   appInfo: {
     ariaLabel: '软件信息',
     version: 'v{{version}}',
-    developer: '开发者'
+    developer: '开发者',
+    updateAvailable: '发现新版本：v{{version}}',
+    updateAvailableAria: '发现新版本 {{version}}，点击打开下载页面',
   },
   common: {
     cancel: '取消',
@@ -36,13 +38,13 @@ export const zhMessages = {
     previous: '上一步',
     next: '下一步',
     notConfigured: '未设置',
-    loadingRuntimeMonitor: '加载运行监控...'
+    loadingRuntimeMonitor: '加载运行监控...',
   },
   colorEditor: {
-      currentColor: '当前颜色 {{color}}',
-      visualColorPicker: '可视化选色',
-      pickScreenColor: '从屏幕吸取颜色',
-      nativeColorInput: '原生颜色选择',
+    currentColor: '当前颜色 {{color}}',
+    visualColorPicker: '可视化选色',
+    pickScreenColor: '从屏幕吸取颜色',
+    nativeColorInput: '原生颜色选择',
     hexColor: 'HEX 色号',
     applyColor: '应用颜色',
     close: '关闭',
@@ -50,7 +52,7 @@ export const zhMessages = {
     presetHint: '快速替换当前编辑颜色',
     saturationValue: '颜色明度和饱和度',
     hue: '色相',
-    eyedropperUnsupported: '当前运行环境不支持屏幕吸色'
+    eyedropperUnsupported: '当前运行环境不支持屏幕吸色',
   },
   desktopNotice: {
     instance: {
@@ -63,7 +65,7 @@ export const zhMessages = {
       variants: {
         customLightbar: '自定义灯条',
         edgeLightbar: '固定屏幕边缘灯条',
-        mascot: '桌面精灵'
+        mascot: '桌面精灵',
       },
       typeSwitchWarning: '切换实例类型会重置当前类型专属设置。',
       confirmTypeSwitch: '确认切换',
@@ -91,7 +93,7 @@ export const zhMessages = {
         top: '上边',
         bottom: '下边',
         left: '左边',
-        right: '右边'
+        right: '右边',
       },
       brightness: '亮度',
       breathingPeriod: '呼吸周期',
@@ -103,12 +105,12 @@ export const zhMessages = {
       idleBehaviorHint: '空闲态表示没有输出规则激活时实例的基础状态，不表达事件含义。',
       resetVisualSettings: '还原默认设置',
       resetSuccessTitle: '已还原默认设置',
-      resetSuccessDescription: '当前实例视觉设置已还原，点击保存后生效。'
+      resetSuccessDescription: '当前实例视觉设置已还原，点击保存后生效。',
     },
     mascot: {
       packs: {
         g7Buddy: 'G7 精灵',
-        warmBuddy: '暖萌机器人'
+        warmBuddy: '暖萌机器人',
       },
       fields: {
         assetPack: '资源包',
@@ -121,7 +123,7 @@ export const zhMessages = {
         bubblePlacement: '气泡位置',
         bubbleFontSize: '气泡字号',
         bubbleFont: '气泡字体',
-        idleState: '空闲状态'
+        idleState: '空闲状态',
       },
       customGuide: {
         open: '自定义精灵资源说明',
@@ -141,8 +143,7 @@ export const zhMessages = {
         description:
           '按规范准备一套本地 GIF 精灵资源包。复制到用户目录后，点击重新扫描即可加入资源包下拉。',
         directoryTitle: '放置目录',
-        directoryDescription:
-          '每套精灵是一个独立目录，软件会从本机用户目录读取合法资源包。',
+        directoryDescription: '每套精灵是一个独立目录，软件会从本机用户目录读取合法资源包。',
         requiredTitle: '必要动作语义',
         requiredIdle: '空闲：没有规则触发时的常驻动作',
         requiredTask: '收到任务：任务开始或启动打招呼',
@@ -160,16 +161,16 @@ export const zhMessages = {
         playModes: {
           loop: {
             name: 'loop',
-            description: '持续循环，适合睡觉、工作中、等待输入'
+            description: '持续循环，适合睡觉、工作中、等待输入',
           },
           onceThenHold: {
             name: 'once-then-hold',
-            description: '播放一次后停留，适合完成、出错等结果反馈'
+            description: '播放一次后停留，适合完成、出错等结果反馈',
           },
           onceThenIdle: {
             name: 'once-then-idle',
-            description: '播放一次后回到空闲态，适合打招呼、感谢、再见'
-          }
+            description: '播放一次后回到空闲态，适合打招呼、感谢、再见',
+          },
         },
         manifestTitle: 'manifest 最小示例',
         notAvailableYet:
@@ -179,108 +180,108 @@ export const zhMessages = {
         downloadStartedDescription:
           '请在浏览器或系统下载记录中查看 cc-notice-custom-mascot-template.zip。',
         downloadFailedTitle: '模板包下载失败',
-        downloadFailedDescription: '未能启动模板包下载，请稍后重试。'
+        downloadFailedDescription: '未能启动模板包下载，请稍后重试。',
       },
       diagnostics: {
         codes: {
           MANIFEST_READ_FAILED: {
             title: '无法读取 manifest',
             impact: '该资源包不会出现在资源包下拉中。',
-            suggestion: '请确认资源包目录中存在 manifest.json，并且当前用户有读取权限。'
+            suggestion: '请确认资源包目录中存在 manifest.json，并且当前用户有读取权限。',
           },
           MANIFEST_INVALID_JSON: {
             title: 'manifest JSON 格式错误',
             impact: '软件无法解析该资源包配置。',
-            suggestion: '请用 JSON 校验工具检查 manifest.json 的逗号、引号和括号。'
+            suggestion: '请用 JSON 校验工具检查 manifest.json 的逗号、引号和括号。',
           },
           MANIFEST_TOO_LARGE: {
             title: 'manifest 文件过大',
             impact: '该资源包被跳过，避免扫描异常文件拖慢软件。',
-            suggestion: '请将 manifest.json 控制在 256KB 以内。'
+            suggestion: '请将 manifest.json 控制在 256KB 以内。',
           },
           INVALID_ID: {
             title: '资源包 ID 非法',
             impact: '软件无法稳定保存或匹配该资源包。',
-            suggestion: '请使用小写字母、数字、短横线、下划线或点号。'
+            suggestion: '请使用小写字母、数字、短横线、下划线或点号。',
           },
           INVALID_RENDERER: {
             title: '不支持的渲染类型',
             impact: '该资源包不会被加载。',
-            suggestion: '当前 renderer 只能填写 gif。'
+            suggestion: '当前 renderer 只能填写 gif。',
           },
           INVALID_ANIMATION_PATH: {
             title: '动画路径非法',
             impact: '该资源包被跳过，避免路径越界读取。',
-            suggestion: '请使用资源包目录内的相对路径，不能包含 ../。'
+            suggestion: '请使用资源包目录内的相对路径，不能包含 ../。',
           },
           MISSING_ANIMATION_FILE: {
             title: '缺少 GIF 文件',
             impact: '动作引用的动画无法播放。',
-            suggestion: '请检查 animations 路径是否和实际 GIF 文件名一致。'
+            suggestion: '请检查 animations 路径是否和实际 GIF 文件名一致。',
           },
           INVALID_GIF_FILE: {
             title: 'GIF 文件无效',
             impact: '该动画不能作为桌面精灵资源播放。',
-            suggestion: '请替换为合法 GIF 文件。'
+            suggestion: '请替换为合法 GIF 文件。',
           },
           ANIMATION_FILE_TOO_LARGE: {
             title: '单个 GIF 过大',
             impact: '该资源包被跳过，避免加载和播放造成性能压力。',
-            suggestion: '单个 GIF 必须小于 10MB，建议控制在 2MB 左右。'
+            suggestion: '单个 GIF 必须小于 10MB，建议控制在 2MB 左右。',
           },
           PACK_TOO_LARGE: {
             title: '资源包总体过大',
             impact: '该资源包被跳过，避免扫描和加载造成性能压力。',
-            suggestion: '整包 GIF 总大小必须小于 80MB。'
+            suggestion: '整包 GIF 总大小必须小于 80MB。',
           },
           TOO_MANY_PACKS: {
             title: '资源包数量过多',
             impact: '超出上限后的资源包不会继续扫描。',
-            suggestion: '请减少 mascots 目录下的资源包数量。'
+            suggestion: '请减少 mascots 目录下的资源包数量。',
           },
           TOO_MANY_ANIMATIONS: {
             title: '动画定义过多',
             impact: '该资源包被跳过。',
-            suggestion: '请将 animations 数量控制在 128 个以内。'
+            suggestion: '请将 animations 数量控制在 128 个以内。',
           },
           TOO_MANY_ACTIONS: {
             title: '动作定义过多',
             impact: '该资源包被跳过。',
-            suggestion: '请将 actions 数量控制在 64 个以内。'
+            suggestion: '请将 actions 数量控制在 64 个以内。',
           },
           MISSING_REQUIRED_ACTION: {
             title: '缺少必需动作',
             impact: '软件无法保证基础状态可用。',
-            suggestion: '请至少提供 idle、task-received、working、success 和 error 状态动作。'
+            suggestion: '请至少提供 idle、task-received、working、success 和 error 状态动作。',
           },
           UNKNOWN_ACTION_ANIMATION: {
             title: '动作引用了不存在的动画',
             impact: '该动作无法播放。',
-            suggestion: '请确认 action.animation 的值存在于 animations 配置中。'
+            suggestion: '请确认 action.animation 的值存在于 animations 配置中。',
           },
           INVALID_INTERACTION_ACTION: {
             title: '交互动作引用非法',
             impact: '该资源包未通过完整性检查。',
-            suggestion: '请确认 interactions 中引用的动作 ID 存在。'
+            suggestion: '请确认 interactions 中引用的动作 ID 存在。',
           },
           UNKNOWN: {
             title: '未知资源包问题',
             impact: '该资源包未加载。',
-            suggestion: '请根据诊断码和原始信息检查资源包配置。'
-          }
-        }
+            suggestion: '请根据诊断码和原始信息检查资源包配置。',
+          },
+        },
       },
       bubblePlacements: {
         top: '顶部',
         topLeft: '左上',
-        topRight: '右上'
+        topRight: '右上',
       },
       bubbleFonts: {
         softHandwriting: '柔和手写',
         roundCute: '圆润可爱',
         comic: '漫画手写',
         cleanSans: '清爽无衬线',
-        systemDefault: '系统默认'
+        systemDefault: '系统默认',
       },
       states: {
         'task-received': '收到任务',
@@ -290,7 +291,7 @@ export const zhMessages = {
         success: '完成',
         warning: '警告',
         error: '出错',
-        idle: '空闲'
+        idle: '空闲',
       },
       actions: {
         taskReceivedWave: '收到任务：挥手',
@@ -319,9 +320,9 @@ export const zhMessages = {
         idleThanks: '空闲：谢谢',
         idleLove: '空闲：爱你',
         idleBye: '空闲：再见',
-        idleBreathe: '空闲：呼吸'
-      }
-    }
+        idleBreathe: '空闲：呼吸',
+      },
+    },
   },
   profileRepair: {
     title: '配置已自动修复',
@@ -334,17 +335,36 @@ export const zhMessages = {
       hookEvents: '已移除 {{count}} 个无效 Hook 事件选择',
       aiMappings: '已移除 {{count}} 条无效 AI 事件映射',
       hardwareRules: '已移除 {{count}} 条无效输出规则',
-      device: '已将设备配置恢复为默认设备'
-    }
+      device: '已将设备配置恢复为默认设备',
+    },
   },
   settings: {
     title: '设置',
     description: '管理日志目录、应用偏好和诊断导出。',
+    update: {
+      title: '软件更新',
+      description: '检查 CC Notice 的最新正式版本和发布说明。',
+      check: '检查新版本',
+      checking: '检查中...',
+      currentVersion: '当前版本：v{{version}}',
+      latestVersion: '最新版本：v{{version}}',
+      upToDate: '当前已是最新版本。',
+      available: '发现新版本。',
+      releaseTitle: '发布版本：{{name}}',
+      publishedAt: '发布时间：{{time}}',
+      releaseNotes: '发布说明',
+      noReleaseNotes: '暂无发布说明。',
+      openDownload: '打开下载页面',
+      checkFailed: '检查新版本失败：{{error}}',
+      neverChecked: '尚未检查',
+      lastCheckedAt: '上次检查：{{time}}',
+    },
     localHookServer: '本地 Hook 接收服务',
     localHookServerDescription: '配置本地 Hook 事件接收服务',
     receivePort: '接收端口',
     savePort: '保存端口',
-    portHelp: '修改端口后需要重启 CC Notice，默认不需要重新配置 AI 工具 hook。刷新 Token 会立即更新本地服务和 relay 鉴权文件。',
+    portHelp:
+      '修改端口后需要重启 CC Notice，默认不需要重新配置 AI 工具 hook。刷新 Token 会立即更新本地服务和 relay 鉴权文件。',
     refreshToken: '刷新 Token',
     refreshingToken: '刷新中...',
     saveSuccessTitle: '保存成功',
@@ -391,8 +411,7 @@ export const zhMessages = {
     arduinoCliDescription: '配置 Arduino 系列板卡烧录时使用的 arduino-cli。',
     arduinoCliPath: 'arduino-cli 路径',
     arduinoCliPathPlaceholder: '请输入 arduino-cli 的完整路径',
-    arduinoCliHelp:
-      '如果 CC Notice 无法自动检测到 arduino-cli，可以在这里填写完整可执行文件路径。',
+    arduinoCliHelp: '如果 CC Notice 无法自动检测到 arduino-cli，可以在这里填写完整可执行文件路径。',
     saveArduinoCliPath: '保存路径',
     arduinoCliPathRequired: '请填写 arduino-cli 的完整路径后再保存。',
     arduinoCliPathSavedDescription: 'Arduino CLI 路径已更新。',
@@ -405,7 +424,8 @@ export const zhMessages = {
     arduinoCliNotFound: '未检测到 arduino-cli，请确认已安装并加入 PATH，或填写完整路径。',
     reset: {
       title: '重置配置',
-      description: '按配置域恢复默认值。操作前会二次确认，不会删除日志、Hook Token、relay 工具或外部 AI 工具 Hook 文件。',
+      description:
+        '按配置域恢复默认值。操作前会二次确认，不会删除日志、Hook Token、relay 工具或外部 AI 工具 Hook 文件。',
       confirm: '确认重置',
       resetting: '重置中...',
       successTitle: '重置完成',
@@ -416,40 +436,77 @@ export const zhMessages = {
           title: '重置应用设置',
           description: '将端口和界面语言恢复为默认值。',
           warning: '修改端口后仍需要重启 CC Notice 才能让本地 Hook 服务使用新端口。',
-          success: '应用设置已恢复为默认值。'
+          success: '应用设置已恢复为默认值。',
         },
         'hook-settings': {
           button: '重置 Hook 设置',
           title: '重置 Hook 设置',
           description: '将 Hook 配置目标和当前方案的 Hook 事件选择恢复为默认值。',
           warning: '此操作不会修改或删除 Codex、Claude Code 等 AI 工具目录下的 Hook 配置文件。',
-          success: 'Hook 设置已恢复为默认值。'
+          success: 'Hook 设置已恢复为默认值。',
         },
         'profile-mappings': {
           button: '重置映射配置',
           title: '重置映射配置',
           description: '将当前方案的 AI 事件映射和输出规则恢复为默认值。',
           warning: '当前方案中手动调整的映射关系、输出规则、Webhook、声音和设备通道绑定会被覆盖。',
-          success: '当前方案的映射配置已恢复为默认值。'
+          success: '当前方案的映射配置已恢复为默认值。',
         },
         devices: {
           button: '重置设备配置',
           title: '重置设备配置',
           description: '将设备列表和设备通道恢复为默认 RP2040 Pico 配置。',
           warning: '已连接设备会回到未连接运行态，手动添加或删除的设备通道会被默认通道替换。',
-          success: '设备配置已恢复为默认 RP2040 Pico 配置。'
+          success: '设备配置已恢复为默认 RP2040 Pico 配置。',
         },
         all: {
           button: '重置所有配置',
           title: '重置所有配置',
           description: '将应用设置、Hook 设置、配置方案和设备配置恢复为默认值。',
-          warning: '此操作会删除自定义配置方案并恢复默认方案，但不会删除日志、Hook Token、relay 工具或外部 AI 工具 Hook 文件。',
-          success: '所有配置已恢复为默认值。'
-        }
-      }
+          warning:
+            '此操作会删除自定义配置方案并恢复默认方案，但不会删除日志、Hook Token、relay 工具或外部 AI 工具 Hook 文件。',
+          success: '所有配置已恢复为默认值。',
+        },
+      },
+    },
+    storage: {
+      title: '缓存与日志',
+      description: '查看并清理软件缓存和运行日志。',
+      cacheLabel: '缓存',
+      logsLabel: '日志',
+      refresh: '重新扫描',
+      clear: '清理缓存和日志',
+      confirmTitle: '清理缓存和日志？',
+      confirmDescription:
+        '只会清理平台缓存目录下的 cc-notice 专属缓存，以及 ~/.cc-notice/logs，不会删除其它配置或素材。',
+      totalSummary: '合计占用：{{bytes}}',
+      unresolvedPath: '路径暂不可用',
+      size: '占用',
+      files: '文件数',
+      directories: '目录数',
+      unknown: '未知',
+      status: {
+        ok: '可清理',
+        missing: '目录不存在',
+        unreadable: '无法读取',
+        cleaned: '已清理',
+        partial: '部分失败',
+        failed: '清理失败',
+      },
+      clearSuccessTitle: '清理完成',
+      clearSuccessDescription:
+        '已释放 {{bytes}}，{{cleanedTargets}} 个目标已清理，{{missingTargets}} 个目标原本不存在。',
+      clearPartialTitle: '清理完成但有部分失败',
+      clearPartialDescription:
+        '已释放 {{bytes}}，缓存状态：{{cacheStatus}}，日志状态：{{logsStatus}}。',
+      clearFailedTitle: '清理失败',
+      progress: {
+        cleaning: '正在清理缓存和日志...',
+        rescanning: '正在重新扫描占用...',
+      },
     },
     logTitle: '日志',
-    logDescription: '日志默认写入 $HOME/.cc-notice/logs，便于排查运行问题。'
+    logDescription: '日志默认写入 $HOME/.cc-notice/logs，便于排查运行问题。',
   },
   debug: {
     title: 'Debug',
@@ -535,35 +592,35 @@ export const zhMessages = {
       nodes: {
         inbound: {
           title: '接收入站事件',
-          description: '软件收到 AI 工具转发的 Hook 事件。'
+          description: '软件收到 AI 工具转发的 Hook 事件。',
         },
         validation: {
           title: '校验与响应',
-          description: '完成请求读取、基础校验和 relay 响应。'
+          description: '完成请求读取、基础校验和 relay 响应。',
         },
         mapping: {
           title: '事件映射',
-          description: '把 AI Hook 事件映射为内部通知事件。'
+          description: '把 AI Hook 事件映射为内部通知事件。',
         },
         rules: {
           title: '规则匹配',
-          description: '根据内部事件匹配当前配置方案中的输出规则。'
+          description: '根据内部事件匹配当前配置方案中的输出规则。',
         },
         outputs: {
           title: '输出执行',
-          description: '执行本地、Webhook 和设备输出计划。'
+          description: '执行本地、Webhook 和设备输出计划。',
         },
         completion: {
           title: '完成',
-          description: '后台处理结束并记录最终耗时。'
-        }
+          description: '后台处理结束并记录最终耗时。',
+        },
       },
       status: {
         success: '成功',
         warning: '注意',
         error: '异常',
         pending: '处理中',
-        skipped: '跳过'
+        skipped: '跳过',
       },
       facts: {
         source: '来源',
@@ -583,12 +640,12 @@ export const zhMessages = {
         deviceProcessing: '设备输出处理',
         webhookProcessing: 'Webhook 输出处理',
         localProcessing: '本地输出处理',
-        error: '错误'
+        error: '错误',
       },
       messages: {
         noInternalEvent: '没有映射到内部事件，后续规则不会执行。',
         noOutputs: '没有命中输出规则或输出规则未启用。',
-        asyncPending: '异步处理尚未回填完成时间。'
+        asyncPending: '异步处理尚未回填完成时间。',
       },
       outputGroups: {
         local: '本地输出',
@@ -610,9 +667,9 @@ export const zhMessages = {
         deviceAck: '设备响应',
         deviceErrorCode: '错误编码',
         deviceError: '错误原因',
-        emptyAck: '无响应内容'
-      }
-    }
+        emptyAck: '无响应内容',
+      },
+    },
   },
   diagnostics: {
     title: '诊断中心',
@@ -628,23 +685,23 @@ export const zhMessages = {
       warning: '警告',
       error: '异常',
       notConfigured: '未配置',
-      unknown: '未知'
+      unknown: '未知',
     },
     severity: {
       error: '异常',
       warning: '警告',
-      info: '提示'
+      info: '提示',
     },
     sections: {
       hookService: { title: 'Hook 服务' },
       relay: { title: 'Relay 工具' },
       hookConfig: { title: 'Hook 配置' },
       profile: { title: '当前方案' },
-      devices: { title: '设备输出' }
+      devices: { title: '设备输出' },
     },
     flow: {
       title: '链路拓扑',
-      description: '从 AI Hook 到输出设备的关键节点状态。'
+      description: '从 AI Hook 到输出设备的关键节点状态。',
     },
     issues: {
       title: '需要处理的问题',
@@ -654,59 +711,59 @@ export const zhMessages = {
         hookServiceNotRunning: {
           title: '本地 Hook 服务未运行',
           description: 'AI 工具无法把 Hook 事件发送到软件。',
-          suggestion: '请检查软件是否正常启动，必要时重启应用。'
+          suggestion: '请检查软件是否正常启动，必要时重启应用。',
         },
         relayNotInstalled: {
           title: 'Relay 工具未安装',
           description: 'AI 工具 Hook 命令需要调用本地 relay 工具转发事件。',
-          suggestion: '请进入 Hook 设置页重新写入 Hook 配置。'
+          suggestion: '请进入 Hook 设置页重新写入 Hook 配置。',
         },
         relayOutdated: {
           title: 'Relay 工具需要更新',
           description: '当前安装的 relay 工具和软件内置版本不一致。',
-          suggestion: '请重启软件或重新写入 Hook 配置以同步 relay 工具。'
+          suggestion: '请重启软件或重新写入 Hook 配置以同步 relay 工具。',
         },
         hookConfigTargetNotSynced: {
           title: 'Hook 配置未同步',
           description: '已启用的 Hook 配置和 Hook 设置中选择的事件不一致。',
-          suggestion: '请进入 Hook 设置页预览并更新对应配置目标。'
+          suggestion: '请进入 Hook 设置页预览并更新对应配置目标。',
         },
         profileMappingWithoutOutput: {
           title: '内部事件没有输出规则',
           description: '这些内部事件已经被映射使用，但没有配置任何输出方式。',
-          suggestion: '请进入 AI事件映射页，为对应内部事件添加输出规则。'
+          suggestion: '请进入 AI事件映射页，为对应内部事件添加输出规则。',
         },
         deviceNoneRegistered: {
           title: '尚未注册设备',
           description: '当前没有可用于硬件输出的已注册设备。',
-          suggestion: '请进入设备页面扫描并注册设备。'
+          suggestion: '请进入设备页面扫描并注册设备。',
         },
         deviceReferencedOffline: {
           title: '规则引用的设备离线',
           description: '输出规则引用了设备，但该设备当前没有连接。',
-          suggestion: '请连接设备，或在设备页面执行自动连接已注册设备。'
+          suggestion: '请连接设备，或在设备页面执行自动连接已注册设备。',
         },
         deviceHeartbeatIssue: {
           title: '设备心跳异常',
           description: '设备连接存在，但心跳检测显示协议响应异常。',
-          suggestion: '请检查连接线、固件版本，必要时重新连接设备。'
+          suggestion: '请检查连接线、固件版本，必要时重新连接设备。',
         },
         deviceFirmwareIssue: {
           title: '设备固件状态异常',
           description: '设备固件版本或协议版本可能和当前软件不匹配。',
-          suggestion: '请进入固件页面检查并烧录当前内置固件。'
+          suggestion: '请进入固件页面检查并烧录当前内置固件。',
         },
         deviceRuntimeIssue: {
           title: '设备运行状态异常',
           description: '设备运行态存在需要关注的问题。',
-          suggestion: '请进入设备页面查看具体设备状态。'
+          suggestion: '请进入设备页面查看具体设备状态。',
         },
         runtimeRecentFailure: {
           title: '最近运行链路存在失败',
           description: '最近 Hook 事件或输出执行过程中出现失败记录。',
-          suggestion: '请进入 Debug 页面查看详细日志。'
-        }
-      }
+          suggestion: '请进入 Debug 页面查看详细日志。',
+        },
+      },
     },
     devices: {
       title: '设备与固件',
@@ -722,10 +779,12 @@ export const zhMessages = {
         deviceChannelNotConfigured: '输出规则引用的设备通道未配置。',
         deviceActionUnsupported: '当前通道不支持输出规则中的动作。',
         deviceCommandUnsupported: '当前固件不支持本次下发命令。',
+        deviceCustomFaceOutputMismatch: '自定义表情激活源或安装组与输出规则不匹配。',
         deviceTransportError: '设备传输失败，请检查线缆、端口占用或重新插入设备。',
-        deviceIdentityLimited: '该板卡无法提供强稳定设备 ID，同型号多设备同时使用时需要留意连接顺序。',
+        deviceIdentityLimited:
+          '该板卡无法提供强稳定设备 ID，同型号多设备同时使用时需要留意连接顺序。',
         boardCatalogMissing: '该设备对应的板卡目录缺失，请确认设备固件和软件版本是否匹配。',
-        runtimeIssue: '设备运行态存在需要关注的问题。'
+        runtimeIssue: '设备运行态存在需要关注的问题。',
       },
       metrics: {
         registered: '已注册设备',
@@ -733,8 +792,8 @@ export const zhMessages = {
         offline: '离线设备',
         heartbeatIssues: '心跳异常',
         firmwareIssues: '固件异常',
-        referencedUnavailable: '被规则引用但不可达'
-      }
+        referencedUnavailable: '被规则引用但不可达',
+      },
     },
     deviceHealth: {
       title: '设备健康检查',
@@ -742,7 +801,7 @@ export const zhMessages = {
       summary: {
         ok: '健康',
         warning: '需关注',
-        error: '异常'
+        error: '异常',
       },
       checks: {
         connection: '连接状态',
@@ -750,7 +809,7 @@ export const zhMessages = {
         firmware: '固件状态',
         heartbeat: '心跳状态',
         ruleReference: '规则引用',
-        inputConfig: '输入配置'
+        inputConfig: '输入配置',
       },
       issues: {
         none: '未发现问题',
@@ -759,6 +818,7 @@ export const zhMessages = {
         deviceActionTimeout: '设备动作响应超时',
         deviceChannelNotConfigured: '设备通道未配置',
         deviceCommandUnsupported: '当前固件不支持该命令',
+        deviceCustomFaceOutputMismatch: '自定义表情激活源或安装组与输出规则不匹配',
         deviceConnectionChanged: '设备连接在操作期间发生变化',
         deviceInfoTimeout: '固件信息响应超时',
         deviceIoWorkerStopped: '设备通信 worker 已停止',
@@ -779,13 +839,13 @@ export const zhMessages = {
         inputPendingSync: '输入配置需要连接后同步',
         referencedOffline: '规则引用的设备未连接',
         boardCatalogMissing: '板卡目录缺失',
-        deviceIdentityLimited: '设备身份仍是临时状态'
+        deviceIdentityLimited: '设备身份仍是临时状态',
       },
-      empty: '暂无已注册设备。'
+      empty: '暂无已注册设备。',
     },
     quickActions: {
       title: '快速动作',
-      description: '只提供安全动作，配置写入仍回到对应页面确认。'
+      description: '只提供安全动作，配置写入仍回到对应页面确认。',
     },
     actions: {
       refreshDiagnostics: '重新检测全部',
@@ -795,8 +855,8 @@ export const zhMessages = {
       openFirmware: '打开固件',
       openDebug: '打开 Debug',
       autoConnectRegisteredDevices: '自动连接已注册设备',
-      sendTestEvent: '发送测试事件'
-    }
+      sendTestEvent: '发送测试事件',
+    },
   },
   setup: {
     title: '接入配置',
@@ -809,28 +869,28 @@ export const zhMessages = {
       hookService: {
         label: '本地 Hook 服务',
         title: 'Hook 服务',
-        description: '检查本地服务状态'
+        description: '检查本地服务状态',
       },
       hookSettings: {
         label: 'Hook 设置',
         title: 'Hook 配置',
-        description: '配置 AI 工具 Hook'
+        description: '配置 AI 工具 Hook',
       },
       eventMapping: {
         label: '事件映射',
         title: 'AI 事件映射',
-        description: '配置事件映射规则'
+        description: '配置事件映射规则',
       },
       deviceFirmware: {
         label: '设备与固件',
         title: '设备配置',
-        description: '连接硬件设备'
+        description: '连接硬件设备',
       },
       diagnosticsCheck: {
         label: '接入检查',
         title: '接入检查',
-        description: '查看链路总览'
-      }
+        description: '查看链路总览',
+      },
     },
     hookService: {
       runningMessage: '本地 Hook 服务运行正常',
@@ -841,7 +901,7 @@ export const zhMessages = {
       description: '接收 AI 工具发送的 Hook 事件',
       eventUrl: '事件接收地址：',
       healthUrl: '健康检查地址：',
-      openDebug: '打开 Debug 页面测试'
+      openDebug: '打开 Debug 页面测试',
     },
     hookSetup: {
       selectToolTitle: '选择 AI 工具',
@@ -850,7 +910,7 @@ export const zhMessages = {
       configureEventsTitle: '配置 Hook 事件',
       configureEventsDescription: '选择要监听的事件并写入配置文件',
       openHookSettings: '打开 Hook 设置页面',
-      openHookSettingsHint: '在 Hook 设置页面中勾选事件、添加配置目标并写入配置'
+      openHookSettingsHint: '在 Hook 设置页面中勾选事件、添加配置目标并写入配置',
     },
     eventMapping: {
       configured: '已配置 {{count}} 条事件映射规则',
@@ -865,28 +925,27 @@ export const zhMessages = {
       moreRules: '还有 {{count}} 条映射规则...',
       viewRules: '查看和修改映射规则',
       startRules: '开始配置事件映射',
-      hint: '点击后将跳转到「AI事件映射」页面进行配置'
+      hint: '点击后将跳转到「AI事件映射」页面进行配置',
     },
     deviceFirmware: {
       deviceTitle: '设备连接与固件',
-      deviceDescription:
-        '在固件页按板卡选择并烧录对应固件，然后到设备管理页识别、注册和连接设备。',
+      deviceDescription: '在固件页按板卡选择并烧录对应固件，然后到设备管理页识别、注册和连接设备。',
       openDevices: '打开设备管理页面',
-      openFirmware: '打开固件管理页面'
+      openFirmware: '打开固件管理页面',
     },
     diagnostics: {
       title: '链路总览',
       description: '轻量检查 Hook、映射、输出规则和设备状态，完整排障请进入诊断中心。',
       loading: '正在加载接入检查...',
       empty: '暂无诊断数据，请重新检测。',
-      openDiagnosticsCenter: '打开诊断中心'
-    }
+      openDiagnosticsCenter: '打开诊断中心',
+    },
   },
   hookSettings: {
     title: 'Hook 设置',
     description: '维护 AI 工具 Hook 事件、全局配置和项目配置目标',
     errors: {
-      invalidProjectDirectory: '请选择有效项目目录'
+      invalidProjectDirectory: '请选择有效项目目录',
     },
     events: {
       title: 'Hook 事件',
@@ -897,7 +956,7 @@ export const zhMessages = {
       loading: 'Hook 事件加载中...',
       empty: '没有匹配的事件',
       recommended: '推荐',
-      requireOne: '至少选择一个 Hook 事件'
+      requireOne: '至少选择一个 Hook 事件',
     },
     targets: {
       title: '配置目标',
@@ -908,7 +967,6 @@ export const zhMessages = {
       project: '项目配置',
       enabled: '已启用',
       disabled: '已禁用',
-      enableHint: '启用全局配置会停用同源项目配置；启用项目配置会停用同源全局配置。同一目录的项目目标不可重复添加。',
       outdated: '配置过期',
       exists: '✓ 配置文件已存在',
       missing: '○ 配置文件不存在，可自动新建',
@@ -919,13 +977,18 @@ export const zhMessages = {
       eventMismatch: '当前配置与已选 Hook 事件不匹配，请预览并更新配置文件',
       debugMismatch: 'Debug 模式设置已变化，请预览并更新配置文件',
       debugEnabled: 'Debug 模式会写入 --debug，relay 将额外提交原始 payload{{suffix}}',
-      debugDisabled: 'Debug 已关闭：relay 只提交默认摘要字段，未纳入摘要的 payload 字段不会参与输出变量渲染{{suffix}}',
+      debugDisabled:
+        'Debug 已关闭：relay 只提交默认摘要字段，未纳入摘要的 payload 字段不会参与输出变量渲染{{suffix}}',
       notUpdatedSuffix: '；当前配置尚未更新',
       writeDone: '✓ 写入完成',
       enableDone: '✓ 已启用',
       backup: '备份: {{path}}',
       restoring: '恢复中...',
-      removeTarget: '移除此目标'
+      removeTarget: '移除此目标',
+    },
+    legacy: {
+      message: '检测到 {{count}} 个旧版项目 Hook，可能造成重复通知',
+      cleanup: '查看并清理',
     },
     previewDialog: {
       title: '{{mode}}：{{targetLabel}}',
@@ -933,7 +996,8 @@ export const zhMessages = {
       restoreMode: '还原预览',
       writeDescription: '{{existsMessage}}，共 {{count}} 个事件',
       restoreDescription: '确认后将移除当前软件写入的 Hook 项，保留用户自己的配置。',
-      globalEnableWarning: '启用全局配置会修改全局 Hook 文件，并自动禁用同源项目配置，避免重复上报。',
+      globalEnableWarning:
+        '启用全局配置会修改全局 Hook 文件，并自动禁用同源项目配置，避免重复上报。',
       exists: '配置文件已存在',
       missing: '配置文件不存在，将自动新建',
       diff: '差异对比',
@@ -947,8 +1011,8 @@ export const zhMessages = {
       writing: '写入中...',
       restoring: '还原中...',
       write: '写入配置',
-      confirmRestore: '确认还原'
-    }
+      confirmRestore: '确认还原',
+    },
   },
   monitor: {
     title: '运行监控',
@@ -964,7 +1028,7 @@ export const zhMessages = {
       failures: '失败数',
       uptime: '运行时长',
       lastEvent: '最近事件',
-      lastOutput: '最近输出'
+      lastOutput: '最近输出',
     },
     charts: {
       eventTitle: '收到事件走势',
@@ -972,7 +1036,7 @@ export const zhMessages = {
       outputTitle: '输出触发走势',
       outputDescription: '按输出方式区分，统计真实 Hook 触发的输出。',
       empty: '暂无统计数据',
-      successFailure: '成功 {{success}} / 失败 {{failure}}'
+      successFailure: '成功 {{success}} / 失败 {{failure}}',
     },
     outputTypes: {
       systemNotification: '系统通知',
@@ -981,7 +1045,7 @@ export const zhMessages = {
       deviceChannel: '设备通道',
       display: '设备屏幕',
       buzzer: '蜂鸣器',
-      desktopNotice: '桌面提示'
+      desktopNotice: '桌面提示',
     },
     outputs: {
       title: '输出类型概览',
@@ -989,32 +1053,647 @@ export const zhMessages = {
       empty: '暂无输出触发统计',
       attempts: '触发 {{count}}',
       failures: '失败 {{count}}',
-      successRate: '成功率 {{rate}}%'
+      successRate: '成功率 {{rate}}%',
     },
     recent: {
       title: '最近事件',
       description: '显示最近 20 条事件摘要，详细 payload 请打开详情查看。',
       empty: '暂无事件',
       internalEvent: '内部事件 {{event}}',
-      details: '详情'
+      details: '详情',
     },
     health: {
       snapshotFailed: '运行监控快照读取失败：{{error}}',
       hookStopped: '本地 Hook 服务未运行。',
       runtimeErrors: '当前运行周期内存在 {{count}} 条错误记录。',
-      notificationFocus: '系统通知可能被系统专注模式拦截，请在系统设置中确认通知权限。'
-    }
+      notificationFocus: '系统通知可能被系统专注模式拦截，请在系统设置中确认通知权限。',
+    },
+  },
+  customFaceEditor: {
+    library: {
+      title: '我的表情组',
+      description:
+        '管理本地自定义表情。每组绑定一个屏幕分辨率，最多包含 15 个表情；默认表情用于组预览和设备表情到期后的恢复显示。',
+      newResolution: '新建分辨率',
+      customResolution: '自定义分辨率',
+      customWidth: '自定义宽度',
+      customHeight: '自定义高度',
+      newGroup: '新建组',
+      importGroup: '导入 .ccface',
+      hint: '新组创建后可继续逐帧编辑。',
+      empty: '暂无表情组，请先新建一个表情组。',
+      previewUnavailable: '预览不可用',
+      defaultFacePreview: '{{name}} 默认表情预览',
+      faceCount: '{{count}} 个表情',
+      open: '打开',
+      copy: '复制',
+      resizeCopy: '另存为其他分辨率',
+      rename: '重命名',
+      export: '导出',
+      remove: '删除',
+      revision: '版本 {{revision}}',
+      profileFrames: '{{width}} × {{height}} · 最多 {{max}} 帧',
+      invalidProfile: '自定义分辨率无效',
+      loading: '加载表情组…',
+    },
+    groupDialogs: {
+      resizeTitle: '另存为其他分辨率',
+      resizeDescription: '创建新组，原组保持不变；完成后自动打开新组编辑。',
+      targetResolution: '目标分辨率',
+      selectResolution: '选择分辨率',
+      newGroupName: '新组名称',
+      customWidth: '宽',
+      customHeight: '高',
+      maxFrames: '目标最多 {{max}} 帧',
+      trimFrames: '，预计裁减 {{count}} 帧。',
+      keepFrames: '，不会裁减当前帧。',
+      create: '创建并打开',
+      creating: '创建中…',
+      renameTitle: '重命名表情组',
+      renameDescription: '名称只影响本地表情库显示。',
+      groupName: '组名称',
+      save: '保存',
+      saving: '保存中…',
+      confirmRename: '确认重命名',
+      deleteTitle: '确认删除表情组',
+      deleteDescription:
+        '将删除“{{name}}”，分辨率 {{profile}}，包含 {{count}} 个表情。此操作不可恢复。',
+      deleting: '删除中…',
+      confirmDelete: '确认删除',
+      cancel: '取消',
+    },
+    toolbar: {
+      ariaLabel: '表情编辑工具条',
+      groups: { selection: '选区', drawing: '绘制', shapes: '形状', history: '历史' },
+      tools: {
+        select: { label: '框选', hint: '拖拽建立选区，再执行复制、粘贴或清空' },
+        brush: { label: '画笔', hint: '点击像素切换高亮状态' },
+        eraser: { label: '橡皮擦', hint: '拖动擦除工具属性中设置的区域' },
+        line: { label: '直线', hint: '拖拽预览，释放后提交' },
+        rectangle: { label: '矩形', hint: '拖拽预览，属性区选择空心或实心' },
+        circle: { label: '圆形', hint: '拖拽外接框，预览与最终结果一致' },
+        triangle: { label: '三角形', hint: '拖拽边界框绘制三角形' },
+        pen: { label: '钢笔', hint: '逐点建立路径，双击或属性区按钮完成' },
+      },
+      expand: '展开工具条',
+      collapse: '收起工具条',
+      undo: '撤销',
+      redo: '重做',
+      undoHint: '撤销最近一次完整操作',
+      redoHint: '恢复最近一次已撤销操作',
+    },
+    defaults: {
+      unnamedGroup: '未命名组',
+      staticFace: '静态表情',
+      copySuffix: '副本',
+      importSuffix: '-import',
+      fileName: 'custom-face',
+    },
+    timeline: {
+      label: '表情时间轴',
+      play: '预览全部',
+      pause: '暂停',
+      selectedPreview: '预览选中',
+      totalFrames: '总帧数 {{count}}',
+      totalDuration: '总时长 {{duration}} ms',
+      selected: '已选 {{count}} 帧',
+      current: '当前帧 {{current}} / {{total}}',
+      insert: '插入位置',
+      selectFrame: '勾选第 {{index}} 帧',
+      framePreview: '第 {{index}} 帧预览',
+      frame: '帧 {{index}}',
+      deleteFrame: '删除帧 {{index}}',
+      keepOne: '至少保留一帧',
+      addFrame: '新增帧',
+      addFrameHint: '复制当前帧并追加到末尾',
+      addFrameOptions: '选择新增帧方式',
+      copyFrame: '复制当前帧',
+      blankFrame: '创建空白帧',
+    },
+    rulers: {
+      horizontal: '横向刻度',
+      vertical: '纵向刻度',
+      horizontalGuide: '横向辅助线',
+      verticalGuide: '纵向辅助线',
+      addHorizontal: '新增横向辅助线',
+      addVertical: '新增纵向辅助线',
+      horizontalRow: '横向辅助线 · 行',
+      verticalColumn: '纵向辅助线 · 列',
+      coordinate: '辅助线坐标',
+      delete: '删除辅助线',
+      close: '关闭',
+    },
+    assets: {
+      label: '素材库',
+      close: '关闭素材库',
+      groupTab: '当前组素材',
+      publicTab: '公共素材',
+      filter: '按标签筛选',
+      clearFilter: '清除筛选',
+      tags: '标签：{{tags}}',
+      rename: '重命名',
+      confirmRename: '确认',
+      tag: '标签',
+      confirmTags: '确认标签',
+      delete: '删除',
+      empty: '暂无素材',
+      saveGroup: '保存到当前组',
+      savePublic: '保存为公共素材',
+      deleteConfirm: '确定删除个人素材“{{name}}”吗？',
+      name: '个人素材新名称',
+      tagInput: '素材标签',
+      preview: '{{name}} 预览',
+    },
+    canvasOverlay: {
+      pendingImport: '待确认导入对象',
+      pendingImportPreview: '待确认导入 {{width}} × {{height}}',
+      magnifierArea: '放大区域',
+      currentPixel: '当前像素',
+      originalSelection: '原始选区',
+      selection: '当前选区',
+      selectionPivot: '旋转轴',
+      eraserArea: '擦除范围',
+      toolPreview: '工具预览',
+      penPreview: '钢笔路径预览',
+      pixelGrid: '像素网格',
+    },
+    workbench: {
+      initialStatus: '选择工具后在画布中操作。',
+      toolHints: {
+        select: '在画布拖拽建立选区，然后在右侧执行选区操作。',
+        brush: '点击一个像素切换高亮状态。',
+        eraser: '调整擦除范围后拖动，松开时作为一次操作提交。',
+        line: '按下建立起点，拖动查看线段预览，松开提交。',
+        rectangle: '拖动查看预览框，松开提交。',
+        circle: '拖动外接框，预览和最终椭圆共用同一范围。',
+        triangle: '首次点击点固定为顶点，拖动调整底边。',
+        pen: '逐点点击建立路径，双击或右侧按钮完成。',
+      },
+      constraints: {
+        line: '约束到水平、垂直或 45°',
+        rectangle: '约束为正方形',
+        circle: '约束为正圆',
+        triangle: '约束为等腰三角形',
+      },
+      back: '返回组管理',
+      save: '保存',
+      saving: '保存中…',
+      importSvg: '导入 SVG',
+      importImage: '导入图片',
+      assets: '素材库',
+      groupName: '组名称',
+      applyGroupName: '应用组名称',
+      modified: '有未保存修改',
+      saved: '已保存',
+      saveFailed: '保存失败：{{error}}',
+      saveSuccess: '已保存当前表情组。',
+      saveConflict: '保存冲突：磁盘中的表情组已被其他操作修改。',
+      reloadSuccess: '已重新加载磁盘版本，本地未保存修改已丢弃。',
+      reloadFailed: '重新加载失败：{{error}}',
+      discardFailed: '丢弃修改失败：{{error}}',
+      closeFailed: '关闭编辑器失败：{{error}}',
+      imagePixelizerOpen: '图片导入窗口已打开，请先关闭它再退出编辑器。',
+      imageVectorizerOpen: '图片转 SVG 窗口已打开，请先关闭它再退出编辑器。',
+      switchFace: '已切换表情并加载第一帧。',
+      frameAdded: '已复制当前帧并追加到时间轴末尾。',
+      blankFrameAdded: '已新增空白帧并追加到时间轴末尾。',
+      faceRenamed: '已重命名为“{{name}}”。',
+      maxFaces: '每组最多 15 个表情。',
+      newFace: '新表情',
+      copyFace: '复制表情',
+      addedFace: '已新增“{{name}}”。',
+      copySuffix: '副本',
+      copiedFace: '已复制为“{{name}}”。',
+      emptyFaceName: '表情名称不能为空。',
+      duplicateFaceName: '当前组内表情名称不能重复。',
+      minFaces: '每组至少保留一个表情。',
+      deleteFaceConfirm: '确定删除表情“{{name}}”吗？',
+      groupNameChanged: '组名称已修改为“{{name}}”。',
+      frameApplied: '临时对象已应用到当前帧。',
+      copiedSelection: '已复制选区，可切换帧后粘贴。',
+      selectionShape: '选区形状',
+      selectionShapeRectangle: '矩形',
+      selectionShapeCircle: '圆形',
+      selectionCreated: '已框选 {{width}} × {{height}} 像素区域。',
+      imageApplied: '图片已加载到画布，请调整后确认应用。',
+      imageImportSizeMismatch: '图片导入结果尺寸与当前画布不一致，请重新导入。',
+      assetApplied: '个人素材已加载到画布，请调整后确认应用。',
+      assetSaved: '当前帧已保存为个人素材。',
+      svgApplied: 'SVG 已加载到画布，请调整位置后确认导入。',
+      currentFace: '当前表情',
+      selectFace: '选择表情',
+      faceName: '表情名称',
+      currentFrame: '当前帧 {{current}} / {{total}}',
+      applyName: '应用名称',
+      defaultFace: '默认',
+      setDefault: '设为默认表情',
+      deleteFace: '删除表情',
+      frameName: '帧',
+      frameDuration: '帧时长',
+      resolutionFaces: '分辨率 {{width}} × {{height}} · 表情 {{count}} / 15',
+      toolProperties: '工具属性',
+      currentTool: '当前工具：{{tool}}',
+      outline: '空心',
+      filled: '实心',
+      eraseArea: '擦除范围：{{size}} × {{size}}',
+      start: '起点：{{point}}',
+      end: '终点：{{point}}',
+      bounds: '范围：{{width}} × {{height}}',
+      selectionInfo: '选区：{{x}},{{y}} · {{width}} × {{height}}',
+      moveSection: '移动',
+      rotationSection: '旋转',
+      selectionActions: '选区操作',
+      cancelSelection: '取消选择',
+      moveStep: '选区移动步长',
+      rotationPivot: '旋转轴：{{x}},{{y}}',
+      setRotationPivot: '设置旋转轴',
+      pickRotationPivot: '请在画布中选择旋转轴',
+      rotationDegrees: '旋转角度',
+      decreaseRotation: '减少旋转角度',
+      increaseRotation: '增加旋转角度',
+      rotateClockwise: '顺时针旋转 90°',
+      rotateCounterclockwise: '逆时针旋转 90°',
+      confirmTransform: '确认变换',
+      cancelTransform: '取消变换',
+      confirmRotation: '确认旋转',
+      cancelRotation: '取消旋转',
+      up: '向上移动选区',
+      left: '向左移动选区',
+      down: '向下移动选区',
+      right: '向右移动选区',
+      confirmMove: '确认移动',
+      copy: '复制',
+      paste: '粘贴',
+      pasteHint: '粘贴到当前选区左上角',
+      clipboardEmpty: '剪贴板为空，请先复制选区。',
+      selectTarget: '请先框选粘贴目标区域。',
+      clear: '清空',
+      highlight: '高亮',
+      dim: '熄灭',
+      cancelMove: '取消移动',
+      cancel: '取消',
+      selectHint: '请在画布中拖拽建立选区。',
+      points: '顶点：{{count}}',
+      finishPath: '完成路径',
+      cancelPath: '取消路径',
+      saveConflictTitle: '检测到保存冲突',
+      saveConflictDescription:
+        '磁盘中的表情组已被其他操作修改。重新加载会丢弃当前本地修改；覆盖保存会以当前本地版本替换磁盘版本。',
+      reloadDisk: '重新加载磁盘版本',
+      overwrite: '覆盖保存',
+      leaveTitle: '保存未完成的修改？',
+      leaveDescription: '当前表情组包含尚未正式保存的修改。保存失败时编辑器会保持打开。',
+      discard: '丢弃修改',
+      saveAndClose: '保存并关闭',
+      pendingTitle: '素材待确认应用',
+      pendingDescription: '拖动画布调整位置，确认后写入当前帧。',
+      pendingScale: '缩放：{{scale}}',
+      pendingScaleLabel: '临时素材缩放',
+      copyFirst: '请先复制选区',
+      cancelApply: '取消应用',
+      confirmApply: '确认应用',
+      pasteTarget: '请先框选粘贴目标区域。',
+    },
+    imagePixelizer: {
+      title: '图片导入',
+      selectImage: '选择图片',
+      selectedFile: '已选图片：{{name}}',
+      pastedImage: '粘贴图片',
+      preview: '像素预览',
+      pasteHint: '可直接从剪贴板粘贴图片',
+      parameters: '参数调整',
+      sourceGroup: '来源',
+      sourceHint: '图片模式沿用现有导入流程，文字模式会先渲染为透明位图再转换。',
+      sourceImage: '图片',
+      sourceText: '文字',
+      paletteGroup: '颜色模式',
+      transformGroup: '图像位置',
+      toneGroup: '明暗处理',
+      textGroup: '文字内容',
+      textLayoutGroup: '文字排版',
+      textContent: '文字内容',
+      textContentHint: '支持多行文字。超出画布不会阻止转换，可通过缩放和移动调整。',
+      textTooLongWarning: '文字较多，可能影响转换性能。',
+      textTruncatedWarning: '文字过长，已按当前画布和字号截断。',
+      fontFamily: '字体',
+      fontFamilyHint: '使用系统字体预设，不会打包或导入字体文件。',
+      fontSans: '无衬线',
+      fontSerif: '衬线',
+      fontMono: '等宽',
+      fontCjkSans: '中文无衬线',
+      fontSize: '字号',
+      fontSizeHint: '控制文字源渲染字号，之后仍可用图像缩放调整整体大小。',
+      letterSpacing: '字间距',
+      letterSpacingHint: '控制字符之间的横向间距，数值会随字号按比例换算。',
+      fontWeight: '字重',
+      fontWeightHint: '控制整段文字普通或加粗。',
+      fontWeightNormal: '普通',
+      fontWeightBold: '加粗',
+      textAlign: '对齐',
+      textAlignHint: '控制每行文字在文字源内部的水平对齐。',
+      alignLeft: '左',
+      alignCenter: '中',
+      alignRight: '右',
+      lineHeight: '行距',
+      lineHeightHint: '控制多行文字之间的垂直间距。',
+      textWrap: '自动换行',
+      textWrapHint: '开启后按文字源宽度自动折行，显式换行仍会保留。',
+      textPadding: '内边距',
+      textPaddingHint: '控制文字和透明源图边缘的距离。',
+      mode: '转换模式',
+      modeMono: '黑白',
+      modeColor: '多色',
+      modeHint: '黑白模式输出可直接应用的像素，多色模式用于测试预览和参数效果。',
+      colorCount: '颜色数量',
+      colorCountHint: '多色模式下限制预览调色板的颜色数；黑白模式会忽略该值。',
+      threshold: '阈值',
+      thresholdHint: '黑白模式下更小的阈值会保留更多亮点，更大的阈值会收紧边缘。',
+      contrast: '对比度',
+      contrastHint: '提高对比度会拉开明暗差异，降低对比度会让结果更柔和。',
+      brightness: '亮度',
+      brightnessHint: '提高亮度会整体提亮，降低亮度会整体压暗。',
+      scale: '缩放',
+      scaleHint: '放大或缩小原图在像素画布中的占用范围。',
+      rotation: '旋转',
+      rotationHint: '围绕图片对象中心旋转，范围为 -180° 到 180°。',
+      offsetX: '水平位置',
+      offsetXHint: '向左或向右移动图片，便于对齐像素画布。',
+      offsetY: '垂直位置',
+      offsetYHint: '向上或向下移动图片，便于对齐像素画布。',
+      dither: '抖动',
+      ditherHint: '开启后会用噪点分布模拟更多层次，适合测试多色预览。',
+      invert: '反相',
+      invertHint: '反相会翻转亮灭关系，适合处理深浅相反的素材。',
+      outputInfo: '输出信息',
+      outputReady: '已生成',
+      outputPending: '等待图片',
+      sourceSize: '原始尺寸 {{width}} × {{height}}',
+      previewMode: '预览模式：{{mode}}',
+      apply: '应用',
+      discard: '关闭',
+      clear: '清空画布',
+      reset: '还原',
+      resetAll: '还原设置',
+      resetTransform: '还原图像位置',
+      center: '居中',
+      resetGroup: '还原{{group}}',
+      canvasSize: '画布 {{width}} × {{height}}',
+      originalImage: '原图预览',
+      hoverHint: '鼠标悬停放大查看原图',
+    },
+    canvas: {
+      label: '自定义表情画布 {{width}} × {{height}}',
+      coordinate: '坐标 {{x}}, {{y}} · ',
+      scale: '缩放 {{scale}}×',
+      emptyFrame: '空白帧',
+    },
+    magnifier: {
+      show: '局部放大',
+      hide: '关闭局部放大',
+      title: '局部放大 {{scale}}×',
+      panelLabel: '局部放大画布',
+      canvasLabel: '局部放大像素画布',
+      close: '关闭局部放大',
+      closePanel: '关闭局部放大浮窗',
+      pointer: '当前像素',
+      mode: {
+        follow: '跟随',
+        locked: '已锁定',
+      },
+      modeAction: {
+        follow: '锁定放大区域',
+        locked: '解锁放大区域',
+      },
+      modeText: {
+        follow: '锁定',
+        locked: '解锁',
+      },
+      range: '{{startX}},{{startY}} 至 {{endX}},{{endY}}',
+    },
+    faceImport: {
+      action: '导入单个表情',
+      title: '导入单个表情',
+      description: '表情将作为新表情加入当前组，不会覆盖已有表情。',
+      source: '来源：{{name}}',
+      details: '分辨率 {{width}} × {{height}} · {{frames}} 帧 · {{duration}} ms',
+      name: '导入后的表情名称',
+      confirm: '导入为新表情',
+      importing: '正在读取表情文件…',
+      profileMismatch:
+        '导入失败：分辨率不一致（来源：{{sourceWidth}} × {{sourceHeight}}；当前组：{{targetWidth}} × {{targetHeight}}）。',
+      capacityReached: '当前组已达到 {{max}} 个表情，无法继续导入。',
+      duplicate: '当前组中已有内容相同的表情，仍可导入副本。',
+      invertImage: '反转图像亮点',
+      invertImageHint: '只反转图像内容区域，透明背景保持熄灭。',
+      imported: '已导入“{{name}}”，尚未保存。',
+    },
+    svgImport: {
+      title: '导入 SVG',
+      filterName: 'SVG 图像',
+      mergeLabel: '叠加到当前帧',
+      replaceLabel: '覆盖当前帧',
+      description:
+        '使用 SVG 原生静态渲染转换为单色像素。推荐透明背景和任意不透明前景；不透明底色也会被点亮。',
+      read: '读取中…',
+      selectFile: '选择 SVG 文件',
+      importImage: '从图片生成',
+      metadata:
+        '原始尺寸 {{width}} × {{height}} · {{elements}} 个元素 · 目标分辨率 {{targetWidth}} × {{targetHeight}}',
+      noFile: '请选择 SVG 文件',
+      updating: '正在更新预览…',
+      mode: '导入方式',
+      merge: '叠加',
+      replace: '覆盖',
+      x: '水平位置 X',
+      y: '垂直偏移',
+      offsetXLabel: '水平偏移',
+      offsetYLabel: '垂直偏移',
+      scaleLabel: '缩放',
+      rotationLabel: '旋转',
+      thresholdLabel: '像素覆盖阈值',
+      recognitionMode: '像素识别方式',
+      alphaRecognition: '按透明度',
+      alphaRecognitionLabel: '按透明度识别像素',
+      alphaRecognitionHint: '适合透明背景素材；只根据像素透明度判断亮灭。',
+      brightnessRecognition: '按亮度',
+      brightnessRecognitionLabel: '按亮度识别像素',
+      brightnessRecognitionHint: '适合白底黑图；深色像素更容易转换为亮点，透明像素仍保持熄灭。',
+      decrease: '减少{{field}}',
+      increase: '增加{{field}}',
+      center: '居中',
+      topLeft: '左上角',
+      reset: '重置',
+      offsetX: '水平偏移：{{value}}',
+      offsetY: '垂直偏移：{{value}}',
+      scale: '缩放：{{value}}',
+      rotation: '旋转：{{value}}°',
+      threshold: '像素覆盖阈值：{{value}}',
+      thresholdHint: '低值保留更多细线，高值会收紧边缘。',
+      activePixels: '高亮像素：{{count}}',
+      clipped: '已裁切屏幕外内容',
+      cancel: '取消',
+      apply: '应用到当前帧',
+      preview: 'SVG 预览 {{width}} × {{height}}',
+    },
+    imageVectorizer: {
+      title: '图片转 SVG',
+      selectImage: '选择图片',
+      selectedFile: '已选图片：{{name}}',
+      paste: '粘贴图片',
+      pastedImage: '粘贴图片',
+      originalImage: '原图预览',
+      svgPreview: 'SVG 预览',
+      sourceSize: '原始尺寸 {{width}} × {{height}}',
+      workingSize: '工作尺寸 {{width}} × {{height}}',
+      svgSize: 'SVG 尺寸 {{width}} × {{height}}',
+      ready: '已生成',
+      waiting: '等待图片',
+      transformGroup: '图像预处理',
+      transformGroupHint: '先调整源图，再交给矢量化引擎处理。',
+      modeGroup: '矢量模式',
+      modeGroupHint: '切换黑白或多色 tracing 方式。',
+      traceGroup: '描边参数',
+      traceGroupHint: '控制轮廓提取的细节、分层和去噪强度。',
+      pathGroup: '路径参数',
+      pathGroupHint: '控制最终 SVG 的路径切分和精度。',
+      mode: '转换模式',
+      modeBinary: '二值',
+      modeColor: '多色',
+      modeHint: '黑白模式更适合表情线稿，多色模式更适合保留色块。',
+      scale: '缩放',
+      scaleHint: '在进入矢量化前放大或缩小源图。',
+      offsetX: '水平位移',
+      offsetXHint: '拖动或精调转换图像在预处理画布中的水平位置。',
+      offsetY: '垂直位移',
+      offsetYHint: '拖动或精调转换图像在预处理画布中的垂直位置。',
+      rotationDeg: '旋转',
+      rotationDegHint: '在进入矢量化前旋转源图角度。',
+      brightness: '亮度',
+      brightnessHint: '在进入矢量化前整体提亮或压暗源图。',
+      contrast: '对比度',
+      contrastHint: '在进入矢量化前增强或压缩明暗差异。',
+      invert: '反色',
+      invertHint: '在进入矢量化前反转亮暗关系。',
+      filterSpeckle: '噪点过滤',
+      filterSpeckleHint: '移除孤立小噪点，减少碎片化路径。',
+      colorPrecision: '颜色精度',
+      colorPrecisionHint: '数值越低，颜色分层越少，结果越简化。',
+      layerDifference: '层间差异',
+      layerDifferenceHint: '控制彩色分层之间的最小差异阈值。',
+      cornerThreshold: '拐角阈值',
+      cornerThresholdHint: '数值越高，更多转角会被保留为拐角。',
+      lengthThreshold: '线段阈值',
+      lengthThresholdHint: '控制较短线段是否保留为独立路径。',
+      maxIterations: '最大迭代',
+      maxIterationsHint: '限制描边优化的迭代次数，越大越细但越慢。',
+      spliceThreshold: '拼接阈值',
+      spliceThresholdHint: '控制相邻路径片段是否合并。',
+      pathPrecision: '路径精度',
+      pathPrecisionHint: '控制路径坐标保留的小数位数。',
+      exportSvg: '另存 SVG',
+      sendToSvg: '发送到 SVG 导入窗口',
+      close: '关闭',
+      reset: '重置',
+      pasteHint: '可直接从剪贴板粘贴静态图片。',
+      unsupportedFile: '仅支持图片文件。',
+      staticOnly: '仅支持静态图片，不支持 GIF。',
+      clipboardUnsupported: '当前环境不支持读取剪贴板图片。',
+      clipboardEmpty: '剪贴板中没有可用图片。',
+    },
+    faceExport: {
+      item: '导出可编辑表情',
+      gif: '导出 GIF',
+      png: '导出当前帧为 PNG',
+      dialog: {
+        title: '导出 GIF',
+        description: '按整数倍率放大像素画布，保持硬边和原始宽高比。',
+        scale: '导出倍率',
+        scaleValue: '{{scale}}×',
+        invert: '反色（黑底白图变白底黑图）',
+        transparentBackground: '透明背景（去除背景色）',
+        frames: '帧选择',
+        allFrames: '导出所有帧',
+        customFrames: '自定义选择帧',
+        selectAll: '全选',
+        deselectAll: '全不选',
+        selectedCount: '已选择 {{count}} 帧',
+        to: '至',
+        sourceSize: '原始尺寸',
+        outputSize: '导出尺寸',
+        limit: '最大支持 8×；较大的 GIF 可能需要更多时间和存储空间。',
+        confirm: '选择保存位置',
+      },
+      pngDialog: {
+        title: '导出当前帧为 PNG',
+        description: '导出当前显示的帧为 PNG 图片。',
+        scale: '导出倍率',
+        scaleValue: '{{scale}}×',
+        invert: '反色（黑底白图变白底黑图）',
+        transparentBackground: '透明背景（去除背景色）',
+        sourceSize: '原始尺寸',
+        outputSize: '导出尺寸',
+        limit: '最大支持 8×。',
+        confirm: '选择保存位置',
+      },
+      itemSuccess: '已导出可再次导入的表情文件。',
+      gifSuccess: '已导出 GIF，共 {{frames}} 帧，播放时长 {{duration}} ms。',
+      pngSuccess: '已导出 PNG 图片。',
+      quantized: 'GIF 使用 10ms 时间精度，帧时长会四舍五入；导出的播放时长为 {{duration}} ms。',
+      exporting: '正在导出当前表情…',
+      failed: '导出失败：{{error}}',
+    },
   },
   devices: {
     title: '设备管理',
     description: '管理多个硬件设备、传输连接、设备通道和测试动作。',
+    customFaces: {
+      manage: '设备屏幕自定义表情管理',
+      openHint: '打开自定义表情编辑器',
+      openedHint: '自定义表情编辑器已打开',
+      unsupportedHint: '当前选中设备不支持表情屏',
+      installTitle: '自定义表情下发',
+      installDescription:
+        '选择本地表情组，匹配当前设备分辨率和固件能力后整组安装到设备自定义槽位。',
+      groupLabel: '表情组',
+      noGroups: '暂无可用表情组',
+      reloadGroups: '刷新表情组列表',
+      install: '安装到当前设备',
+      installing: '正在安装…',
+      installSuccessTitle: '自定义表情安装成功',
+      installSuccessDescription: '已将「{{name}}」写入设备自定义槽位。',
+      installedGroup: '设备已安装：{{groupId}}，占用 {{bytes}} 字节。',
+      activeSourceLabel: '当前激活：{{source}}',
+      activeSourceBuiltin: '内置',
+      activeSourceCustom: '自定义',
+      activateBuiltin: '切回内置表情',
+      activateCustom: '激活自定义表情',
+      activationSuccessTitle: '表情激活成功',
+      activationSuccessDescription: '当前激活源已切换为{{source}}。',
+      preflightFailed: '当前表情组不能下发：{{reasons}}',
+      preflightReasonSeparator: '、',
+      preflightReasons: {
+        'profile-not-deployable': '该表情组分辨率暂不支持下发',
+        'display-face-unsupported': '当前设备未声明屏幕表情能力',
+        'display-size-missing': '当前设备缺少屏幕分辨率信息',
+        'display-size-mismatch': '设备屏幕分辨率与表情组不一致',
+        'custom-face-capability-missing': '当前固件未声明自定义表情能力',
+        'protocol-version-mismatch': '固件自定义表情协议版本不匹配',
+        'profile-code-mismatch': '固件自定义表情 Profile 与表情组不一致',
+        'custom-face-size-mismatch': '固件自定义表情分辨率与表情组不一致',
+        'frame-limit-exceeded': '表情帧数超过当前固件限制',
+        'framebuffer-size-mismatch': '表情帧数据大小与分辨率不匹配',
+      },
+      reloadFailed: '刷新表情组失败：{{error}}',
+      installFailed: '下发失败：{{error}}',
+      activationFailed: '激活源切换失败：{{error}}',
+    },
     unknownDevice: '未知设备',
     unknownBoard: '未知板卡',
     status: {
       disconnected: '未连接',
       connecting: '连接中',
       connected: '已连接',
-      error: '异常'
+      error: '异常',
     },
     list: {
       title: '设备实例',
@@ -1030,7 +1709,7 @@ export const zhMessages = {
       removeBlockedDescription:
         '请先到 AI 事件映射中移除或改绑相关设备通道动作，然后再移除该设备。',
       referencedRule: '引用规则：{{rule}}',
-      openRules: '前往 AI 事件映射'
+      openRules: '前往 AI 事件映射',
     },
     discovery: {
       title: '设备发现',
@@ -1042,8 +1721,10 @@ export const zhMessages = {
       register: '注册设备',
       registering: '注册中...',
       matchedDevice: '已匹配设备：{{device}}',
-      portHint: 'Windows 下优先选择带有 USB 厂商、产品、VID/PID 或序列号的端口；如果识别超时，请确认设备未被 Arduino IDE、串口监视器或其他软件占用。',
-      identityFallback: '当前设备身份尚未写入固件，串口地址变化后可能需要重新识别。建议烧录最新固件后再次识别。',
+      portHint:
+        'Windows 下优先选择带有 USB 厂商、产品、VID/PID 或序列号的端口；如果识别超时，请确认设备未被 Arduino IDE、串口监视器或其他软件占用。',
+      identityFallback:
+        '当前设备身份尚未写入固件，串口地址变化后可能需要重新识别。建议烧录最新固件后再次识别。',
       autoConnectErrorTitle: '自动连接失败',
       empty: '暂无候选设备资源，请点击扫描设备资源。',
       statuses: {
@@ -1051,8 +1732,8 @@ export const zhMessages = {
         identifying: '识别中',
         identified: '已识别',
         matched: '已匹配',
-        failed: '失败'
-      }
+        failed: '失败',
+      },
     },
     connection: {
       title: '连接管理',
@@ -1072,7 +1753,7 @@ export const zhMessages = {
       selectedTransport: '当前传输配置',
       availablePorts: '可用传输资源',
       matchedPort: '已匹配',
-      emptyPorts: '暂无扫描结果，点击扫描传输资源。'
+      emptyPorts: '暂无扫描结果，点击扫描传输资源。',
     },
     transportMonitor: {
       title: '设备通信监控',
@@ -1098,12 +1779,12 @@ export const zhMessages = {
         command: '命令',
         channel: '通道',
         control: '控件',
-        error: '错误码'
+        error: '错误码',
       },
       direction: {
         outbound: '下行',
         inbound: '上行',
-        system: '系统'
+        system: '系统',
       },
       category: {
         command: '命令',
@@ -1111,7 +1792,7 @@ export const zhMessages = {
         'input-event': '输入事件',
         heartbeat: '心跳',
         connection: '连接',
-        error: '错误'
+        error: '错误',
       },
       status: {
         pending: '等待',
@@ -1120,18 +1801,19 @@ export const zhMessages = {
         timeout: '超时',
         error: '错误',
         skipped: '跳过',
-        stopped: '已停止'
-      }
+        stopped: '已停止',
+      },
     },
     operation: {
       connectingTitle: '正在连接设备',
       autoConnectingTitle: '正在自动连接设备',
-      connectingDescription: '软件正在尝试打开设备通道并确认设备身份。设备连接不稳定时可能需要几秒。',
+      connectingDescription:
+        '软件正在尝试打开设备通道并确认设备身份。设备连接不稳定时可能需要几秒。',
       deviceLabel: '设备',
       portLabel: '通道',
       cancelConnection: '取消连接',
       cancelling: '正在取消...',
-      blockedHint: '已取消本次连接，短时间内不会自动重连该设备。'
+      blockedHint: '已取消本次连接，短时间内不会自动重连该设备。',
     },
     identity: {
       title: '设备身份',
@@ -1143,7 +1825,7 @@ export const zhMessages = {
       confirmTitle: '确认重置设备 ID',
       confirmDescription: '软件会生成新的随机设备 ID，并写入当前连接设备的 EEPROM。',
       confirmWarning: '重置后，同一块板会以新的设备 ID 参与识别。请确认当前连接的是要重置的设备。',
-      confirmReset: '确认重置'
+      confirmReset: '确认重置',
     },
     channels: {
       title: '设备通道',
@@ -1172,10 +1854,10 @@ export const zhMessages = {
       modeFixedInput: '固定输入',
       modeValue: {
         output: '输出',
-        input: '输入'
+        input: '输入',
       },
       emptyAvailable: '当前板型没有可添加的空闲通道。',
-      guide: '说明'
+      guide: '说明',
     },
     channelKind: {
       'digital-output': '数字输出',
@@ -1184,7 +1866,7 @@ export const zhMessages = {
       display: '显示屏',
       buzzer: '蜂鸣器',
       relay: '继电器',
-      'button-input': '按钮输入'
+      'button-input': '按钮输入',
     },
     inputBinding: {
       title: '输入动作',
@@ -1204,20 +1886,20 @@ export const zhMessages = {
       disabledShortcut: '{{shortcut}}（已禁用）',
       focusScopeHint: '快捷键会发送到当前焦点应用，后台应用不保证接收。',
       key: {
-        space: '空格'
+        space: '空格',
       },
       validation: {
         primaryRequired: '请选择一个主键。',
         comboNeedsOnePrimary: '组合键只能包含一个非修饰主键。',
-        comboNeedsModifier: '组合键必须包含至少一个修饰键。'
-      }
+        comboNeedsModifier: '组合键必须包含至少一个修饰键。',
+      },
     },
     inputTest: {
       title: '按钮上行测试',
       description: '查看设备输入通道已绑定的快捷键，按下真实设备按钮时可对照高亮键位确认配置。',
       recentEvent: '最近收到',
       disabledHint: '当前按钮功能已禁用。设备仍可能上报按钮事件，但不会触发快捷键：{{shortcut}}。',
-      unconfiguredHint: '当前输入通道还没有配置快捷键，请先在设备通道中配置输入动作。'
+      unconfiguredHint: '当前输入通道还没有配置快捷键，请先在设备通道中配置输入动作。',
     },
     channelAction: {
       activate: '激活',
@@ -1230,7 +1912,8 @@ export const zhMessages = {
       beep: '蜂鸣',
       tone: '播放音调',
       pattern: '提示音模式',
-      'set-color': '设置颜色'
+      'display-face': '屏幕表情',
+      'set-color': '设置颜色',
     },
     testAction: {
       title: '测试动作',
@@ -1252,12 +1935,25 @@ export const zhMessages = {
       ready: '已准备，可发送测试动作。',
       skipped: '设备未连接，测试动作已跳过。',
       sent: '测试动作已发送。',
-      failed: '测试动作发送失败。'
+      failed: '测试动作发送失败。',
     },
     deviceExtension: {
       title: '设备扩展能力',
       description: '向当前设备声明支持的屏幕、提示音等扩展能力发送设备级测试命令。',
       display: '屏幕测试',
+      builtinFaceTest: '内置表情测试',
+      customFaceTest: '自定义表情测试',
+      displayFace: '屏幕表情',
+      customFace: '自定义表情',
+      customFacePreview: '自定义表情预览',
+      customFaceNotInstalled: '当前设备未安装自定义表情组。',
+      customFaceNeedsActivation: '设备已安装自定义表情组，请先激活后再进行测试。',
+      customFaceTestRequiresActivation: '请先激活自定义表情后再测试。',
+      customFaceMissingLocalGroup:
+        '设备已安装自定义表情组，但本机未找到对应组数据：{{groupId}}。请先导入或同步该表情组后再测试。',
+      displayFaceDurationMs: '持续时长(ms)',
+      testDisplayFace: '测试表情',
+      testCustomFace: '测试自定义表情',
       buzzerPatterns: '提示音模式',
       testRuntime: '测试运行态',
       clearDisplay: '清屏',
@@ -1270,21 +1966,21 @@ export const zhMessages = {
         defaultTitle: 'CC Notice Test',
         defaultMessage: 'Test message',
         asciiNote: '该入口只用于验证屏幕事件覆盖页和串口下发链路，请使用英文、数字和常用符号。',
-        asciiValidation: '当前屏幕暂不支持中文，请使用英文、数字或常用符号。'
+        asciiValidation: '当前屏幕暂不支持中文，请使用英文、数字或常用符号。',
       },
       status: {
         notice: '通知',
         success: '成功',
         working: '工作中',
         warning: '警告',
-        error: '错误'
+        error: '错误',
       },
       pattern: {
         notice: '通知音',
         success: '成功音',
         warning: '警告音',
         error: '错误音',
-        working: '工作音'
+        working: '工作音',
       },
       statusPayload: {
         successTitle: 'Task Done',
@@ -1294,7 +1990,7 @@ export const zhMessages = {
         warningTitle: 'Attention Needed',
         warningMessage: 'Check the current task state',
         errorTitle: 'Task Failed',
-        errorMessage: 'Check the desktop app error details'
+        errorMessage: 'Check the desktop app error details',
       },
       statusPayloadCompact: {
         successTitle: 'Done',
@@ -1304,14 +2000,14 @@ export const zhMessages = {
         warningTitle: 'Warning',
         warningMessage: 'Check',
         errorTitle: 'Failed',
-        errorMessage: 'Error'
+        errorMessage: 'Error',
       },
       runtimePayload: {
         title: 'Working',
         message: 'E/O 12/34',
         line1: 'Last codex hook',
-        line2: 'OK 33 / Err 1'
-      }
+        line2: 'OK 33 / Err 1',
+      },
     },
     runtime: {
       title: '运行状态',
@@ -1328,11 +2024,11 @@ export const zhMessages = {
         'up-to-date': '已是最新',
         'update-available': '需要更新固件',
         incompatible: '协议不兼容',
-        unsupported: '无法识别固件版本'
+        unsupported: '无法识别固件版本',
       },
       lastAck: '最近 ACK',
       lastError: '最近错误',
-      lastSentAt: '最近下发时间'
+      lastSentAt: '最近下发时间',
     },
     heartbeat: {
       title: '心跳状态',
@@ -1345,9 +2041,9 @@ export const zhMessages = {
         healthy: '正常',
         stale: '异常',
         lost: '已丢失',
-        unsupported: '当前固件不支持心跳'
-      }
-    }
+        unsupported: '当前固件不支持心跳',
+      },
+    },
   },
   hardwareGuides: {
     open: '说明',
@@ -1355,7 +2051,7 @@ export const zhMessages = {
     fallback: {
       title: '硬件连接助手',
       summary: '当前通道没有专用连接说明。',
-      detail: '请先查看板卡针脚、电压、电流限制和外设模块说明，确认接线正确后再发送测试动作。'
+      detail: '请先查看板卡针脚、电压、电流限制和外设模块说明，确认接线正确后再发送测试动作。',
     },
     sections: {
       suitableHardware: '适用硬件',
@@ -1365,7 +2061,7 @@ export const zhMessages = {
       electricalNotices: '电气注意事项',
       actions: '支持动作',
       testSteps: '测试步骤',
-      faq: '常见问题'
+      faq: '常见问题',
     },
     pinout: {
       title: 'RP2040 Pico 引脚图',
@@ -1380,7 +2076,7 @@ export const zhMessages = {
         chipDatasheet: '芯片数据手册',
         stm32duinoDocs: 'STM32duino 文档',
         picoDatasheet: 'Pico 数据手册',
-        rp2040Datasheet: 'RP2040 数据手册'
+        rp2040Datasheet: 'RP2040 数据手册',
       },
       legend: {
         gpio: 'GPIO',
@@ -1390,8 +2086,8 @@ export const zhMessages = {
         power: '电源',
         system: '系统控制',
         analog: '模拟参考',
-        reference: '参考/保留'
-      }
+        reference: '参考/保留',
+      },
     },
     electrical: {
       gpioVoltage: 'GPIO 输出逻辑电平：3.3V。',
@@ -1402,130 +2098,133 @@ export const zhMessages = {
       driverRequired: '继电器、蜂鸣器、大功率 LED 和灯带建议使用驱动模块或外部供电。',
       ws2812DataResistor: 'WS2812/SK6812 数据线建议在靠近 DIN 端串联 330Ω - 470Ω 小电阻。',
       ws2812Power: 'WS2812/SK6812 应按灯珠数量使用外部电源，不要从 GPIO 取电。',
-      ws2812Level: '5V 可寻址灯带在长线或不稳定场景下建议使用 3.3V 到 5V 电平转换。'
+      ws2812Level: '5V 可寻址灯带在长线或不稳定场景下建议使用 3.3V 到 5V 电平转换。',
     },
     arduinoTinyAvr: {
       notices: {
         outputRange: '当前输出通道支持 D2-D10，D0/D1 为串口 RX/TX，不作为输出使用。',
-        pwmPins: 'D3/D5/D6/D9/D10 支持呼吸和 PWM 类动作，其他数字输出脚只支持普通开关、闪烁或脉冲动作。',
-        reservedPins: 'D11-D13、A0-A5 以及 Nano 的 A6/A7 当前只作为板卡引脚信息展示，不生成输出通道。'
-      }
+        pwmPins:
+          'D3/D5/D6/D9/D10 支持呼吸和 PWM 类动作，其他数字输出脚只支持普通开关、闪烁或脉冲动作。',
+        reservedPins:
+          'D11-D13、A0-A5 以及 Nano 的 A6/A7 当前只作为板卡引脚信息展示，不生成输出通道。',
+      },
     },
     stm32BluePill: {
       notices: {
-        smallMcuScope: '按 STM32F103C6T6 最小资源约束，只开放稳妥数字输出；运行态使用板载 USB CDC 串口。',
-        swdPins: 'PA13/PA14 为 SWD 调试和烧录引脚，不作为输出通道使用。'
-      }
+        smallMcuScope:
+          '按 STM32F103C6T6 最小资源约束，只开放稳妥数字输出；运行态使用板载 USB CDC 串口。',
+        swdPins: 'PA13/PA14 为 SWD 调试和烧录引脚，不作为输出通道使用。',
+      },
     },
     digitalOutput: {
       title: '数字输出连接助手',
       summary: '适合普通 LED、继电器输入和低压数字触发模块。',
       hardware: {
         led: '普通单色 LED 或带限流模块的 LED 指示灯。',
-        relay: '低压继电器模块、光耦输入模块或其他数字触发输入。'
+        relay: '低压继电器模块、光耦输入模块或其他数字触发输入。',
       },
       scenarios: {
         status: '用于表达运行、完成、失败等二值或闪烁状态。',
-        trigger: '用于触发外部低压模块的开关输入。'
+        trigger: '用于触发外部低压模块的开关输入。',
       },
       wiring: {
         pin: 'GPIO 输出脚连接到模块信号脚；普通 LED 需要串联合适限流电阻。',
-        ground: '外设 GND 必须与开发板 GND 共地。'
+        ground: '外设 GND 必须与开发板 GND 共地。',
       },
       notices: {
         resistor: '裸 LED 必须串联限流电阻，避免 GPIO 过流。',
-        current: '不要直接驱动大电流负载，继电器线圈和灯带需要驱动模块。'
+        current: '不要直接驱动大电流负载，继电器线圈和灯带需要驱动模块。',
       },
       tests: {
         connect: '先断电完成接线，再连接开发板并进入设备页。',
-        activate: '发送激活或闪烁测试动作，确认电平语义与外设响应一致。'
+        activate: '发送激活或闪烁测试动作，确认电平语义与外设响应一致。',
       },
       faq: {
-        inverted: '如果输出逻辑相反，请检查通道有效电平配置或外设输入是否为低电平触发。'
-      }
+        inverted: '如果输出逻辑相反，请检查通道有效电平配置或外设输入是否为低电平触发。',
+      },
     },
     pwmOutput: {
       title: 'PWM 输出连接助手',
       summary: '适合需要亮度、占空比或简单渐变控制的输出模块。',
       hardware: {
         led: '可调亮度 LED 模块或经限流后的 LED。',
-        driver: 'MOSFET/三极管驱动模块，用于更高电流负载。'
+        driver: 'MOSFET/三极管驱动模块，用于更高电流负载。',
       },
       scenarios: {
         brightness: '用于按状态展示不同亮度或强弱提示。',
-        fade: '用于脉冲、渐亮渐暗等柔和提示。'
+        fade: '用于脉冲、渐亮渐暗等柔和提示。',
       },
       wiring: {
         pin: 'PWM GPIO 连接模块信号输入，负载电源按模块说明单独供电。',
-        ground: '驱动模块和开发板必须共地。'
+        ground: '驱动模块和开发板必须共地。',
       },
       notices: {
         driver: '大电流 LED 或灯带必须使用外部驱动，不能直接接 GPIO。',
-        frequency: '如出现闪烁，可调整 PWM 频率或更换驱动模块。'
+        frequency: '如出现闪烁，可调整 PWM 频率或更换驱动模块。',
       },
       tests: {
         duty: '先发送较低占空比测试，再逐步调高，确认亮度变化正常。',
-        clear: '发送清除动作，确认输出恢复到默认占空比。'
+        clear: '发送清除动作，确认输出恢复到默认占空比。',
       },
       faq: {
-        flicker: '肉眼可见闪烁通常与频率、供电或驱动模块有关。'
-      }
+        flicker: '肉眼可见闪烁通常与频率、供电或驱动模块有关。',
+      },
     },
     buzzer: {
       title: '蜂鸣器连接助手',
       summary: '适合失败、权限确认、长任务结束等需要声音提示的场景。',
       hardware: {
         active: '有源蜂鸣器模块，通常只需要高低电平控制。',
-        passive: '无源蜂鸣器模块，可通过 tone 动作输出指定频率。'
+        passive: '无源蜂鸣器模块，可通过 tone 动作输出指定频率。',
       },
       scenarios: {
         failure: '用于错误、失败或需要人工介入的提醒。',
-        permission: '用于权限请求、任务完成等短促提示。'
+        permission: '用于权限请求、任务完成等短促提示。',
       },
       wiring: {
         pin: 'GPIO 输出脚连接蜂鸣器模块信号脚。',
-        ground: '蜂鸣器模块 GND 与开发板 GND 共地。'
+        ground: '蜂鸣器模块 GND 与开发板 GND 共地。',
       },
       notices: {
         current: '蜂鸣器电流较大时需要驱动模块，不要直接由 GPIO 供电。',
-        volume: '测试时先使用短时长动作，避免持续蜂鸣影响使用。'
+        volume: '测试时先使用短时长动作，避免持续蜂鸣影响使用。',
       },
       tests: {
         beep: '发送蜂鸣动作，确认模块能发出短提示音。',
-        tone: '如使用无源蜂鸣器，发送 tone 动作确认频率变化。'
+        tone: '如使用无源蜂鸣器，发送 tone 动作确认频率变化。',
       },
       faq: {
-        silent: '无声音时先确认蜂鸣器类型、有源/无源动作是否匹配，以及供电和共地是否正确。'
-      }
+        silent: '无声音时先确认蜂鸣器类型、有源/无源动作是否匹配，以及供电和共地是否正确。',
+      },
     },
     addressableLed: {
       title: '可寻址 LED 连接助手',
       summary: '适合 WS2812、SK6812 等单线可寻址灯带或灯环。',
       hardware: {
         strip: 'WS2812/SK6812 灯带、灯珠板或矩阵屏。',
-        ring: 'NeoPixel 兼容灯环或小型状态灯阵列。'
+        ring: 'NeoPixel 兼容灯环或小型状态灯阵列。',
       },
       scenarios: {
         richStatus: '用于显示更丰富的颜色、亮度和多状态提示。',
-        multiDevice: '用于多设备或显示型硬件的扩展状态表达。'
+        multiDevice: '用于多设备或显示型硬件的扩展状态表达。',
       },
       wiring: {
         data: 'GPIO 数据脚连接灯带 DIN，建议靠近灯带输入端串联小电阻。',
         power: '灯带按实际数量使用合适外部电源，不要从 GPIO 取电。',
-        ground: '外部电源 GND、灯带 GND 和开发板 GND 必须共地。'
+        ground: '外部电源 GND、灯带 GND 和开发板 GND 必须共地。',
       },
       notices: {
         power: '多颗灯珠全亮电流很高，测试时先限制亮度和灯珠数量。',
-        level: '部分 5V 灯带可能需要电平转换，3.3V 数据线不一定稳定。'
+        level: '部分 5V 灯带可能需要电平转换，3.3V 数据线不一定稳定。',
       },
       tests: {
         color: '先发送低亮度单色测试，确认颜色和灯珠顺序正确。',
-        brightness: '逐步调整亮度，观察供电是否稳定。'
+        brightness: '逐步调整亮度，观察供电是否稳定。',
       },
       faq: {
-        colorOrder: '颜色不对通常是 RGB/GRB 顺序不同，可在通道配置中调整。'
-      }
-    }
+        colorOrder: '颜色不对通常是 RGB/GRB 顺序不同，可在通道配置中调整。',
+      },
+    },
   },
   firmware: {
     title: '固件管理',
@@ -1547,43 +2246,49 @@ export const zhMessages = {
       arduinoAvr: 'Arduino AVR',
       stm32: 'STM32',
       seeedSamd: 'Seeed SAMD',
-      unknown: '其他板卡'
+      unknown: '其他板卡',
     },
     capabilityTiers: {
       full: {
         label: '完整能力',
-        description: '适合 Pico 这类能力更完整的板卡，可覆盖常用提示输出场景。'
+        description: '适合 Pico 这类能力更完整的板卡，可覆盖常用提示输出场景。',
       },
       lightweight: {
         label: '轻量能力',
-        description: '适合 32U4 类 Arduino 板卡，保留常用输出能力，烧录前需要准备 Arduino CLI。'
+        description: '适合 32U4 类 Arduino 板卡，保留常用输出能力，烧录前需要准备 Arduino CLI。',
       },
       minimal: {
         label: '精简能力',
-        description: '适合 Uno / Nano 这类入门 AVR 板卡，只开放更稳妥的少量输出通道。'
+        description: '适合 Uno / Nano 这类入门 AVR 板卡，只开放更稳妥的少量输出通道。',
       },
       extended: {
         label: '扩展设备能力',
-        description: '适合带屏幕、按键、板载蜂鸣器和传感器的综合设备，输出通道与设备级扩展能力分开建模。'
+        description:
+          '适合带屏幕、按键、板载蜂鸣器和传感器的综合设备，输出通道与设备级扩展能力分开建模。',
       },
       oled096: {
         description:
-          '适合 Raspberry Pi Pico 外接 0.96 寸 128x64 I2C OLED，保留常用输出通道，并额外支持设备级屏幕状态输出。'
+          '适合 Raspberry Pi Pico 外接 0.96 寸 128x64 I2C OLED，保留常用输出通道，并额外支持设备级屏幕状态输出。',
       },
       oled091: {
         description:
-          '适合 Raspberry Pi Pico 外接 0.91 寸 128x32 I2C OLED，使用 GP20/GP21 连接屏幕并保留 GP22 作为普通输出通道。'
+          '适合 Raspberry Pi Pico 外接 0.91 寸 128x32 I2C OLED，使用 GP20/GP21 连接屏幕并保留 GP22 作为普通输出通道。',
+      },
+      oled128: {
+        description:
+          '适合 Raspberry Pi Pico 外接 1.5 寸 128x128 I2C SH1107 OLED，保留常用输出通道并提供更大的屏幕表情显示空间。',
       },
       stm32SmallMcu: {
-        description: '按 STM32F103C6T6 最小资源约束开放稳妥数字输出，启用板载 USB CDC 串口，不启用高占用能力。'
+        description:
+          '按 STM32F103C6T6 最小资源约束开放稳妥数字输出，启用板载 USB CDC 串口，不启用高占用能力。',
       },
       unknown: {
         label: '未知能力',
-        description: '该板卡暂未配置明确的能力层级说明。'
-      }
+        description: '该板卡暂未配置明确的能力层级说明。',
+      },
     },
     recommendationReason: {
-      pico: 'Pico 使用 UF2 烧录盘复制固件，烧录和日常恢复都更简单，建议优先尝试。'
+      pico: 'Pico 使用 UF2 烧录盘复制固件，烧录和日常恢复都更简单，建议优先尝试。',
     },
     wiring: {
       pin: '针脚',
@@ -1601,7 +2306,7 @@ export const zhMessages = {
         oledSda: 'OLED I2C SDA',
         oledScl: 'OLED I2C SCL',
         oledReset: 'OLED 复位',
-        oledPower: 'OLED 供电'
+        oledPower: 'OLED 供电',
       },
       wires: {
         digitalOutput: '输出脚连接 LED、继电器模块或驱动模块输入端，外设 GND 与板卡 GND 共地。',
@@ -1614,17 +2319,21 @@ export const zhMessages = {
         oled096Scl: '连接 OLED D0 / SCL。',
         oled091Sda: '连接 OLED SDA。',
         oled091Scl: '连接 OLED SCL。',
+        oled128Sda: '连接 OLED SDA。',
+        oled128Scl: '连接 OLED SCL。',
         oledReset: '连接 OLED RES / RST，固件上电后会执行一次复位脉冲。',
-        oledPower: 'OLED VCC 接 3V3，GND 接板卡 GND。'
+        oledPower: 'OLED VCC 接 3V3，GND 接板卡 GND。',
       },
       noticeItems: {
         rp2040Voltage: 'RP2040 GPIO 逻辑电平为 3.3V，不能直接接 5V 信号输入。',
         arduinoVoltage: 'Uno / Nano GPIO 逻辑电平为 5V，连接 3.3V 外设前需要确认兼容性。',
-        proMicroVoltage: '当前 Pro Micro 固件面向 5V/16MHz 变体，GPIO 逻辑电平为 5V，连接 3.3V 外设前需要确认兼容性。',
+        proMicroVoltage:
+          '当前 Pro Micro 固件面向 5V/16MHz 变体，GPIO 逻辑电平为 5V，连接 3.3V 外设前需要确认兼容性。',
         sharedGround: '外接模块必须与板卡 GND 共地，否则信号电平不可靠。',
-        driverForLoad: '继电器、电机、大功率灯带等负载不要直接由 GPIO 供电，应使用驱动模块或独立电源。',
+        driverForLoad:
+          '继电器、电机、大功率灯带等负载不要直接由 GPIO 供电，应使用驱动模块或独立电源。',
         oledI2cAddress: 'OLED I2C 地址由屏幕硬件决定，固件会探测 0x3C 和 0x3D。',
-        stm32Voltage: 'STM32F103 Blue Pill GPIO 逻辑电平为 3.3V，不能直接接 5V 信号输入。'
+        stm32Voltage: 'STM32F103 Blue Pill GPIO 逻辑电平为 3.3V，不能直接接 5V 信号输入。',
       },
       guides: {
         rp2040Pico: {
@@ -1632,62 +2341,75 @@ export const zhMessages = {
           summary: '普通 Pico 软件侧开放数字输出和蜂鸣器通道，默认只启用 GP0、GP1、GP2。',
           reserved: {
             usb: 'USB 串口用于软件通信，不需要额外占用 GPIO。',
-            system: 'RUN、3V3_EN、ADC_VREF 等系统和参考针脚只作为板卡信息展示。'
-          }
+            system: 'RUN、3V3_EN、ADC_VREF 等系统和参考针脚只作为板卡信息展示。',
+          },
         },
         rp2040PicoOled096: {
           title: 'Pico + OLED 0.96 寸 128x64 接线说明',
           summary: '该固件使用 GP20/GP21 连接 I2C OLED，并使用 GP22 控制屏幕复位。',
           reserved: {
             i2c: 'GP20 和 GP21 被 OLED I2C 占用，不再作为普通数字输出通道。',
-            reset: 'GP22 被 OLED RES/RST 占用，不再作为普通数字输出通道。'
-          }
+            reset: 'GP22 被 OLED RES/RST 占用，不再作为普通数字输出通道。',
+          },
         },
         rp2040PicoOled091: {
           title: 'Pico + OLED 0.91 寸 128x32 接线说明',
-          summary: '该固件使用 GP20/GP21 连接 I2C OLED，软件侧开放普通数字输出、蜂鸣器和屏幕输出入口。',
+          summary:
+            '该固件使用 GP20/GP21 连接 I2C OLED，软件侧开放普通数字输出、蜂鸣器和屏幕输出入口。',
           reserved: {
-            i2c: 'GP20 和 GP21 被 OLED I2C 占用，不再作为普通数字输出通道。'
-          }
+            i2c: 'GP20 和 GP21 被 OLED I2C 占用，不再作为普通数字输出通道。',
+          },
+        },
+        rp2040PicoOled128x128: {
+          title: 'Pico + OLED 1.5 寸 128x128 接线说明',
+          summary:
+            '该固件使用 GP20/GP21 连接 I2C OLED，软件侧开放普通数字输出、蜂鸣器和屏幕输出入口。',
+          reserved: {
+            i2c: 'GP20 和 GP21 被 OLED I2C 占用，不再作为普通数字输出通道。',
+          },
         },
         arduinoUno: {
           title: 'Arduino Uno 接线说明',
           summary: 'Uno 软件侧开放 D2-D10 作为稳妥数字输出通道。',
           reserved: {
-            serial: 'D0/D1 是硬串口 RX/TX，不作为输出通道使用。'
-          }
+            serial: 'D0/D1 是硬串口 RX/TX，不作为输出通道使用。',
+          },
         },
         arduinoNano: {
           title: 'Arduino Nano 接线说明',
-          summary: 'Nano 软件侧开放 D2-D10 作为稳妥数字输出通道，新版和旧版 bootloader 只影响烧录参数。',
+          summary:
+            'Nano 软件侧开放 D2-D10 作为稳妥数字输出通道，新版和旧版 bootloader 只影响烧录参数。',
           reserved: {
-            serialAnalog: 'D0/D1 是硬串口 RX/TX；D11-D13、A0-A7 当前只作为引脚信息展示。'
-          }
+            serialAnalog: 'D0/D1 是硬串口 RX/TX；D11-D13、A0-A7 当前只作为引脚信息展示。',
+          },
         },
         sparkfunProMicro32u4: {
           title: 'SparkFun Pro Micro 32U4 接线说明',
-          summary: '该固件面向 5V/16MHz Pro Micro，软件侧开放常见排针数字输出、D3/D5/D6/D9/D10 呼吸动作和 D9 蜂鸣器。',
+          summary:
+            '该固件面向 5V/16MHz Pro Micro，软件侧开放常见排针数字输出、D3/D5/D6/D9/D10 呼吸动作和 D9 蜂鸣器。',
           reserved: {
             usb: '板载 USB 同时用于软件通信和烧录；运行时不需要额外 USB-TTL 接线。',
-            unrouted: 'D13、D22、D23 不在常见 Pro Micro 排针上；D17/RX_LED 是板载 LED 焊盘。这些脚不作为普通外接输出通道使用。',
-            sharedD9: 'D9 同时可作为数字输出/PWM 呼吸和蜂鸣器通道，接线时同一时间只接一种外设。'
-          }
+            unrouted:
+              'D13、D22、D23 不在常见 Pro Micro 排针上；D17/RX_LED 是板载 LED 焊盘。这些脚不作为普通外接输出通道使用。',
+            sharedD9: 'D9 同时可作为数字输出/PWM 呼吸和蜂鸣器通道，接线时同一时间只接一种外设。',
+          },
         },
         wioTerminal: {
           title: 'Wio Terminal 接线说明',
           summary: 'Wio Terminal 固件同时支持 Grove/排针数字输出、板载蜂鸣器、板载屏幕和按钮输入。',
           reserved: {
-            onboard: '板载 LCD、蜂鸣器和按键无需额外接线；外接模块仍需按 Grove 或排针引脚共地连接。'
-          }
+            onboard:
+              '板载 LCD、蜂鸣器和按键无需额外接线；外接模块仍需按 Grove 或排针引脚共地连接。',
+          },
         },
         stm32BluePill: {
           title: 'STM32F103C8T6/C6T6 Blue Pill 接线说明',
           summary: 'Blue Pill 固件开放 PA0-PA7、PB0/PB1、PB10/PB11 作为数字输出通道。',
           reserved: {
-            swd: 'PA13/PA14 是 SWD 调试和烧录引脚，只作为板卡信息展示，不作为输出通道使用。'
-          }
-        }
-      }
+            swd: 'PA13/PA14 是 SWD 调试和烧录引脚，只作为板卡信息展示，不作为输出通道使用。',
+          },
+        },
+      },
     },
     flashGuides: {
       stm32BluePill: {
@@ -1706,12 +2428,13 @@ export const zhMessages = {
         runtimeTtl: 'USB-TTL 主要用于串口烧录，日常识别和连接不需要继续接 TXD/RXD。',
         dependencyTitle: '软件依赖',
         dependencyTools: '需要 Arduino CLI、STM32CubeProgrammer 和 GNU getopt。',
-        dependencyGetopt: 'macOS 如遇 getopt 参数错误，可安装 GNU getopt：brew install gnu-getopt。',
+        dependencyGetopt:
+          'macOS 如遇 getopt 参数错误，可安装 GNU getopt：brew install gnu-getopt。',
         dependencyProgrammer:
           '如提示找不到 STM32_Programmer_CLI，请安装 STM32CubeProgrammer，并确保软件进程能读取该命令路径。',
         portTitle: '端口选择',
-        portHint: '选择 USB-TTL 对应的 /dev/cu.usbserial-* 或同类串口。'
-      }
+        portHint: '选择 USB-TTL 对应的 /dev/cu.usbserial-* 或同类串口。',
+      },
     },
     currentFirmware: '当前固件',
     firmwareDescription: '设备固件信息',
@@ -1751,7 +2474,8 @@ export const zhMessages = {
     arduinoCliHintReady: '选择目标串口后即可通过 Arduino CLI 烧录所选固件。',
     arduinoCliHintConfigure:
       '请先在设置页配置 arduino-cli 路径，或确认 arduino-cli 已加入系统 PATH。',
-    arduinoCliNotFound: '未检测到 Arduino CLI。请在设置中配置 arduino-cli 路径，或确认它已经加入系统 PATH。',
+    arduinoCliNotFound:
+      '未检测到 Arduino CLI。请在设置中配置 arduino-cli 路径，或确认它已经加入系统 PATH。',
     flashTargetPort: '目标端口',
     flashTargetPortDescription: '选择准备进入烧录流程的设备串口。',
     noFlashTargetPort: '暂无可用串口',
@@ -1771,203 +2495,203 @@ export const zhMessages = {
     noteFormat: '• 固件文件格式：.uf2',
     noteConnected: '• 更新前请确保设备已连接',
     noteBootsel: '• 按住 BOOTSEL 插入 RP2040 Pico，直到系统出现 RPI-RP2 磁盘',
-    noteKeepConnected: '• 烧录过程中请勿断开设备'
+    noteKeepConnected: '• 烧录过程中请勿断开设备',
   },
   hookEvents: {
     codex: {
       sessionStart: {
         title: '会话开始',
         description: 'Codex 会话或恢复会话开始时触发。',
-        scenario: '用于提示 AI 已进入工作状态。'
+        scenario: '用于提示 AI 已进入工作状态。',
       },
       subagentStart: {
         title: '子代理开始',
         description: 'Codex 启动子代理处理任务时触发。',
-        scenario: '用于观察复杂任务中的子代理活动。'
+        scenario: '用于观察复杂任务中的子代理活动。',
       },
       preToolUse: {
         title: '工具调用前',
         description: 'Codex 即将调用命令、文件或其他工具前触发。',
-        scenario: '用于提示 AI 正在执行具体操作。'
+        scenario: '用于提示 AI 正在执行具体操作。',
       },
       permissionRequest: {
         title: '权限请求',
         description: 'Codex 需要用户授权某个工具调用时触发。',
-        scenario: '用于提示用户需要处理授权或确认。'
+        scenario: '用于提示用户需要处理授权或确认。',
       },
       postToolUse: {
         title: '工具调用后',
         description: 'Codex 工具调用完成后触发。',
-        scenario: '用于提示一次命令或工具操作已结束。'
+        scenario: '用于提示一次命令或工具操作已结束。',
       },
       preCompact: {
         title: '压缩前',
         description: 'Codex 即将压缩上下文前触发。',
-        scenario: '用于观察上下文整理前的状态变化。'
+        scenario: '用于观察上下文整理前的状态变化。',
       },
       postCompact: {
         title: '压缩后',
         description: 'Codex 完成上下文压缩后触发。',
-        scenario: '用于观察上下文整理完成。'
+        scenario: '用于观察上下文整理完成。',
       },
       userPromptSubmit: {
         title: '用户提交提示',
         description: '用户向 Codex 提交新提示时触发。',
-        scenario: '用于提示新一轮 AI 工作即将开始。'
+        scenario: '用于提示新一轮 AI 工作即将开始。',
       },
       subagentStop: {
         title: '子代理结束',
         description: 'Codex 子代理完成工作时触发。',
-        scenario: '用于观察复杂任务中的子代理结束。'
+        scenario: '用于观察复杂任务中的子代理结束。',
       },
       stop: {
         title: '会话轮次结束',
         description: 'Codex 当前响应或任务轮次结束时触发。',
-        scenario: '用于提示 AI 当前工作已完成。'
-      }
+        scenario: '用于提示 AI 当前工作已完成。',
+      },
     },
     claudeCode: {
       sessionStart: {
         title: '会话开始',
         description: 'Claude Code 会话开始时触发。',
-        scenario: '用于提示 AI 已进入工作状态。'
+        scenario: '用于提示 AI 已进入工作状态。',
       },
       userPromptSubmit: {
         title: '用户提交提示',
         description: '用户提交新提示时触发。',
-        scenario: '用于提示新一轮 AI 工作即将开始。'
+        scenario: '用于提示新一轮 AI 工作即将开始。',
       },
       userPromptExpansion: {
         title: '提示扩展',
         description: 'Claude Code 扩展用户提示时触发。',
-        scenario: '用于观察提示被扩展或改写的过程。'
+        scenario: '用于观察提示被扩展或改写的过程。',
       },
       preToolUse: {
         title: '工具调用前',
         description: '工具调用前触发。',
-        scenario: '用于提示 AI 正在执行具体操作。'
+        scenario: '用于提示 AI 正在执行具体操作。',
       },
       postToolUse: {
         title: '工具调用后',
         description: '工具调用完成后触发。',
-        scenario: '用于提示一次工具操作已结束。'
+        scenario: '用于提示一次工具操作已结束。',
       },
       postToolUseFailure: {
         title: '工具调用失败',
         description: '工具调用失败后触发。',
-        scenario: '用于提示 AI 操作失败。'
+        scenario: '用于提示 AI 操作失败。',
       },
       postToolBatch: {
         title: '工具批次完成',
         description: '一批工具调用完成后触发。',
-        scenario: '用于减少逐条工具事件带来的提示频率。'
+        scenario: '用于减少逐条工具事件带来的提示频率。',
       },
       notification: {
         title: '通知',
         description: 'Claude Code 发出通知时触发。',
-        scenario: '用于提示用户需要关注状态变化。'
+        scenario: '用于提示用户需要关注状态变化。',
       },
       permissionRequest: {
         title: '权限请求',
         description: '需要用户授权时触发。',
-        scenario: '用于提示用户处理授权。'
+        scenario: '用于提示用户处理授权。',
       },
       stop: {
         title: '停止',
         description: '当前响应或任务结束时触发。',
-        scenario: '用于提示 AI 当前工作已完成。'
+        scenario: '用于提示 AI 当前工作已完成。',
       },
       stopFailure: {
         title: '停止失败',
         description: '停止流程失败时触发。',
-        scenario: '用于提示任务结束阶段发生异常。'
+        scenario: '用于提示任务结束阶段发生异常。',
       },
       subagentStart: {
         title: '子代理开始',
         description: '子代理开始处理任务时触发。',
-        scenario: '用于观察复杂任务中的子代理活动。'
+        scenario: '用于观察复杂任务中的子代理活动。',
       },
       subagentStop: {
         title: '子代理结束',
         description: '子代理完成工作时触发。',
-        scenario: '用于观察复杂任务中的子代理结束。'
+        scenario: '用于观察复杂任务中的子代理结束。',
       },
       taskCreated: {
         title: '任务创建',
         description: 'Claude Code 创建任务时触发。',
-        scenario: '用于观察任务拆分和排队。'
+        scenario: '用于观察任务拆分和排队。',
       },
       taskCompleted: {
         title: '任务完成',
         description: 'Claude Code 任务完成时触发。',
-        scenario: '用于观察任务完成。'
+        scenario: '用于观察任务完成。',
       },
       preCompact: {
         title: '压缩前',
         description: '上下文压缩前触发。',
-        scenario: '用于观察上下文整理前状态。'
+        scenario: '用于观察上下文整理前状态。',
       },
       postCompact: {
         title: '压缩后',
         description: '上下文压缩后触发。',
-        scenario: '用于观察上下文整理完成。'
+        scenario: '用于观察上下文整理完成。',
       },
       sessionEnd: {
         title: '会话结束',
         description: '会话结束时触发。',
-        scenario: '用于提示 AI 会话已结束。'
+        scenario: '用于提示 AI 会话已结束。',
       },
       configChange: {
         title: '配置变化',
         description: '配置变化时触发。',
-        scenario: '用于观察 Claude Code 配置调整。'
+        scenario: '用于观察 Claude Code 配置调整。',
       },
       cwdChanged: {
         title: '目录变化',
         description: '工作目录变化时触发。',
-        scenario: '用于观察工作上下文切换。'
+        scenario: '用于观察工作上下文切换。',
       },
       fileChanged: {
         title: '文件变化',
         description: '文件变化时触发。',
-        scenario: '用于观察文件编辑活动。'
+        scenario: '用于观察文件编辑活动。',
       },
       permissionDenied: {
         title: '权限拒绝',
         description: '权限请求被拒绝时触发。',
-        scenario: '用于提示权限受限导致操作无法继续。'
+        scenario: '用于提示权限受限导致操作无法继续。',
       },
       teammateIdle: {
         title: '协作者空闲',
         description: '协作者空闲时触发。',
-        scenario: '用于协作场景的状态提示。'
+        scenario: '用于协作场景的状态提示。',
       },
       worktreeCreate: {
         title: '工作树创建',
         description: '创建工作树时触发。',
-        scenario: '用于观察并行工作区创建。'
+        scenario: '用于观察并行工作区创建。',
       },
       worktreeRemove: {
         title: '工作树移除',
         description: '移除工作树时触发。',
-        scenario: '用于观察并行工作区清理。'
+        scenario: '用于观察并行工作区清理。',
       },
       messageDisplay: {
         title: '消息显示',
         description: '显示消息时触发。',
-        scenario: '用于观察重要消息展示。'
+        scenario: '用于观察重要消息展示。',
       },
       elicitation: {
         title: '信息征询',
         description: 'Claude Code 征询额外信息时触发。',
-        scenario: '用于提示用户可能需要补充信息。'
+        scenario: '用于提示用户可能需要补充信息。',
       },
       elicitationResult: {
         title: '信息征询结果',
         description: '信息征询得到结果时触发。',
-        scenario: '用于观察补充信息流程完成。'
-      }
-    }
+        scenario: '用于观察补充信息流程完成。',
+      },
+    },
   },
   rules: {
     title: 'AI事件映射',
@@ -1980,7 +2704,7 @@ export const zhMessages = {
       activateTitle: '激活成功',
       activateDescription: '配置方案「{{name}}」已激活',
       deleteTitle: '删除成功',
-      deleteDescription: '配置方案「{{name}}」已删除'
+      deleteDescription: '配置方案「{{name}}」已删除',
     },
     profile: {
       title: '配置方案',
@@ -2009,7 +2733,7 @@ export const zhMessages = {
       idHint: '方案 ID 将根据名称自动生成（如：focus-mode-a1b2c3d4）',
       templateLabel: '选择模板',
       deleteDialogTitle: '确认删除配置方案？',
-      deleteDialogDescription: '即将删除配置方案「{{name}}」。此操作无法撤销。'
+      deleteDialogDescription: '即将删除配置方案「{{name}}」。此操作无法撤销。',
     },
     profilePackage: {
       import: '导入方案',
@@ -2047,33 +2771,33 @@ export const zhMessages = {
         'full-match': '完全匹配',
         'partial-match': '部分匹配',
         'board-mismatch': '板型不匹配',
-        unbound: '未绑定'
+        unbound: '未绑定',
       },
       statusHelp: {
         'full-match': '目标设备板型和通道能力都匹配，导入后可保持原规则启用状态。',
         'partial-match': '目标设备板型一致但缺少部分通道或动作，相关设备规则会被禁用。',
         'board-mismatch': '目标设备板型不同，允许保留绑定意图，但相关设备规则会被禁用。',
-        unbound: '未选择目标设备，相关设备规则会被禁用，后续可在输出规则中手动调整。'
-      }
+        unbound: '未选择目标设备，相关设备规则会被禁用，后续可在输出规则中手动调整。',
+      },
     },
     profileTemplates: {
       basic: {
         name: '基础映射方案',
-        description: '预设常用 AI Hook 到内部事件的映射和基础输出规则，不启用任何 Hook。'
+        description: '预设常用 AI Hook 到内部事件的映射和基础输出规则，不启用任何 Hook。',
       },
       advanced: {
         name: '完整映射方案',
-        description: '预设当前支持 AI 工具的完整 Hook 映射和输出规则，不启用任何 Hook。'
+        description: '预设当前支持 AI 工具的完整 Hook 映射和输出规则，不启用任何 Hook。',
       },
       blank: {
         name: '空白方案',
-        description: '从零开始自定义配置'
-      }
+        description: '从零开始自定义配置',
+      },
     },
     tabs: {
       visualWorkflow: '可视化配置',
       aiMapping: 'AI事件映射',
-      outputRules: '输出规则设置'
+      outputRules: '输出规则设置',
     },
     linkWorkflow: {
       title: '可视化配置',
@@ -2086,17 +2810,17 @@ export const zhMessages = {
         empty: '未配置',
         ready: '可配置',
         configured: '已配置',
-        warning: '待完善'
+        warning: '待完善',
       },
       canvas: {
         internalOverviewTitle: '内部事件总览',
         internalOverviewDescription: '查看已被使用的内部事件。',
         outputOverviewTitle: '输出规则',
-        outputOverviewDescription: '查看会触发的输出方式。'
+        outputOverviewDescription: '查看会触发的输出方式。',
       },
       toolNode: {
         enabledCount: '启用 {{count}} 个 Hook',
-        mappedCount: '{{mapped}}/{{total}}'
+        mappedCount: '{{mapped}}/{{total}}',
       },
       inspector: {
         hookMapping: 'Hook 映射',
@@ -2122,7 +2846,8 @@ export const zhMessages = {
         editHookMappingFor: '编辑映射 {{event}}',
         configureHookMappingTitle: '配置 Hook 映射',
         editHookMappingTitle: '编辑 Hook 映射',
-        hookMappingDetailDescription: '为当前 Hook 事件选择一个内部事件，保存后该事件会进入输出规则链路。',
+        hookMappingDetailDescription:
+          '为当前 Hook 事件选择一个内部事件，保存后该事件会进入输出规则链路。',
         currentAiTool: 'AI 工具',
         currentHookEvent: '当前 Hook 事件',
         internalEventSelectionHint: '{{title}}：{{scenario}}',
@@ -2133,7 +2858,7 @@ export const zhMessages = {
         outputStats: {
           total: '输出方式',
           enabled: '已启用',
-          needsConfig: '需配置'
+          needsConfig: '需配置',
         },
         outputItems: '输出方式',
         edit: '编辑',
@@ -2142,13 +2867,13 @@ export const zhMessages = {
         editOutput: '编辑 {{type}}',
         addOutputType: '添加 {{type}}',
         addAndConfigureOutput: '添加并配置 {{type}}',
-        addOutput: '添加输出方式'
+        addOutput: '添加输出方式',
       },
       outputStatus: {
         enabled: '已启用',
         disabled: '已停用',
         'needs-config': '需配置',
-        'not-added': '未添加'
+        'not-added': '未添加',
       },
       summary: {
         deviceActions: '{{count}} 个动作 · {{channels}}',
@@ -2156,8 +2881,8 @@ export const zhMessages = {
         missingWebhookUrl: '缺少 Webhook URL',
         missingSoundFile: '缺少音频文件',
         systemNotification: '系统通知',
-        display: '屏幕输出'
-      }
+        display: '屏幕输出',
+      },
     },
     aiMapping: {
       title: 'AI Hook 到内部事件',
@@ -2173,11 +2898,12 @@ export const zhMessages = {
       enabled: '启用',
       createTitle: '新增 {{toolName}} 映射',
       createDescription: '从已配置的 Hook 事件中选择一个事件，并绑定到内部统一事件',
-      allConfigured: '当前工具没有可新增的已配置 Hook 事件，请先到「Hook 设置」启用事件，或检查是否已全部映射。',
+      allConfigured:
+        '当前工具没有可新增的已配置 Hook 事件，请先到「Hook 设置」启用事件，或检查是否已全部映射。',
       enabledHookSourceHint: '可选 Hook 事件来源于「Hook 设置」中已启用的事件。',
       hookEventPlaceholder: '选择 Hook 事件',
       internalEventPlaceholder: '选择内部事件',
-      scenario: '场景：{{scenario}}'
+      scenario: '场景：{{scenario}}',
     },
     internalCatalog: {
       title: '内部事件目录',
@@ -2205,50 +2931,50 @@ export const zhMessages = {
         invalidChars: '事件标识前缀只允许英文字母、数字和英文句号。',
         edgeDot: '事件标识前缀不能以英文句号开头或结尾。',
         doubleDot: '事件标识前缀不能包含连续英文句号。',
-        duplicateSuffix: '只需要填写前缀，系统会自动追加 .userDefined。'
-      }
+        duplicateSuffix: '只需要填写前缀，系统会自动追加 .userDefined。',
+      },
     },
     internalEvents: {
       agentStarted: {
         title: 'AI 开始工作',
         description: '用户提交 prompt 后，AI 开始思考和处理任务。',
-        scenario: '会话启动、用户提交提示'
+        scenario: '会话启动、用户提交提示',
       },
       agentWorking: {
         title: 'AI 工作中',
         description: 'AI 正在处理任务的通用状态。',
-        scenario: '子任务运行、提示扩展、工具完成后继续工作'
+        scenario: '子任务运行、提示扩展、工具完成后继续工作',
       },
       agentWaitingInput: {
         title: '等待输入',
         description: 'AI 等待用户输入或授权。',
-        scenario: '权限请求或人工确认'
+        scenario: '权限请求或人工确认',
       },
       toolExecuting: {
         title: '工具执行中',
         description: 'AI 正在调用工具（读写文件、运行命令等）。',
-        scenario: 'PreToolUse 事件'
+        scenario: 'PreToolUse 事件',
       },
       agentCompleted: {
         title: '任务完成',
         description: 'AI 任务正常结束。',
-        scenario: 'Stop 事件、会话结束'
+        scenario: 'Stop 事件、会话结束',
       },
       agentFailed: {
         title: '任务失败',
         description: 'AI 任务失败或异常结束。',
-        scenario: '失败事件或解析异常'
+        scenario: '失败事件或解析异常',
       },
       notification: {
         title: '系统通知',
         description: 'AI 工具发出的系统通知或提示。',
-        scenario: 'Claude Code Notification 事件'
+        scenario: 'Claude Code Notification 事件',
       },
       contextCompacting: {
         title: '上下文压缩',
         description: 'AI 正在压缩上下文以节省内存。',
-        scenario: 'PreCompact 事件'
-      }
+        scenario: 'PreCompact 事件',
+      },
     },
     outputTypes: {
       deviceChannel: '设备通道',
@@ -2266,7 +2992,7 @@ export const zhMessages = {
       desktopNotice: '桌面提示',
       desktopNoticeDescription: '在电脑桌面显示置顶的本地视觉提示',
       custom: '自定义',
-      customDescription: '自定义输出配置'
+      customDescription: '自定义输出配置',
     },
     outputRules: {
       title: '输出规则设置',
@@ -2289,9 +3015,12 @@ export const zhMessages = {
       summaryWebhook: '{{method}} · {{url}}',
       summarySound: '{{file}} · 音量 {{volume}}%',
       summaryDisplay: '{{device}} · {{status}} · {{title}}',
-      summaryDesktopNotice: '桌面提示 {{targets}} · {{effect}} · {{seconds}} 秒 · {{restoreBehavior}}',
-      summaryDesktopNoticeTargets: '桌面提示 {{count}} 个目标 · {{targetTypes}} · {{highlight}} · {{seconds}} 秒 · {{restoreBehavior}}',
-      summaryDesktopMascot: '桌面提示 {{targets}} · 桌面精灵 · {{state}} · {{action}} · {{playbackWindow}} · 气泡 {{bubble}} · {{seconds}} 秒 · {{restoreBehavior}}',
+      summaryDesktopNotice:
+        '桌面提示 {{targets}} · {{effect}} · {{seconds}} 秒 · {{restoreBehavior}}',
+      summaryDesktopNoticeTargets:
+        '桌面提示 {{count}} 个目标 · {{targetTypes}} · {{highlight}} · {{seconds}} 秒 · {{restoreBehavior}}',
+      summaryDesktopMascot:
+        '桌面提示 {{targets}} · 桌面精灵 · {{state}} · {{action}} · {{playbackWindow}} · 气泡 {{bubble}} · {{seconds}} 秒 · {{restoreBehavior}}',
       desktopNoticeLightbarCount: '灯条 {{count}}',
       desktopNoticeMascotCount: '精灵 {{count}}',
       multipleTargets: '多目标',
@@ -2330,6 +3059,8 @@ export const zhMessages = {
       validationBrightnessRequired: '设置颜色动作需要填写亮度。',
       validationIntervalRequired: '闪烁或呼吸动作需要填写间隔时间。',
       validationPatternRequired: '提示音模式动作需要选择提示音。',
+      validationDisplayFaceTemplateRequired: '请选择屏幕表情。',
+      validationDisplayFaceTemplateUnsupported: '当前屏幕表情不受支持。',
       validationDisplayDeviceRequired: '请选择支持屏幕输出的设备。',
       validationDisplayStatusRequired: '请选择屏幕显示状态。',
       validationDisplayTitleRequired: '请输入屏幕标题模板。',
@@ -2338,7 +3069,7 @@ export const zhMessages = {
       validationDesktopNoticeDurationInvalid: '显示时长必须在 100 到 60000 毫秒之间。',
       validationDesktopNoticeBreathingPeriodInvalid: '呼吸周期必须在 500 到 5000 毫秒之间。',
       validationDesktopNoticeColorInvalid: '颜色必须使用 #RRGGBB 格式。',
-      validationDesktopNoticeColorStopsInvalid: '当前颜色模式的色标数量不正确。'
+      validationDesktopNoticeColorStopsInvalid: '当前颜色模式的色标数量不正确。',
     },
     desktopNotice: {
       addDialogTitle: '桌面提示实例',
@@ -2362,10 +3093,11 @@ export const zhMessages = {
         default: '按动作默认',
         loop: '循环播放',
         onceThenHold: '播放一次后停留',
-        onceThenIdle: '播放一次后回到空闲态'
+        onceThenIdle: '播放一次后回到空闲态',
       },
       mascotPlaybackWindowMs: '单次播放窗口（毫秒）',
-      mascotPlaybackWindowHint: '只影响播放一次后停留或回到空闲态，允许范围 {{min}}-{{max}} 毫秒，默认 {{defaultValue}} 毫秒。',
+      mascotPlaybackWindowHint:
+        '只影响播放一次后停留或回到空闲态，允许范围 {{min}}-{{max}} 毫秒，默认 {{defaultValue}} 毫秒。',
       mascotPlaybackWindowInvalid: '单次播放窗口必须在 500 到 8000 毫秒之间。',
       mascotPlaybackWindowSummary: '播放一次 {{seconds}} 秒',
       mascotBubbleTemplate: '气泡文本',
@@ -2409,7 +3141,7 @@ export const zhMessages = {
         useInstanceIdle: '使用实例空闲态',
         hide: '到期隐藏',
         keepLast: '保留最后状态',
-        dimPlaceholder: '恢复低亮占位'
+        dimPlaceholder: '恢复低亮占位',
       },
       effects: {
         solid: '常亮',
@@ -2417,19 +3149,19 @@ export const zhMessages = {
         blink: '闪烁',
         scan: '扫描',
         fade: '渐隐',
-        edgeBreathing: '边缘呼吸'
+        edgeBreathing: '边缘呼吸',
       },
       edges: {
         auto: '自动',
         top: '上边',
         bottom: '下边',
         left: '左边',
-        right: '右边'
+        right: '右边',
       },
       colorModes: {
         solid: '纯色',
-        gradient: '渐变'
-      }
+        gradient: '渐变',
+      },
     },
     display: {
       device: '屏幕设备',
@@ -2444,7 +3176,7 @@ export const zhMessages = {
         taskSuccess: '任务完成',
         taskWarning: '需要注意',
         taskError: '任务失败',
-        waitingInput: '等待输入'
+        waitingInput: '等待输入',
       },
       status: '显示状态',
       titleTemplate: '标题模板',
@@ -2460,11 +3192,51 @@ export const zhMessages = {
       duration30s: '30 秒',
       durationUntilNext: '持续到下一条屏幕内容',
       titleMaxChars: '标题最大字符数',
-      messageMaxChars: '内容最大字符数'
+      messageMaxChars: '内容最大字符数',
+    },
+    displayFace: {
+      template: '屏幕表情',
+      intensity: '表情强度',
+      previewLabel: '屏幕表情像素预览',
+      previewUnavailable: '当前设备缺少有效的屏幕分辨率',
+      source: '表情来源',
+      sourceBuiltin: '内置表情',
+      sourceCustom: '自定义表情',
+      reloadCustomFaces: '刷新自定义表情列表',
+      customGroup: '表情组',
+      customGroupPlaceholder: '请选择表情组',
+      customFace: '表情',
+      customFacePlaceholder: '请选择表情',
+      customFaceCount: '{{count}} 张',
+      customPreview: '自定义表情预览',
+      customPreviewUnavailable: '当前没有可用的自定义表情预览',
+      intensityOptions: {
+        subtle: '轻微',
+        standard: '标准',
+        strong: '强烈',
+      },
+      templates: {
+        idleSleep: '休眠',
+        idleBored: '无聊',
+        workingFocus: '认真',
+        workingBusy: '繁忙',
+        waitingCall: '呼喊',
+        waitingWait: '等待',
+        successHappy: '开心',
+        successSurprise: '惊喜',
+        warningShock: '惊讶',
+        warningSweat: '流汗',
+        errorAwkward: '尴尬',
+        errorPanic: '惊慌',
+      },
     },
     deviceChannel: {
       defaultRp2040: 'RP2040 Pico 默认设备',
       device: '设备',
+      connectionStatus: {
+        connected: '已连接',
+        'offline-config': '离线配置',
+      },
       channelType: '通道类型',
       channel: '通道',
       noConfiguredChannels: '当前设备尚未启用可用通道，请先到设备页添加通道。',
@@ -2503,8 +3275,9 @@ export const zhMessages = {
         tone: '播放音调',
         pattern: '提示音模式',
         'display-status': '显示状态',
-        'set-color': '设置颜色'
-      }
+        'display-face': '屏幕表情',
+        'set-color': '设置颜色',
+      },
     },
     duration: {
       customDurationSeconds: '自定义持续时间（秒）',
@@ -2517,8 +3290,8 @@ export const zhMessages = {
         10000: '10 秒',
         20000: '20 秒',
         30000: '30 秒',
-        60000: '60 秒'
-      }
+        60000: '60 秒',
+      },
     },
     notification: {
       copiedVariable: '已复制变量',
@@ -2529,11 +3302,11 @@ export const zhMessages = {
         info: '信息',
         warning: '警告',
         error: '错误',
-        success: '成功'
+        success: '成功',
       },
       sound: '通知声音',
       sounds: {
-        default: '系统默认'
+        default: '系统默认',
       },
       macosSoundHint: '系统通知声音由操作系统通知中心决定；自定义音频请使用独立声音输出。',
       title: '通知标题',
@@ -2546,7 +3319,7 @@ export const zhMessages = {
       unsetBody: '未设置通知内容',
       previewCount: '标题 {{titleLength}} / {{titleMax}} · 内容 {{bodyLength}} / {{bodyMax}}',
       bodyMaxChars: '内容最大字符数',
-      throttleSeconds: '通知限流秒数'
+      throttleSeconds: '通知限流秒数',
     },
     webhook: {
       copiedVariable: '已复制变量',
@@ -2557,7 +3330,7 @@ export const zhMessages = {
       headers: '请求头（JSON 格式，可选）',
       body: '请求体（JSON 格式，可选）',
       bodyMaxChars: '请求体最大字符数',
-      currentTemplate: '当前模板 {{length}} / {{max}}'
+      currentTemplate: '当前模板 {{length}} / {{max}}',
     },
     sound: {
       loadFailed: '音频列表加载失败',
@@ -2569,7 +3342,7 @@ export const zhMessages = {
       sources: {
         builtIn: '内置音频',
         user: '用户目录',
-        custom: '自定义路径'
+        custom: '自定义路径',
       },
       builtIn: '内置音频',
       chooseBuiltIn: '选择内置音频',
@@ -2583,7 +3356,7 @@ export const zhMessages = {
       preview: '预览',
       volumePercent: '音量百分比',
       maxDurationMs: '最长播放毫秒',
-      throttleSeconds: '提示音限流秒数'
+      throttleSeconds: '提示音限流秒数',
     },
     variables: {
       helper: '变量助手',
@@ -2596,59 +3369,59 @@ export const zhMessages = {
       sources: {
         context: '上下文',
         summary: '摘要',
-        largeSummary: '摘要裁剪'
+        largeSummary: '摘要裁剪',
       },
       internalEvent: {
         label: '内部事件',
-        description: '软件侧转换后的统一事件名。'
+        description: '软件侧转换后的统一事件名。',
       },
       model: {
         label: '模型',
-        description: 'Hook payload 中解析到的模型名称。'
+        description: 'Hook payload 中解析到的模型名称。',
       },
       lastAssistantMessage: {
         label: '任务总结',
         description: '任务结束时的助手总结，输出时最多保留 10240 个字符。',
-        example: '已完成代码修改和验证。'
+        example: '已完成代码修改和验证。',
       },
       prompt: {
         label: '用户提示',
         description: 'UserPromptSubmit 事件中的 prompt 字段。',
-        example: '请帮我检查这次修改。'
+        example: '请帮我检查这次修改。',
       },
       toolResponse: {
         label: '工具返回',
         description: 'PostToolUse 事件中的 tool_response 字段，内容通常较长。',
-        example: '命令执行完成，退出码 0。'
+        example: '命令执行完成，退出码 0。',
       },
       pwd: {
         label: '工作目录',
-        description: 'Hook payload 中解析到的当前工作目录 cwd。'
+        description: 'Hook payload 中解析到的当前工作目录 cwd。',
       },
       sessionId: {
         label: '会话ID',
-        description: 'Hook payload 中解析到的会话标识。'
+        description: 'Hook payload 中解析到的会话标识。',
       },
       permissionMode: {
         label: '权限模式',
-        description: 'Hook payload 中解析到的权限模式。'
+        description: 'Hook payload 中解析到的权限模式。',
       },
       source: {
         label: '来源',
-        description: 'AI 工具来源标识。'
+        description: 'AI 工具来源标识。',
       },
       event: {
         label: 'Hook事件',
-        description: 'AI 工具原始 Hook 事件名。'
+        description: 'AI 工具原始 Hook 事件名。',
       },
       timestamp: {
         label: '事件时间',
-        description: 'Relay 上报事件时的时间。'
+        description: 'Relay 上报事件时的时间。',
       },
       toolName: {
         label: '工具标识',
-        description: 'Hook payload 中解析到的工具名称或标识。'
-      }
-    }
-  }
+        description: 'Hook payload 中解析到的工具名称或标识。',
+      },
+    },
+  },
 };

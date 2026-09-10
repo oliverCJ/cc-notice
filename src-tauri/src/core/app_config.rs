@@ -242,24 +242,17 @@ impl HookEventSelections {
 }
 
 pub fn default_hook_config_targets() -> Vec<HookConfigTarget> {
-    vec![
-        HookConfigTarget {
-            id: "global-codex".to_string(),
+    registry::all_ai_tools()
+        .iter()
+        .map(|tool| HookConfigTarget {
+            id: format!("global-{}", tool.source),
             scope: HookConfigTargetScope::Global,
-            source: "codex".to_string(),
-            label: "Codex 全局配置".to_string(),
+            source: tool.source.to_string(),
+            label: format!("{} 全局配置", tool.display_name),
             project_path: None,
             enabled: false,
-        },
-        HookConfigTarget {
-            id: "global-claude-code".to_string(),
-            scope: HookConfigTargetScope::Global,
-            source: "claude-code".to_string(),
-            label: "Claude Code 全局配置".to_string(),
-            project_path: None,
-            enabled: false,
-        },
-    ]
+        })
+        .collect()
 }
 
 pub fn default_devices() -> Vec<DeviceInstance> {
@@ -336,12 +329,13 @@ impl AppConfig {
         }
         self.hook_config_targets
             .retain(|target| registry::is_supported_ai_tool(&target.source));
-        ensure_global_target(&mut self.hook_config_targets, "codex", "Codex 全局配置");
-        ensure_global_target(
-            &mut self.hook_config_targets,
-            "claude-code",
-            "Claude Code 全局配置",
-        );
+        for tool in registry::all_ai_tools() {
+            ensure_global_target(
+                &mut self.hook_config_targets,
+                tool.source,
+                &format!("{} 全局配置", tool.display_name),
+            );
+        }
         sanitize_devices(&mut self.devices);
         sanitize_device_input_bindings(&mut self.device_input_bindings);
         sanitize_desktop_notice_instances(&mut self.desktop_notice_instances);

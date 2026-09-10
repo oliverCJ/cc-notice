@@ -54,7 +54,8 @@ function isRp2040PicoFamilyBoard(boardId?: string | null) {
   return (
     boardId === 'rp2040-pico' ||
     boardId === 'rp2040-pico-oled-096' ||
-    boardId === 'rp2040-pico-oled-091'
+    boardId === 'rp2040-pico-oled-091' ||
+    boardId === 'rp2040-pico-oled-128x128'
   );
 }
 

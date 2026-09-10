@@ -121,6 +121,11 @@ fn dispatch_sends_device_extension_actions() {
                 message: Some("Build passed".to_string()),
                 icon: None,
                 lines: None,
+                face_template: None,
+                face_intensity: None,
+                custom_face_group_id: None,
+                custom_face_id: None,
+                duration_ms: None,
                 pattern: None,
                 control: None,
                 active: None,
@@ -182,6 +187,8 @@ fn test_action(
         color: None,
         brightness_percent: None,
         pattern: None,
+        display_face_template_id: None,
+        display_face_intensity: None,
         priority: 50,
     }
 }

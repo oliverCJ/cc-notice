@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+use crate::core::custom_faces::device_protocol_generated::{
+    CUSTOM_FACE_DEVICE_COMMAND_INSTALL_ABORT, CUSTOM_FACE_DEVICE_COMMAND_INSTALL_BEGIN,
+    CUSTOM_FACE_DEVICE_COMMAND_INSTALL_CHUNK, CUSTOM_FACE_DEVICE_COMMAND_INSTALL_COMMIT,
+};
 use crate::core::device::{
+    DeviceCustomFaceActiveSource, DeviceCustomFaceActiveState,
     DeviceChannelAction, DeviceChannelActionType, DeviceExtensionAction, DeviceExtensionActionType,
     DeviceFirmwareInfo,
 };
@@ -80,6 +85,10 @@ pub struct ProtocolCommandV2 {
     #[serde(skip_serializing_if = "Option::is_none")]
     lines: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    face: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    intensity: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pattern: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     mode: Option<&'static str>,
@@ -91,6 +100,30 @@ pub struct ProtocolCommandV2 {
     control: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     active: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    session_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    profile_code: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    group_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    face_id: Option<String>,
+    #[serde(rename = "source", skip_serializing_if = "Option::is_none")]
+    custom_face_active_source: Option<&'static str>,
+    #[serde(rename = "group_id", skip_serializing_if = "Option::is_none")]
+    custom_face_active_group_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    group_runtime_hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    package_hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    total_bytes: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    chunk_bytes: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    offset: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    data: Option<String>,
 }
 
 impl ProtocolCommandV2 {
@@ -115,6 +148,62 @@ impl ProtocolCommandV2 {
 
     pub fn device_info() -> Self {
         Self::base_command("device_info")
+    }
+
+    pub fn custom_face_status() -> Self {
+        Self::base_command("custom_face_status")
+    }
+
+    pub fn custom_face_install_begin(
+        session_id: String,
+        profile_code: u16,
+        group_id: String,
+        group_runtime_hash: String,
+        package_hash: String,
+        total_bytes: u32,
+        chunk_bytes: u16,
+    ) -> Self {
+        Self {
+            session_id: Some(session_id),
+            profile_code: Some(profile_code),
+            group_id: Some(group_id),
+            group_runtime_hash: Some(group_runtime_hash),
+            package_hash: Some(package_hash),
+            total_bytes: Some(total_bytes),
+            chunk_bytes: Some(chunk_bytes),
+            ..Self::base_command(CUSTOM_FACE_DEVICE_COMMAND_INSTALL_BEGIN)
+        }
+    }
+
+    pub fn custom_face_install_chunk(session_id: String, offset: u32, data: String) -> Self {
+        Self {
+            session_id: Some(session_id),
+            offset: Some(offset),
+            data: Some(data),
+            ..Self::base_command(CUSTOM_FACE_DEVICE_COMMAND_INSTALL_CHUNK)
+        }
+    }
+
+    pub fn custom_face_install_commit(session_id: String) -> Self {
+        Self {
+            session_id: Some(session_id),
+            ..Self::base_command(CUSTOM_FACE_DEVICE_COMMAND_INSTALL_COMMIT)
+        }
+    }
+
+    pub fn custom_face_install_abort(session_id: String) -> Self {
+        Self {
+            session_id: Some(session_id),
+            ..Self::base_command(CUSTOM_FACE_DEVICE_COMMAND_INSTALL_ABORT)
+        }
+    }
+
+    pub fn set_custom_face_active_source(source: &'static str, group_id: Option<String>) -> Self {
+        Self {
+            custom_face_active_source: Some(source),
+            custom_face_active_group_id: group_id,
+            ..Self::base_command("set_custom_face_active_source")
+        }
     }
 
     pub fn set_device_uid(device_uid: String) -> Self {
@@ -195,6 +284,19 @@ impl ProtocolCommandV2 {
                 }))
             }
             DeviceExtensionActionType::DisplayClear => Ok(Self::base_command("display_clear")),
+            DeviceExtensionActionType::DisplayFace => {
+                Ok(trim_display_command_to_firmware_budget(Self {
+                    face: Some(required_non_blank_option(
+                        action.face_template.as_deref(),
+                        "face",
+                    )?),
+                    intensity: optional_non_blank_string(action.face_intensity.as_deref()),
+                    group_id: optional_non_blank_string(action.custom_face_group_id.as_deref()),
+                    face_id: optional_non_blank_string(action.custom_face_id.as_deref()),
+                    duration_ms: action.duration_ms,
+                    ..Self::base_command("display_face")
+                }))
+            }
             DeviceExtensionActionType::BuzzerPattern => Ok(Self {
                 channel: action.channel_id.clone().unwrap_or_default(),
                 pattern: Some(required_non_blank_option(
@@ -250,6 +352,11 @@ impl ProtocolCommandV2 {
                     "display-status action must be sent as device extension action".to_string(),
                 )
             }
+            DeviceChannelActionType::DisplayFace => {
+                return Err(
+                    "display-face action must be sent as device extension action".to_string(),
+                )
+            }
             DeviceChannelActionType::SetColor => Self::addressable_led_set(action)?,
         };
 
@@ -274,12 +381,26 @@ impl ProtocolCommandV2 {
             message: None,
             icon: None,
             lines: None,
+            face: None,
+            intensity: None,
             pattern: None,
             mode: None,
             pull: None,
             active_level: None,
             control: None,
             active: None,
+            session_id: None,
+            profile_code: None,
+            group_id: None,
+            face_id: None,
+            custom_face_active_source: None,
+            custom_face_active_group_id: None,
+            group_runtime_hash: None,
+            package_hash: None,
+            total_bytes: None,
+            chunk_bytes: None,
+            offset: None,
+            data: None,
         }
     }
 
@@ -352,6 +473,8 @@ pub struct DeviceInfoAck {
     pub device_uid: Option<String>,
     pub firmware_version: Option<String>,
     pub protocol_version: Option<u16>,
+    pub custom_face: Option<serde_json::Value>,
+    pub custom_face_active: Option<serde_json::Value>,
     pub error: Option<String>,
 }
 
@@ -387,6 +510,17 @@ impl DeviceInfoAck {
             return Err("unexpected device_info response type".to_string());
         }
 
+        let (custom_face, custom_face_error) = match self.custom_face.as_ref() {
+            Some(value) => match crate::core::custom_faces::parse_custom_face_capabilities(value) {
+                Ok(capability) => (Some(capability), None),
+                Err(error) => (None, Some(error)),
+            },
+            None => (None, None),
+        };
+        let custom_face_active = match self.custom_face_active.as_ref() {
+            Some(value) => Some(parse_device_custom_face_active_state(value)?),
+            None => None,
+        };
         Ok(DeviceFirmwareInfo {
             board_id: self
                 .board_id
@@ -398,7 +532,47 @@ impl DeviceInfoAck {
             protocol_version: self
                 .protocol_version
                 .ok_or_else(|| "device_info response missing protocol_version".to_string())?,
+            custom_face,
+            custom_face_error,
+            custom_face_active,
         })
+    }
+}
+
+fn parse_device_custom_face_active_state(
+    value: &serde_json::Value,
+) -> Result<DeviceCustomFaceActiveState, String> {
+    let source = value
+        .get("source")
+        .and_then(|item| item.as_str())
+        .ok_or_else(|| "device_info custom_face_active missing source".to_string())?;
+    let source = match source {
+        "builtin" => DeviceCustomFaceActiveSource::Builtin,
+        "custom" => DeviceCustomFaceActiveSource::Custom,
+        other => {
+            return Err(format!(
+                "device_info custom_face_active invalid source: {other}"
+            ));
+        }
+    };
+    let group_id = value
+        .get("group_id")
+        .and_then(|item| item.as_str())
+        .map(str::to_string);
+    match source {
+        DeviceCustomFaceActiveSource::Builtin => Ok(DeviceCustomFaceActiveState {
+            source,
+            group_id: None,
+        }),
+        DeviceCustomFaceActiveSource::Custom => {
+            let group_id = group_id.ok_or_else(|| {
+                "device_info custom_face_active missing group_id".to_string()
+            })?;
+            Ok(DeviceCustomFaceActiveState {
+                source,
+                group_id: Some(group_id),
+            })
+        }
     }
 }
 
@@ -546,6 +720,8 @@ mod tests {
             color: None,
             brightness_percent: None,
             pattern: None,
+            display_face_template_id: None,
+            display_face_intensity: None,
             priority: 50,
         }
     }
@@ -560,6 +736,11 @@ mod tests {
             message: None,
             icon: None,
             lines: None,
+            face_template: None,
+            face_intensity: None,
+            custom_face_group_id: None,
+            custom_face_id: None,
+            duration_ms: None,
             pattern: None,
             control: None,
             active: None,
@@ -578,6 +759,46 @@ mod tests {
         assert_eq!(
             "{\"v\":2,\"type\":\"digital_write\",\"channel\":\"pin.gp2\",\"state\":\"active\"}\n",
             line
+        );
+    }
+
+    #[test]
+    fn serializes_custom_face_install_commands_as_protocol_v2_lines() {
+        assert_eq!(
+            "{\"v\":2,\"type\":\"custom_face_install_begin\",\"session_id\":\"session-1\",\"profile_code\":3,\"group_id\":\"10000000-0000-4000-8000-000000000001\",\"group_runtime_hash\":\"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"package_hash\":\"1123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"total_bytes\":700,\"chunk_bytes\":512}\n",
+            ProtocolCommandV2::custom_face_install_begin(
+                "session-1".to_string(),
+                3,
+                "10000000-0000-4000-8000-000000000001".to_string(),
+                "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".to_string(),
+                "1123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".to_string(),
+                700,
+                512,
+            )
+            .to_json_line()
+            .expect("install begin should serialize")
+        );
+        assert_eq!(
+            "{\"v\":2,\"type\":\"custom_face_install_chunk\",\"session_id\":\"session-1\",\"offset\":512,\"data\":\"AQI=\"}\n",
+            ProtocolCommandV2::custom_face_install_chunk(
+                "session-1".to_string(),
+                512,
+                "AQI=".to_string(),
+            )
+            .to_json_line()
+            .expect("install chunk should serialize")
+        );
+        assert_eq!(
+            "{\"v\":2,\"type\":\"custom_face_install_commit\",\"session_id\":\"session-1\"}\n",
+            ProtocolCommandV2::custom_face_install_commit("session-1".to_string())
+                .to_json_line()
+                .expect("install commit should serialize")
+        );
+        assert_eq!(
+            "{\"v\":2,\"type\":\"custom_face_install_abort\",\"session_id\":\"session-1\"}\n",
+            ProtocolCommandV2::custom_face_install_abort("session-1".to_string())
+                .to_json_line()
+                .expect("install abort should serialize")
         );
     }
 
@@ -910,6 +1131,11 @@ mod tests {
             message: None,
             icon: None,
             lines: None,
+            face_template: None,
+            face_intensity: None,
+            custom_face_group_id: None,
+            custom_face_id: None,
+            duration_ms: None,
             pattern: Some("success".to_string()),
             control: None,
             active: None,
@@ -937,6 +1163,11 @@ mod tests {
             message: None,
             icon: None,
             lines: None,
+            face_template: None,
+            face_intensity: None,
+            custom_face_group_id: None,
+            custom_face_id: None,
+            duration_ms: None,
             pattern: Some("error".to_string()),
             control: None,
             active: None,
@@ -970,5 +1201,41 @@ mod tests {
         assert_eq!("ws2812.gp16", value["channel"]);
         assert_eq!("#33cc99", value["color"]);
         assert_eq!(40, value["brightness_percent"]);
+    }
+
+    #[test]
+    fn serializes_display_face_extension_action() {
+        let mut action = test_extension_action(DeviceExtensionActionType::DisplayFace);
+        action.face_template = Some("success-happy".to_string());
+        action.face_intensity = Some("strong".to_string());
+        action.duration_ms = Some(5000);
+
+        let line = ProtocolCommandV2::from_device_extension_action(&action)
+            .expect("display face extension should convert")
+            .to_json_line()
+            .expect("protocol command should serialize");
+
+        let value: serde_json::Value = serde_json::from_str(line.trim()).expect("json line");
+        assert_eq!("display_face", value["type"]);
+        assert_eq!("success-happy", value["face"]);
+        assert_eq!("strong", value["intensity"]);
+        assert_eq!(5000, value["duration_ms"]);
+        assert!(value.get("channel").is_none());
+    }
+
+    #[test]
+    fn serializes_custom_display_face_extension_action_ids() {
+        let mut action = test_extension_action(DeviceExtensionActionType::DisplayFace);
+        action.face_template = Some("idle-sleep".to_string());
+        action.custom_face_group_id = Some("10000000-0000-4000-8000-000000000001".to_string());
+        action.custom_face_id = Some("20000000-0000-4000-8000-000000000001".to_string());
+
+        let command = ProtocolCommandV2::from_device_extension_action(&action).unwrap();
+        let value = serde_json::to_value(command).unwrap();
+
+        assert_eq!("display_face", value["type"]);
+        assert_eq!("idle-sleep", value["face"]);
+        assert_eq!("10000000-0000-4000-8000-000000000001", value["group_id"]);
+        assert_eq!("20000000-0000-4000-8000-000000000001", value["face_id"]);
     }
 }

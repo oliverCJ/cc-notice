@@ -2,17 +2,20 @@ import {
   DeviceChannel,
   DeviceChannelActionType,
   DeviceChannelKind,
-  DeviceExtensionCapabilities
+  DeviceExtensionCapabilities,
 } from '../../api/tauriApi';
 import { getBoardAvailableChannels } from '@/domain/boards/boardCatalog';
+import type { DeviceRuleContext } from './deviceRuleContext';
 
 export type DeviceSelectOption = {
   value: string;
   label?: string;
   labelKey?: string;
+  connectionStatus?: 'connected' | 'offline-config';
   boardId?: string | null;
   deviceExtensions?: DeviceExtensionCapabilities | null;
   channels?: ChannelSelectOption[];
+  ruleContext?: DeviceRuleContext | null;
 };
 
 export type ChannelSelectOption = {
@@ -29,13 +32,13 @@ export const defaultDeviceOptions: DeviceSelectOption[] = [
   {
     value: 'rp2040-pico-default',
     labelKey: 'rules.deviceChannel.defaultRp2040',
-    boardId: 'rp2040-pico'
-  }
+    boardId: 'rp2040-pico',
+  },
 ];
 
-export const defaultChannelOptions: ChannelSelectOption[] = getBoardAvailableChannels('rp2040-pico').map(
-  (channel) => toChannelSelectOption(channel, 'rp2040-pico')
-);
+export const defaultChannelOptions: ChannelSelectOption[] = getBoardAvailableChannels(
+  'rp2040-pico'
+).map((channel) => toChannelSelectOption(channel, 'rp2040-pico'));
 
 export type ChannelKindOption = {
   value: DeviceChannelKind;
@@ -51,7 +54,7 @@ export function buildChannelKindOptions(channels: ChannelSelectOption[]): Channe
     seen.add(channel.kind);
     options.push({
       value: channel.kind,
-      labelKey: `devices.channelKind.${channel.kind}`
+      labelKey: `devices.channelKind.${channel.kind}`,
     });
     return options;
   }, []);
@@ -68,7 +71,7 @@ export function toChannelSelectOption(
     supportedActions: channel.supportedActions,
     hardwareGuideId: channel.hardwareGuideId,
     boardId,
-    sourceChannel: channel
+    sourceChannel: channel,
   };
 }
 
@@ -83,24 +86,31 @@ export function enrichDeviceChannelsForRule(device: DeviceSelectOption): Channel
       ) {
         return {
           ...channel,
-          supportedActions: [...channel.supportedActions, 'pattern' as DeviceChannelActionType]
+          supportedActions: [...channel.supportedActions, 'pattern' as DeviceChannelActionType],
         };
       }
       return channel;
     });
 
   if (
-    device.deviceExtensions?.display?.status &&
+    (device.deviceExtensions?.display?.status || device.deviceExtensions?.display?.face) &&
     !channels.some((channel) => channel.value === 'display')
   ) {
+    const supportedActions: DeviceChannelActionType[] = [];
+    if (device.deviceExtensions?.display?.status && !device.deviceExtensions.display.face) {
+      supportedActions.push('display-status');
+    }
+    if (device.deviceExtensions?.display?.face) {
+      supportedActions.push('display-face');
+    }
     channels.push({
       value: 'display',
       label: '屏幕',
       kind: 'display',
-      supportedActions: ['display-status'],
+      supportedActions,
       hardwareGuideId: null,
       boardId: device.boardId ?? null,
-      sourceChannel: null
+      sourceChannel: null,
     });
   }
 

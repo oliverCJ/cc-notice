@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 use tauri_plugin_autostart::ManagerExt;
 
 use crate::app_services::hook_event_service::{HookEventFrontendState, HookEventService};
@@ -10,6 +10,8 @@ use crate::core::profiles::NoticeProfile;
 use crate::startup::tray;
 use crate::utils::profile_utils::hook_events_from_selections;
 use crate::{infrastructure, AppState};
+
+pub const APP_CONFIG_UPDATED_EVENT: &str = "cc-notice://app-config-updated";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -114,7 +116,14 @@ pub fn save_app_config(
         restart_required: port_changed,
     };
     tray::refresh_tray_menu_after_state_change(&app, "app config saved");
+    emit_app_config_updated(&app, &result.config);
     Ok(result)
+}
+
+fn emit_app_config_updated(app: &AppHandle, config: &AppConfig) {
+    if let Err(error) = app.emit(APP_CONFIG_UPDATED_EVENT, config) {
+        tracing::warn!(%error, "failed to emit app config updated event");
+    }
 }
 
 fn rollback_launch_at_login_after_failed_save<R: tauri::Runtime>(
@@ -176,6 +185,7 @@ pub fn reset_configuration(
         }
     };
     tray::refresh_tray_menu_after_state_change(&app, "configuration reset");
+    emit_app_config_updated(&app, &result.config);
     Ok(result)
 }
 
@@ -323,6 +333,9 @@ mod tests {
     use std::sync::Arc;
 
     use crate::app_services::app_config_service::AppConfigService;
+    use crate::app_services::custom_face_library::CustomFaceLibraryService;
+    use crate::app_services::custom_face_pixelizer::CustomFacePixelizerSourceStore;
+    use crate::app_services::custom_face_vectorizer::CustomFaceVectorizerSourceStore;
     use crate::app_services::custom_internal_event_service::CustomInternalEventService;
     use crate::app_services::desktop_notice_service::DesktopNoticeService;
     use crate::app_services::device_input_service::DeviceInputService;
@@ -548,6 +561,13 @@ mod tests {
             custom_internal_event_service: std::sync::Mutex::new(
                 CustomInternalEventService::from_config_root(root.join(".cc-notice"))
                     .expect("custom internal event service"),
+            ),
+            custom_face_library_service: std::sync::Mutex::new(CustomFaceLibraryService::new(
+                root.join(".cc-notice"),
+            )),
+            custom_face_pixelizer_source_store: Arc::new(CustomFacePixelizerSourceStore::default()),
+            custom_face_vectorizer_source_store: Arc::new(
+                CustomFaceVectorizerSourceStore::default(),
             ),
             local_hook_server_status: Arc::new(std::sync::Mutex::new(
                 LocalHookServerService::status_for_port(initial_port, false, None),

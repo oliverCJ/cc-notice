@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "custom-face-image-vectorizer",
+  "description": "Permissions for the custom face image vectorizer tool window.",
+  "windows": ["custom-face-image-vectorizer"],
+  "permissions": ["core:default", "dialog:allow-open", "dialog:allow-save"]
+}

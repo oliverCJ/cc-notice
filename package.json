@@ -1,7 +1,7 @@
 {
   "name": "cc-notice",
   "productName": "CC Notice",
-  "version": "1.1.1",
+  "version": "1.2.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,8 +16,15 @@
     "package:mac:all": "node scripts/package-macos.mjs all",
     "package:win": "npm run build:relay:asset && npx tauri build --bundles nsis",
     "build:app": "npm run build:relay:asset && npm run build",
+    "firmware:build:sync": "node scripts/firmware-build-and-sync.mjs",
+    "clean:rust:debug": "node scripts/clean-rust-target.mjs debug",
+    "clean:rust:release": "node scripts/clean-rust-target.mjs release",
+    "clean:rust:all": "node scripts/clean-rust-target.mjs all",
+    "diagnose:disk": "node scripts/diagnose-disk.mjs",
     "test": "vitest run",
-    "tauri": "node scripts/tauri-dev.mjs"
+    "tauri": "node scripts/tauri-dev.mjs",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
     "@lottiefiles/dotlottie-react": "^0.19.12",
@@ -56,6 +63,7 @@
     "autoprefixer": "^10.5.0",
     "jsdom": "^25.0.1",
     "postcss": "^8.5.15",
+    "prettier": "^3.9.6",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.6.3",
     "vite": "^5.4.11",
