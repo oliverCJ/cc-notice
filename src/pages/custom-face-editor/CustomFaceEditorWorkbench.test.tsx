@@ -252,6 +252,9 @@ test('opens the image import window from the workbench toolbar', () => {
 
   expect(openCustomFaceImagePixelizerMock).toHaveBeenCalledOnce();
   expect(openCustomFaceImagePixelizerMock).toHaveBeenCalledWith({ width: 128, height: 32 });
+  expect(screen.getByRole('button', { name: '导入图片' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '导入 GIF 动画' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '导入 SVG' })).toBeDisabled();
 });
 
 test('shows a prominent banner while the image import window is open', async () => {
@@ -613,6 +616,63 @@ test('imports a compatible face into the reducer draft without saving the group'
   expect(screen.getByRole('textbox', { name: '表情名称' })).toHaveValue('Imported');
   expect(screen.getByText('有未保存修改')).toBeInTheDocument();
   expect(saveCustomFaceGroupMock).not.toHaveBeenCalled();
+});
+
+test('imports a face item with the same resolution even when the profile id was renamed', async () => {
+  previewCustomFaceItemImportMock.mockResolvedValue({
+    face: {
+      faceId: 'source-128',
+      name: 'Imported 128',
+      color: { red: 1, green: 2, blue: 3 },
+      frames: [{ durationMs: 200, packedPixels: Array(2048).fill(0) }],
+    },
+    displayProfileId: 'custom-128x128-v1',
+    width: 128,
+    height: 128,
+    frameCount: 1,
+    totalDurationMs: 200,
+    contentHash: 'a'.repeat(64),
+    sourceFaceId: 'source-128',
+  });
+  openDialogMock.mockResolvedValue('/tmp/face.ccfaceitem');
+  const state = createEditorState(
+    {
+      schemaVersion: 1,
+      groupId: 'g128',
+      name: 'G128',
+      displayProfileId: 'custom-mono-128x128-v1',
+      revision: 1,
+      defaultFaceId: 'f128',
+      faces: [
+        {
+          faceId: 'f128',
+          name: 'Face 128',
+          color: { red: 255, green: 255, blue: 255 },
+          frames: [{ durationMs: 200, packedPixels: Array(2048).fill(0) }],
+        },
+      ],
+    },
+    {
+      id: 'custom-mono-128x128-v1',
+      width: 128,
+      height: 128,
+      maxFrames: 10,
+      framebufferBytes: 2048,
+    }
+  );
+
+  render(
+    <CustomFaceEditorWorkbench
+      initialState={state}
+      expectedLibraryHash="hash"
+      onBack={vi.fn()}
+      onSaved={vi.fn()}
+    />
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '导入单个表情' }));
+  expect(await screen.findByRole('dialog', { name: '导入单个表情' })).toBeInTheDocument();
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
 
 test('blocks a mismatched face profile before opening import confirmation', async () => {

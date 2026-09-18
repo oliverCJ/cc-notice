@@ -1481,8 +1481,12 @@ export const enMessages = {
       offsetYHint: 'Move the image up or down to align it on the pixel canvas.',
       dither: 'Dither',
       ditherHint: 'Enable noise-based blending to simulate more shades during preview.',
-      invert: 'Invert',
-      invertHint: 'Invert flips the on/off relationship for opposite-toned source images.',
+      invert: 'Image invert',
+      invertHint:
+        'Flips only the visible image pixels. Transparent background pixels are controlled separately.',
+      backgroundInvert: 'Light transparent background',
+      backgroundInvertHint:
+        'Converts transparent background pixels to lit pixels for assets that need the transparent area preserved as light.',
       outputInfo: 'Output info',
       outputReady: 'Ready',
       outputPending: 'Waiting for image',

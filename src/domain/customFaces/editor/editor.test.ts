@@ -5,14 +5,26 @@ import type { EditorProfile } from './types';
 import { getPixel } from './raster';
 
 const profile: EditorProfile = {
-  id: 'custom-mono-128x32-v1', width: 128, height: 32, maxFrames: 10, framebufferBytes: 512
+  id: 'custom-mono-128x32-v1',
+  width: 128,
+  height: 32,
+  maxFrames: 10,
+  framebufferBytes: 512,
 };
 const face = (id = 'face-1', frames = [{ durationMs: 200, packedPixels: Array(512).fill(0) }]) => ({
-  faceId: id, name: id, color: { red: 255, green: 255, blue: 255 }, frames
+  faceId: id,
+  name: id,
+  color: { red: 255, green: 255, blue: 255 },
+  frames,
 });
 const group = (faces = [face()]): CustomFaceGroup => ({
-  schemaVersion: 1, groupId: 'group-1', name: 'Group', displayProfileId: profile.id,
-  revision: 1, defaultFaceId: faces[0]?.faceId ?? 'missing', faces
+  schemaVersion: 1,
+  groupId: 'group-1',
+  name: 'Group',
+  displayProfileId: profile.id,
+  revision: 1,
+  defaultFaceId: faces[0]?.faceId ?? 'missing',
+  faces,
 });
 
 describe('custom face editor reducer', () => {
@@ -29,11 +41,14 @@ describe('custom face editor reducer', () => {
     const initial = createEditorState(group(), profile);
     const next = editorReducer(initial, {
       type: 'apply-pixel-transaction',
-      pixels: [{ x: 4, y: 2, active: true }]
+      pixels: [{ x: 4, y: 2, active: true }],
     });
     expect(next.presentGroup.faces[0].frames[0].packedPixels[4] & (1 << 2)).toBe(1 << 2);
     expect(next.past).toHaveLength(1);
-    expect(editorReducer(next, { type: 'undo' }).presentGroup.faces[0].frames[0].packedPixels[4] & (1 << 2)).toBe(0);
+    expect(
+      editorReducer(next, { type: 'undo' }).presentGroup.faces[0].frames[0].packedPixels[4] &
+        (1 << 2)
+    ).toBe(0);
   });
 
   test('manages frames and protects deleting the last frame and default face', () => {
@@ -72,17 +87,98 @@ describe('custom face editor reducer', () => {
 
   test('appends a blank frame with default duration and empty pixels', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [{ x: 4, y: 2, active: true }] });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [{ x: 4, y: 2, active: true }],
+    });
     const sourcePixels = [...state.presentGroup.faces[0].frames[0].packedPixels];
     state = editorReducer(state, { type: 'add-blank-frame' });
     const frames = state.presentGroup.faces[0].frames;
     expect(frames).toHaveLength(2);
-    expect(frames[1]).toEqual({ durationMs: 200, packedPixels: Array(profile.framebufferBytes).fill(0) });
+    expect(frames[1]).toEqual({
+      durationMs: 200,
+      packedPixels: Array(profile.framebufferBytes).fill(0),
+    });
     expect(frames[0].packedPixels).toEqual(sourcePixels);
     expect(state.selectedFrameIndex).toBe(1);
     const undone = editorReducer(state, { type: 'undo' });
     expect(undone.presentGroup.faces[0].frames).toHaveLength(1);
     expect(editorReducer(undone, { type: 'redo' }).presentGroup.faces[0].frames).toHaveLength(2);
+  });
+
+  test('imports multiple GIF frames as one undoable frame transaction', () => {
+    const initial = createEditorState(group(), profile);
+    const imported = editorReducer(initial, {
+      type: 'apply-frame-import',
+      placement: 'replace',
+      frames: [
+        { durationMs: 20, packedPixels: Array(512).fill(1) },
+        { durationMs: 6000, packedPixels: Array(512).fill(2) },
+      ],
+    });
+
+    expect(imported.presentGroup.faces[0].frames).toHaveLength(2);
+    expect(imported.presentGroup.faces[0].frames[0].durationMs).toBe(50);
+    expect(imported.presentGroup.faces[0].frames[1].durationMs).toBe(5000);
+    expect(imported.past).toHaveLength(1);
+    expect(editorReducer(imported, { type: 'undo' }).presentGroup.faces[0].frames).toHaveLength(1);
+  });
+
+  test('overlays GIF content while preserving transparent pixels from the selected frame', () => {
+    const basePixels = Array(512).fill(0);
+    basePixels[0] = 0b00000101;
+    const initial = createEditorState(
+      group([face('face-1', [{ durationMs: 200, packedPixels: basePixels }])]),
+      profile
+    );
+    const imported = editorReducer(initial, {
+      type: 'apply-frame-import',
+      placement: 'replace',
+      transparencyMode: 'overlay',
+      contentMasks: [[1, 0, ...Array(profile.width * profile.height - 2).fill(0)]],
+      frames: [{ durationMs: 200, packedPixels: Array(512).fill(0) }],
+    });
+
+    expect(imported.presentGroup.faces[0].frames[0].packedPixels[0]).toBe(0b00000100);
+  });
+
+  test('keeps background-lit transparent GIF pixels out of overlay writes', () => {
+    const basePixels = Array(512).fill(0);
+    const importedPixels = Array(512).fill(0);
+    importedPixels[0] = 0b00000001;
+    importedPixels[1] = 0b00000001;
+    const initial = createEditorState(
+      group([face('face-1', [{ durationMs: 200, packedPixels: basePixels }])]),
+      profile
+    );
+    const imported = editorReducer(initial, {
+      type: 'apply-frame-import',
+      placement: 'replace',
+      transparencyMode: 'overlay',
+      contentMasks: [[1, 0, ...Array(profile.width * profile.height - 2).fill(0)]],
+      frames: [{ durationMs: 200, packedPixels: importedPixels }],
+    });
+
+    expect(imported.presentGroup.faces[0].frames[0].packedPixels[0]).toBe(0b00000001);
+    expect(imported.presentGroup.faces[0].frames[0].packedPixels[1]).toBe(0);
+  });
+
+  test('inserts imported GIF frames at the explicitly selected insertion index', () => {
+    const existing = face('face-1', [
+      { durationMs: 100, packedPixels: Array(512).fill(1) },
+      { durationMs: 200, packedPixels: Array(512).fill(2) },
+      { durationMs: 300, packedPixels: Array(512).fill(3) },
+    ]);
+    const initial = createEditorState(group([existing]), profile);
+    const next = editorReducer(initial, {
+      type: 'apply-frame-import',
+      placement: 'insert',
+      insertionIndex: 2,
+      frames: [{ durationMs: 400, packedPixels: Array(512).fill(9) }],
+    });
+    expect(next.presentGroup.faces[0].frames.map((frame) => frame.packedPixels[0])).toEqual([
+      1, 2, 9, 3,
+    ]);
   });
 
   test('does not add a blank frame beyond the profile frame limit', () => {
@@ -95,12 +191,23 @@ describe('custom face editor reducer', () => {
 
   test('previews rotation from the original selection and commits it in one undo step', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [{ x: 2, y: 1, active: true }, { x: 2, y: 2, active: true }] });
-    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 2, height: 2 } });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [
+        { x: 2, y: 1, active: true },
+        { x: 2, y: 2, active: true },
+      ],
+    });
+    state = editorReducer(state, {
+      type: 'set-selection',
+      selection: { x: 1, y: 1, width: 2, height: 2 },
+    });
     state = editorReducer(state, { type: 'set-selection-pivot', pivot: { x: 2, y: 2 } });
     const pastLength = state.past.length;
     state = editorReducer(state, { type: 'rotate-selection', degrees: 90 });
-    expect(getPixel(new Uint8Array(state.presentGroup.faces[0].frames[0].packedPixels), profile, 3, 2)).toBe(true);
+    expect(
+      getPixel(new Uint8Array(state.presentGroup.faces[0].frames[0].packedPixels), profile, 3, 2)
+    ).toBe(true);
     expect(state.past).toHaveLength(pastLength);
     state = editorReducer(state, { type: 'rotate-selection', degrees: 180 });
     expect(state.past).toHaveLength(pastLength);
@@ -109,15 +216,23 @@ describe('custom face editor reducer', () => {
     expect(state.presentGroup.faces[0].frames[0].packedPixels).toEqual(previewPixels);
     expect(state.past).toHaveLength(pastLength + 1);
     expect(state.selection).toBeNull();
-    const undonePixels = new Uint8Array(editorReducer(state, { type: 'undo' }).presentGroup.faces[0].frames[0].packedPixels);
+    const undonePixels = new Uint8Array(
+      editorReducer(state, { type: 'undo' }).presentGroup.faces[0].frames[0].packedPixels
+    );
     expect(getPixel(undonePixels, profile, 2, 1)).toBe(true);
     expect(getPixel(undonePixels, profile, 3, 2)).toBe(false);
   });
 
   test('cancels a rotation preview and restores the original selection pixels', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [{ x: 2, y: 1, active: true }] });
-    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 2, height: 2 } });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [{ x: 2, y: 1, active: true }],
+    });
+    state = editorReducer(state, {
+      type: 'set-selection',
+      selection: { x: 1, y: 1, width: 2, height: 2 },
+    });
     state = editorReducer(state, { type: 'rotate-selection', degrees: 90 });
     state = editorReducer(state, { type: 'cancel-selection-rotation' });
     const pixels = new Uint8Array(state.presentGroup.faces[0].frames[0].packedPixels);
@@ -128,8 +243,14 @@ describe('custom face editor reducer', () => {
 
   test('does not move while a rotation preview is active', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [{ x: 2, y: 1, active: true }] });
-    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 2, height: 2 } });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [{ x: 2, y: 1, active: true }],
+    });
+    state = editorReducer(state, {
+      type: 'set-selection',
+      selection: { x: 1, y: 1, width: 2, height: 2 },
+    });
     state = editorReducer(state, { type: 'rotate-selection', degrees: 90 });
     const next = editorReducer(state, { type: 'move-selection', dx: 1, dy: 0 });
     expect(next).toBe(state);
@@ -137,8 +258,14 @@ describe('custom face editor reducer', () => {
 
   test('copies and clears a selected region', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [{ x: 2, y: 2, active: true }] });
-    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 3, height: 3 } });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [{ x: 2, y: 2, active: true }],
+    });
+    state = editorReducer(state, {
+      type: 'set-selection',
+      selection: { x: 1, y: 1, width: 3, height: 3 },
+    });
     state = editorReducer(state, { type: 'copy-selection' });
     expect(state.clipboard?.pixels.some(Boolean)).toBe(true);
     state = editorReducer(state, { type: 'clear-selection' });
@@ -157,8 +284,17 @@ describe('custom face editor reducer', () => {
 
   test('moves a selected region by a step using a source snapshot', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 2, height: 2 } });
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [{ x: 1, y: 1, active: true }, { x: 2, y: 2, active: true }] });
+    state = editorReducer(state, {
+      type: 'set-selection',
+      selection: { x: 1, y: 1, width: 2, height: 2 },
+    });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [
+        { x: 1, y: 1, active: true },
+        { x: 2, y: 2, active: true },
+      ],
+    });
     const moved = editorReducer(state, { type: 'move-selection', dx: 1, dy: 0 });
     const movedPixels = new Uint8Array(moved.presentGroup.faces[0].frames[0].packedPixels);
     expect(getPixel(movedPixels, profile, 1, 1)).toBe(false);
@@ -171,11 +307,17 @@ describe('custom face editor reducer', () => {
 
   test('moves only active pixels and preserves existing target pixels', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [
-      { x: 1, y: 1, active: true },
-      { x: 3, y: 1, active: true }
-    ] });
-    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 2, height: 2 } });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [
+        { x: 1, y: 1, active: true },
+        { x: 3, y: 1, active: true },
+      ],
+    });
+    state = editorReducer(state, {
+      type: 'set-selection',
+      selection: { x: 1, y: 1, width: 2, height: 2 },
+    });
     const moved = editorReducer(state, { type: 'move-selection', dx: 2, dy: 0 });
     const pixels = new Uint8Array(moved.presentGroup.faces[0].frames[0].packedPixels);
     expect(getPixel(pixels, profile, 1, 1)).toBe(false);
@@ -186,8 +328,14 @@ describe('custom face editor reducer', () => {
 
   test('cancels a move by restoring the original pixels and selection', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [{ x: 1, y: 1, active: true }] });
-    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 2, height: 2 } });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [{ x: 1, y: 1, active: true }],
+    });
+    state = editorReducer(state, {
+      type: 'set-selection',
+      selection: { x: 1, y: 1, width: 2, height: 2 },
+    });
     const pastLength = state.past.length;
     state = editorReducer(state, { type: 'move-selection', dx: 2, dy: 0 });
     state = editorReducer(state, { type: 'cancel-selection-move' });
@@ -202,11 +350,17 @@ describe('custom face editor reducer', () => {
 
   test('rebuilds repeated selection moves from the original active-pixel baseline', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [
-      { x: 1, y: 1, active: true },
-      { x: 4, y: 1, active: true }
-    ] });
-    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 2, height: 2 } });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [
+        { x: 1, y: 1, active: true },
+        { x: 4, y: 1, active: true },
+      ],
+    });
+    state = editorReducer(state, {
+      type: 'set-selection',
+      selection: { x: 1, y: 1, width: 2, height: 2 },
+    });
     state = editorReducer(state, { type: 'move-selection', dx: 1, dy: 0 });
     state = editorReducer(state, { type: 'move-selection', dx: 1, dy: 0 });
     const pixels = new Uint8Array(state.presentGroup.faces[0].frames[0].packedPixels);
@@ -217,11 +371,17 @@ describe('custom face editor reducer', () => {
 
   test('cancel restores the original frame including pre-existing target pixels', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [
-      { x: 1, y: 1, active: true },
-      { x: 3, y: 1, active: true }
-    ] });
-    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 2, height: 2 } });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [
+        { x: 1, y: 1, active: true },
+        { x: 3, y: 1, active: true },
+      ],
+    });
+    state = editorReducer(state, {
+      type: 'set-selection',
+      selection: { x: 1, y: 1, width: 2, height: 2 },
+    });
     state = editorReducer(state, { type: 'move-selection', dx: 2, dy: 0 });
     const canceled = editorReducer(state, { type: 'cancel-selection-move' });
     const pixels = new Uint8Array(canceled.presentGroup.faces[0].frames[0].packedPixels);
@@ -229,19 +389,30 @@ describe('custom face editor reducer', () => {
     expect(getPixel(pixels, profile, 3, 1)).toBe(true);
     expect(getPixel(pixels, profile, 4, 1)).toBe(false);
     expect(canceled.selectionMoveBaseline).toBeNull();
-
   });
 
   test('does not create history when a selection is already at the requested boundary', () => {
-    const state = editorReducer(editorReducer(createEditorState(group(), profile), { type: 'set-selection', selection: { x: 0, y: 0, width: 2, height: 2 } }), { type: 'move-selection', dx: -1, dy: 0 });
+    const state = editorReducer(
+      editorReducer(createEditorState(group(), profile), {
+        type: 'set-selection',
+        selection: { x: 0, y: 0, width: 2, height: 2 },
+      }),
+      { type: 'move-selection', dx: -1, dy: 0 }
+    );
     expect(state.past).toHaveLength(0);
     expect(state.selection).toEqual({ x: 0, y: 0, width: 2, height: 2 });
   });
 
   test('cancels a selection move by returning pixels to the origin', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'set-selection', selection: { x: 1, y: 1, width: 2, height: 2 } });
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [{ x: 1, y: 1, active: true }] });
+    state = editorReducer(state, {
+      type: 'set-selection',
+      selection: { x: 1, y: 1, width: 2, height: 2 },
+    });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [{ x: 1, y: 1, active: true }],
+    });
     state = editorReducer(state, { type: 'move-selection', dx: 2, dy: 0 });
     const canceled = editorReducer(state, { type: 'cancel-selection-move' });
     const pixels = new Uint8Array(canceled.presentGroup.faces[0].frames[0].packedPixels);
@@ -260,21 +431,36 @@ describe('custom face editor reducer', () => {
     expect(state.presentGroup.faces[1].name).toBe('Thinking');
     state = editorReducer(state, { type: 'set-default-face', faceId: 'face-2' });
     expect(state.presentGroup.defaultFaceId).toBe('face-2');
-    state = editorReducer(state, { type: 'duplicate-face', sourceFaceId: 'face-2', faceId: 'face-3', name: 'Thinking copy' });
+    state = editorReducer(state, {
+      type: 'duplicate-face',
+      sourceFaceId: 'face-2',
+      faceId: 'face-3',
+      name: 'Thinking copy',
+    });
     expect(state.presentGroup.faces).toHaveLength(3);
-    state = editorReducer(state, { type: 'delete-face', faceId: 'face-2', replacementDefaultFaceId: 'face-1' });
+    state = editorReducer(state, {
+      type: 'delete-face',
+      faceId: 'face-2',
+      replacementDefaultFaceId: 'face-1',
+    });
     expect(state.presentGroup.defaultFaceId).toBe('face-1');
     expect(state.presentGroup.faces.map((item) => item.faceId)).not.toContain('face-2');
   });
 
   test('copies only active pixels inside a circle selection', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [
-      { x: 4, y: 4, active: true },
-      { x: 5, y: 5, active: true },
-      { x: 2, y: 2, active: true }
-    ] });
-    state = editorReducer(state, { type: 'set-selection', selection: { x: 2, y: 2, width: 5, height: 5, shape: 'circle' } });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [
+        { x: 4, y: 4, active: true },
+        { x: 5, y: 5, active: true },
+        { x: 2, y: 2, active: true },
+      ],
+    });
+    state = editorReducer(state, {
+      type: 'set-selection',
+      selection: { x: 2, y: 2, width: 5, height: 5, shape: 'circle' },
+    });
     state = editorReducer(state, { type: 'copy-selection' });
     expect(state.clipboard?.width).toBe(5);
     expect(state.clipboard?.height).toBe(5);
@@ -286,12 +472,18 @@ describe('custom face editor reducer', () => {
 
   test('clears only pixels inside a circle selection', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [
-      { x: 4, y: 4, active: true },
-      { x: 2, y: 2, active: true },
-      { x: 6, y: 6, active: true }
-    ] });
-    state = editorReducer(state, { type: 'set-selection', selection: { x: 2, y: 2, width: 5, height: 5, shape: 'circle' } });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [
+        { x: 4, y: 4, active: true },
+        { x: 2, y: 2, active: true },
+        { x: 6, y: 6, active: true },
+      ],
+    });
+    state = editorReducer(state, {
+      type: 'set-selection',
+      selection: { x: 2, y: 2, width: 5, height: 5, shape: 'circle' },
+    });
     state = editorReducer(state, { type: 'clear-selection' });
     const pixels = new Uint8Array(state.presentGroup.faces[0].frames[0].packedPixels);
     expect(getPixel(pixels, profile, 4, 4)).toBe(false);
@@ -301,11 +493,17 @@ describe('custom face editor reducer', () => {
 
   test('moves only active pixels inside a circle selection', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [
-      { x: 4, y: 4, active: true },
-      { x: 2, y: 2, active: true }
-    ] });
-    state = editorReducer(state, { type: 'set-selection', selection: { x: 2, y: 2, width: 5, height: 5, shape: 'circle' } });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [
+        { x: 4, y: 4, active: true },
+        { x: 2, y: 2, active: true },
+      ],
+    });
+    state = editorReducer(state, {
+      type: 'set-selection',
+      selection: { x: 2, y: 2, width: 5, height: 5, shape: 'circle' },
+    });
     const moved = editorReducer(state, { type: 'move-selection', dx: 2, dy: 0 });
     const pixels = new Uint8Array(moved.presentGroup.faces[0].frames[0].packedPixels);
     expect(getPixel(pixels, profile, 6, 4)).toBe(true);
@@ -316,8 +514,14 @@ describe('custom face editor reducer', () => {
 
   test('preserves circle shape through rotation', () => {
     let state = createEditorState(group(), profile);
-    state = editorReducer(state, { type: 'apply-pixel-transaction', pixels: [{ x: 4, y: 3, active: true }] });
-    state = editorReducer(state, { type: 'set-selection', selection: { x: 2, y: 2, width: 5, height: 5, shape: 'circle' } });
+    state = editorReducer(state, {
+      type: 'apply-pixel-transaction',
+      pixels: [{ x: 4, y: 3, active: true }],
+    });
+    state = editorReducer(state, {
+      type: 'set-selection',
+      selection: { x: 2, y: 2, width: 5, height: 5, shape: 'circle' },
+    });
     state = editorReducer(state, { type: 'set-selection-pivot', pivot: { x: 4, y: 4 } });
     state = editorReducer(state, { type: 'rotate-selection', degrees: 90 });
     expect(state.selection?.shape).toBe('circle');
@@ -330,7 +534,10 @@ describe('custom face editor reducer', () => {
     state = editorReducer(state, { type: 'rename-group', name: 'Renamed group' });
     expect(state.presentGroup.name).toBe('Renamed group');
     expect(state.past).toHaveLength(1);
-    state = editorReducer(state, { type: 'mark-saved', group: { ...state.presentGroup, revision: 2 } });
+    state = editorReducer(state, {
+      type: 'mark-saved',
+      group: { ...state.presentGroup, revision: 2 },
+    });
     expect(state.savedGroup.name).toBe('Renamed group');
     expect(state.presentGroup.revision).toBe(2);
     expect(state.past).toHaveLength(0);

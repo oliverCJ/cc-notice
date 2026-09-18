@@ -18,6 +18,8 @@ const waitForDebouncedPixelize = () =>
 
 const prepareSourceMock = vi.hoisted(() => vi.fn());
 const pixelizeSourceMock = vi.hoisted(() => vi.fn());
+const prepareGifSourceMock = vi.hoisted(() => vi.fn());
+const pixelizeGifSourceMock = vi.hoisted(() => vi.fn());
 const releaseSourceMock = vi.hoisted(() => vi.fn());
 const applyMock = vi.hoisted(() => vi.fn());
 const closePixelizerMock = vi.hoisted(() => vi.fn());
@@ -36,6 +38,8 @@ vi.mock('@/api/tauriApi', async () => {
     ...actual,
     prepareCustomFaceImagePixelizerSource: prepareSourceMock,
     pixelizeCustomFaceImageSource: pixelizeSourceMock,
+    prepareCustomFaceGifPixelizerSource: prepareGifSourceMock,
+    pixelizeCustomFaceGifSource: pixelizeGifSourceMock,
     releaseCustomFaceImagePixelizerSource: releaseSourceMock,
     applyCustomFaceImageImport: applyMock,
     closeCustomFaceImagePixelizer: closePixelizerMock,
@@ -63,6 +67,8 @@ beforeEach(() => {
   Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
   prepareSourceMock.mockReset();
   pixelizeSourceMock.mockReset();
+  prepareGifSourceMock.mockReset();
+  pixelizeGifSourceMock.mockReset();
   releaseSourceMock.mockReset().mockResolvedValue(undefined);
   applyMock.mockReset();
   closePixelizerMock.mockReset();
@@ -119,6 +125,25 @@ test('reads the canvas size from the window url', () => {
   render(<CustomFaceImagePixelizerWindow />);
 
   expect(screen.getByText('画布 128 × 128')).toBeInTheDocument();
+});
+
+test('keeps the pixelizer window itself from becoming a third scroll container', () => {
+  render(<CustomFaceImagePixelizerWindow />);
+
+  const root = screen.getByRole('main');
+  const layout = root.querySelector('[data-testid="custom-face-image-pixelizer-layout"]');
+  expect(root.className).toContain('overflow-hidden');
+  expect(layout?.className).toContain('overflow-hidden');
+  expect(layout?.querySelector('section')?.className).toContain('min-h-0');
+  expect(layout?.querySelector('section')?.className).toContain('overflow-hidden');
+  expect(
+    layout?.querySelector('[data-testid="custom-face-image-pixelizer-viewport"]')?.className
+  ).toContain('overflow-auto');
+  expect(
+    layout?.querySelector('[data-testid="custom-face-image-pixelizer-viewport"]')?.className
+  ).toContain('overscroll-contain');
+  expect(layout?.querySelector('aside')?.className).toContain('min-h-0');
+  expect(layout?.querySelector('aside')?.className).toContain('overscroll-contain');
 });
 
 test('updates the canvas size when the backend reopens the existing window with a new target profile', async () => {
@@ -213,6 +238,449 @@ test('loads an image, supports monochrome and color preview modes, and applies p
     sourceWidth: 128,
     sourceHeight: 32,
   });
+});
+
+test('passes transparent background lighting separately from image invert for image sources', async () => {
+  prepareSourceMock.mockResolvedValue({
+    sourceId: 'source-background-invert',
+    sourceWidth: 8,
+    sourceHeight: 8,
+    workingWidth: 8,
+    workingHeight: 8,
+  });
+  pixelizeSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    packedPixels: createPackedPixels(128, 32),
+    previewPixels: new Array(128 * 32 * 4).fill(255),
+    sourceWidth: 8,
+    sourceHeight: 8,
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.change(screen.getByTestId('custom-face-image-input'), {
+    target: { files: [new File([new Uint8Array([1])], 'transparent.png', { type: 'image/png' })] },
+  });
+  await waitFor(() => expect(pixelizeSourceMock).toHaveBeenCalledOnce());
+
+  expect(screen.getByRole('checkbox', { name: '图像反相' })).not.toBeChecked();
+  fireEvent.click(screen.getByRole('checkbox', { name: '透明背景点亮' }));
+  await waitForDebouncedPixelize();
+
+  await waitFor(() =>
+    expect(pixelizeSourceMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          invert: false,
+          backgroundInvert: true,
+        }),
+      })
+    )
+  );
+});
+
+test('loads a GIF source and shows multi-frame preview with durations', async () => {
+  window.history.replaceState({}, '', '/custom-face-image-pixelizer?width=128&height=32&mode=gif');
+  prepareGifSourceMock.mockResolvedValue({
+    sourceId: 'gif-source-1',
+    sourceWidth: 4,
+    sourceHeight: 4,
+    frameCount: 2,
+    totalDurationMs: 350,
+    durationWasClamped: true,
+  });
+  pixelizeGifSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    sourceWidth: 4,
+    sourceHeight: 4,
+    totalDurationMs: 350,
+    frames: [
+      {
+        durationMs: 50,
+        packedPixels: createPackedPixels(128, 32),
+        previewPixels: new Array(128 * 32 * 4).fill(255),
+      },
+      {
+        durationMs: 300,
+        packedPixels: createPackedPixels(128, 32, 1),
+        previewPixels: new Array(128 * 32 * 4).fill(0),
+      },
+    ],
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  const input = screen.getByTestId('custom-face-image-input') as HTMLInputElement;
+  const file = new File([new Uint8Array([0x47, 0x49, 0x46])], 'animation.gif', {
+    type: 'image/gif',
+  });
+  fireEvent.change(input, { target: { files: [file] } });
+
+  await waitFor(() => expect(prepareGifSourceMock).toHaveBeenCalledOnce());
+  expect(prepareGifSourceMock).toHaveBeenCalledWith({
+    profileWidth: 128,
+    profileHeight: 32,
+    imageBytes: [0x47, 0x49, 0x46],
+  });
+  await waitFor(() => expect(pixelizeGifSourceMock).toHaveBeenCalledOnce());
+  expect(screen.getByTestId('gif-import-timeline')).toBeInTheDocument();
+  expect(screen.getByRole('main').className).toContain('overflow-hidden');
+  expect(screen.getByTestId('custom-face-image-pixelizer-layout').className).toContain(
+    'overflow-hidden'
+  );
+  expect(screen.getByRole('button', { name: 'GIF 第 1 帧' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'GIF 第 2 帧' })).toBeInTheDocument();
+  expect(screen.getByText('总时长 350 ms')).toBeInTheDocument();
+  expect(screen.getByText('50 ms')).toBeInTheDocument();
+});
+
+test('passes transparent background lighting to GIF source without changing transparency mode', async () => {
+  window.history.replaceState({}, '', '/custom-face-image-pixelizer?width=128&height=32&mode=gif');
+  prepareGifSourceMock.mockResolvedValue({
+    sourceId: 'gif-source-background-invert',
+    sourceWidth: 4,
+    sourceHeight: 4,
+    frameCount: 1,
+    totalDurationMs: 120,
+    durationWasClamped: false,
+  });
+  pixelizeGifSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    sourceWidth: 4,
+    sourceHeight: 4,
+    totalDurationMs: 120,
+    frames: [
+      {
+        durationMs: 120,
+        packedPixels: createPackedPixels(128, 32),
+        previewPixels: new Array(128 * 32 * 4).fill(255),
+        contentMask: new Array(128 * 32).fill(0),
+      },
+    ],
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.change(screen.getByTestId('custom-face-image-input'), {
+    target: { files: [new File([new Uint8Array([1])], 'transparent.gif', { type: 'image/gif' })] },
+  });
+  await waitFor(() => expect(pixelizeGifSourceMock).toHaveBeenCalledOnce());
+
+  fireEvent.click(screen.getByRole('checkbox', { name: '透明背景点亮' }));
+  await waitForDebouncedPixelize();
+
+  await waitFor(() =>
+    expect(pixelizeGifSourceMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          backgroundInvert: true,
+        }),
+      })
+    )
+  );
+  expect(screen.getByText('当前选择：透明区域应用后覆盖为空')).toBeInTheDocument();
+});
+
+test('applies GIF overlay with original content masks after transparent background lighting', async () => {
+  window.history.replaceState({}, '', '/custom-face-image-pixelizer?width=128&height=32&mode=gif');
+  const contentMask = [1, 0, ...Array(128 * 32 - 2).fill(0)];
+  prepareGifSourceMock.mockResolvedValue({
+    sourceId: 'gif-source-background-overlay',
+    sourceWidth: 4,
+    sourceHeight: 4,
+    frameCount: 1,
+    totalDurationMs: 120,
+    durationWasClamped: false,
+  });
+  pixelizeGifSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    sourceWidth: 4,
+    sourceHeight: 4,
+    totalDurationMs: 120,
+    frames: [
+      {
+        durationMs: 120,
+        packedPixels: createPackedPixels(128, 32),
+        previewPixels: new Array(128 * 32 * 4).fill(255),
+        contentMask,
+      },
+    ],
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.change(screen.getByTestId('custom-face-image-input'), {
+    target: { files: [new File([new Uint8Array([1])], 'transparent-overlay.gif', { type: 'image/gif' })] },
+  });
+  await waitFor(() => expect(pixelizeGifSourceMock).toHaveBeenCalledOnce());
+  fireEvent.click(screen.getByRole('checkbox', { name: '透明背景点亮' }));
+  await waitForDebouncedPixelize();
+  await waitFor(() => expect(pixelizeGifSourceMock).toHaveBeenCalledTimes(2));
+
+  fireEvent.click(screen.getByRole('button', { name: '透明处保留当前帧' }));
+  fireEvent.click(screen.getByRole('button', { name: '应用' }));
+  fireEvent.click(screen.getByRole('button', { name: '确认应用' }));
+
+  await waitFor(() =>
+    expect(applyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transparencyMode: 'overlay',
+        contentMasks: [contentMask],
+      })
+    )
+  );
+});
+
+test('switches the main canvas when selecting an in-limit GIF source frame', async () => {
+  window.history.replaceState({}, '', '/custom-face-image-pixelizer?width=128&height=32&mode=gif');
+  prepareGifSourceMock.mockResolvedValue({
+    sourceId: 'gif-source-select',
+    sourceWidth: 4,
+    sourceHeight: 4,
+    frameCount: 2,
+    totalDurationMs: 200,
+    durationWasClamped: false,
+  });
+  pixelizeGifSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    sourceWidth: 4,
+    sourceHeight: 4,
+    totalDurationMs: 200,
+    frames: [
+      {
+        durationMs: 100,
+        packedPixels: createPackedPixels(128, 32),
+        previewPixels: new Array(128 * 32 * 4).fill(255),
+      },
+      {
+        durationMs: 100,
+        packedPixels: createPackedPixels(128, 32, 1),
+        previewPixels: Object.assign(new Array(128 * 32 * 4).fill(0), { 4: 255 }),
+      },
+    ],
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.change(screen.getByTestId('custom-face-image-input'), {
+    target: { files: [new File([new Uint8Array([1])], 'select.gif', { type: 'image/gif' })] },
+  });
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'GIF 第 2 帧' })).toBeInTheDocument()
+  );
+
+  expect(screen.getAllByLabelText('GIF 第 1 帧预览')[0]).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'GIF 第 2 帧' }));
+  expect(screen.getByRole('button', { name: 'GIF 第 2 帧' }).className).toContain('border-primary');
+  expect(screen.getByRole('button', { name: 'GIF 第 1 帧' }).className).not.toContain(
+    'border-primary'
+  );
+  await waitFor(() => expect(screen.getAllByLabelText('GIF 第 2 帧预览')[0]).toBeInTheDocument());
+});
+
+test('keeps GIF placement controls compact and vertically aligned with header actions', async () => {
+  window.history.replaceState(
+    {},
+    '',
+    '/custom-face-image-pixelizer?width=128&height=32&mode=gif&selectedFrameIndex=0&frameCount=1'
+  );
+  prepareGifSourceMock.mockResolvedValue({
+    sourceId: 'gif-source-layout',
+    sourceWidth: 4,
+    sourceHeight: 4,
+    frameCount: 1,
+    totalDurationMs: 200,
+    durationWasClamped: false,
+  });
+  pixelizeGifSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    sourceWidth: 4,
+    sourceHeight: 4,
+    totalDurationMs: 200,
+    frames: [
+      {
+        durationMs: 200,
+        packedPixels: createPackedPixels(128, 32),
+        previewPixels: new Array(128 * 32 * 4).fill(255),
+        contentMask: new Array(128 * 32).fill(1),
+      },
+    ],
+  });
+  render(<CustomFaceImagePixelizerWindow />);
+  const input = screen.getByTestId('custom-face-image-input') as HTMLInputElement;
+  fireEvent.change(input, {
+    target: { files: [new File([new Uint8Array([1])], 'layout.gif', { type: 'image/gif' })] },
+  });
+  await waitFor(() => expect(screen.getByTestId('gif-application-options')).toBeInTheDocument());
+  const options = screen.getByTestId('gif-application-options');
+  expect(options).toContainElement(screen.getByTestId('gif-placement-switch'));
+  expect(options).toContainElement(screen.getByTestId('gif-transparency-switch'));
+  fireEvent.click(screen.getByRole('button', { name: '插入' }));
+  expect(screen.getByRole('combobox', { name: 'GIF 插入位置' })).toBeInTheDocument();
+  expect(screen.queryByTestId('gif-insertion-native-select')).not.toBeInTheDocument();
+  expect(screen.getByTestId('gif-placement-switch').className).toContain('items-center');
+});
+
+test('uses the editor frame count rather than imported GIF frame count for insertion positions', async () => {
+  window.history.replaceState(
+    {},
+    '',
+    '/custom-face-image-pixelizer?width=128&height=32&mode=gif&selectedFrameIndex=0&frameCount=1'
+  );
+  prepareGifSourceMock.mockResolvedValue({
+    sourceId: 'gif-source-frame-count',
+    sourceWidth: 4,
+    sourceHeight: 4,
+    frameCount: 3,
+    totalDurationMs: 300,
+    durationWasClamped: false,
+  });
+  pixelizeGifSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    sourceWidth: 4,
+    sourceHeight: 4,
+    totalDurationMs: 300,
+    frames: Array.from({ length: 3 }, (_, index) => ({
+      durationMs: 100,
+      packedPixels: createPackedPixels(128, 32, index),
+      previewPixels: new Array(128 * 32 * 4).fill(255),
+      contentMask: new Array(128 * 32).fill(1),
+    })),
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.change(screen.getByTestId('custom-face-image-input'), {
+    target: { files: [new File([new Uint8Array([1])], 'frame-count.gif', { type: 'image/gif' })] },
+  });
+  await waitFor(() => expect(screen.getByTestId('gif-application-options')).toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: '插入' }));
+  fireEvent.click(screen.getByRole('combobox', { name: 'GIF 插入位置' }));
+
+  expect(screen.getAllByRole('option')).toHaveLength(2);
+  expect(screen.getByRole('option', { name: '最前面' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: '最后面' })).toBeInTheDocument();
+});
+
+test('keeps the GIF frame policy prompt as a full-width block in the narrow options panel', async () => {
+  window.history.replaceState({}, '', '/custom-face-image-pixelizer?width=320&height=240&mode=gif');
+  prepareGifSourceMock.mockResolvedValue({
+    sourceId: 'gif-source-policy-layout',
+    sourceWidth: 8,
+    sourceHeight: 8,
+    frameCount: 11,
+    totalDurationMs: 1100,
+    durationWasClamped: false,
+  });
+  pixelizeGifSourceMock.mockResolvedValue({
+    width: 320,
+    height: 240,
+    sourceWidth: 8,
+    sourceHeight: 8,
+    totalDurationMs: 1100,
+    frames: Array.from({ length: 11 }, (_, index) => ({
+      durationMs: 100,
+      packedPixels: createPackedPixels(320, 240, index),
+      previewPixels: new Array(320 * 240 * 4).fill(255),
+      contentMask: new Array(320 * 240).fill(1),
+    })),
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.change(screen.getByTestId('custom-face-image-input'), {
+    target: {
+      files: [new File([new Uint8Array([1])], 'policy-layout.gif', { type: 'image/gif' })],
+    },
+  });
+
+  await waitFor(() =>
+    expect(screen.getByText('帧数超过 10 帧，请选择处理方式')).toBeInTheDocument()
+  );
+  const prompt = screen.getByText('帧数超过 10 帧，请选择处理方式');
+  expect(prompt.className).toContain('w-full');
+  expect(prompt.className).toContain('min-w-0');
+});
+
+test('uses forward manual selection as opt-in and updates the processed preview in real time', async () => {
+  window.history.replaceState({}, '', '/custom-face-image-pixelizer?width=320&height=240&mode=gif');
+  prepareGifSourceMock.mockResolvedValue({
+    sourceId: 'gif-source-manual-keep',
+    sourceWidth: 8,
+    sourceHeight: 8,
+    frameCount: 11,
+    totalDurationMs: 1100,
+    durationWasClamped: false,
+  });
+  pixelizeGifSourceMock.mockResolvedValue({
+    width: 320,
+    height: 240,
+    sourceWidth: 8,
+    sourceHeight: 8,
+    totalDurationMs: 1100,
+    frames: Array.from({ length: 11 }, (_, index) => ({
+      durationMs: 100,
+      packedPixels: createPackedPixels(320, 240, index),
+      previewPixels: new Array(320 * 240 * 4).fill(255),
+      contentMask: new Array(320 * 240).fill(1),
+    })),
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.change(screen.getByTestId('custom-face-image-input'), {
+    target: { files: [new File([new Uint8Array([1])], 'manual-keep.gif', { type: 'image/gif' })] },
+  });
+
+  await waitFor(() => expect(screen.getByText('处理后预览 · 11 帧')).toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: '正向选择（保留）' }));
+  expect(screen.getByText('处理后预览 · 0 帧')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'GIF 第 1 帧' }).className).toContain('opacity-40');
+  fireEvent.click(screen.getByRole('button', { name: 'GIF 第 1 帧' }));
+  expect(screen.getByText('处理后预览 · 1 帧')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '处理后 GIF 第 1 帧' })).toBeInTheDocument();
+  expect(screen.getByText('原始第 1 帧')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '处理后 GIF 第 1 帧' }));
+  expect(screen.getByRole('button', { name: 'GIF 第 1 帧' }).className).toContain('border-primary');
+});
+
+test('uses reverse manual selection as opt-out and reflects processed durations', async () => {
+  window.history.replaceState({}, '', '/custom-face-image-pixelizer?width=320&height=240&mode=gif');
+  prepareGifSourceMock.mockResolvedValue({
+    sourceId: 'gif-source-manual-discard',
+    sourceWidth: 8,
+    sourceHeight: 8,
+    frameCount: 11,
+    totalDurationMs: 1100,
+    durationWasClamped: false,
+  });
+  pixelizeGifSourceMock.mockResolvedValue({
+    width: 320,
+    height: 240,
+    sourceWidth: 8,
+    sourceHeight: 8,
+    totalDurationMs: 1100,
+    frames: Array.from({ length: 11 }, (_, index) => ({
+      durationMs: index === 0 ? 100 : 50,
+      packedPixels: createPackedPixels(320, 240, index),
+      previewPixels: new Array(320 * 240 * 4).fill(255),
+      contentMask: new Array(320 * 240).fill(1),
+    })),
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.change(screen.getByTestId('custom-face-image-input'), {
+    target: {
+      files: [new File([new Uint8Array([1])], 'manual-discard.gif', { type: 'image/gif' })],
+    },
+  });
+
+  await waitFor(() => expect(screen.getByText('处理后预览 · 11 帧')).toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: '反向选择（丢弃）' }));
+  expect(screen.getByText('处理后预览 · 11 帧')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'GIF 第 1 帧' }));
+  expect(screen.getByText('处理后预览 · 10 帧')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '仅保留帧原时长' }));
+  expect(screen.getByText('总时长 500 ms')).toBeInTheDocument();
 });
 
 test('loads an image under react strict mode without leaving the workspace busy', async () => {

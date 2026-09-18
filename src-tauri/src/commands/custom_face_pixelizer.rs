@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 use crate::app_services::custom_face_pixelizer::{
-    pixelize_custom_face_image as pixelize_image, CustomFacePixelizeRequest,
-    CustomFacePixelizeResult, CustomFacePixelizeSourceRequest,
+    pixelize_custom_face_image as pixelize_image, CustomFaceGifPixelizeResult,
+    CustomFacePixelizeRequest, CustomFacePixelizeResult, CustomFacePixelizeSourceRequest,
+    PrepareCustomFaceGifPixelizerSourceRequest, PrepareCustomFaceGifPixelizerSourceResult,
     PrepareCustomFacePixelizerSourceRequest, PrepareCustomFacePixelizerSourceResult,
 };
 use crate::infrastructure::app_paths;
@@ -24,6 +25,19 @@ pub struct CustomFaceImageImportReadyPayload {
     pub packed_pixels: Vec<u8>,
     pub source_width: u32,
     pub source_height: u32,
+    #[serde(default)]
+    pub frames: Option<Vec<CustomFaceImageImportFramePayload>>,
+    #[serde(default)]
+    pub placement: Option<String>,
+    #[serde(default)]
+    pub insertion_index: Option<usize>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomFaceImageImportFramePayload {
+    pub duration_ms: u16,
+    pub packed_pixels: Vec<u8>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -31,6 +45,12 @@ pub struct CustomFaceImageImportReadyPayload {
 pub struct OpenCustomFaceImagePixelizerRequest {
     pub width: u32,
     pub height: u32,
+    #[serde(default)]
+    pub mode: String,
+    #[serde(default)]
+    pub selected_frame_index: Option<usize>,
+    #[serde(default)]
+    pub frame_count: Option<usize>,
 }
 
 #[tauri::command]
@@ -72,6 +92,28 @@ pub async fn pixelize_custom_face_image_source(
 ) -> Result<CustomFacePixelizeResult, String> {
     let source_store = state.custom_face_pixelizer_source_store.clone();
     tauri::async_runtime::spawn_blocking(move || source_store.pixelize_source(request))
+        .await
+        .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn prepare_custom_face_gif_pixelizer_source(
+    state: State<'_, AppState>,
+    request: PrepareCustomFaceGifPixelizerSourceRequest,
+) -> Result<PrepareCustomFaceGifPixelizerSourceResult, String> {
+    let source_store = state.custom_face_pixelizer_source_store.clone();
+    tauri::async_runtime::spawn_blocking(move || source_store.prepare_gif_source(request))
+        .await
+        .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn pixelize_custom_face_gif_source(
+    state: State<'_, AppState>,
+    request: CustomFacePixelizeSourceRequest,
+) -> Result<CustomFaceGifPixelizeResult, String> {
+    let source_store = state.custom_face_pixelizer_source_store.clone();
+    tauri::async_runtime::spawn_blocking(move || source_store.pixelize_gif_source(request))
         .await
         .map_err(|error| error.to_string())?
 }
@@ -125,15 +167,27 @@ fn open_or_focus(
         return Ok(());
     }
     let url = format!(
-        "/custom-face-image-pixelizer?width={}&height={}",
-        request.width, request.height
+        "/custom-face-image-pixelizer?width={}&height={}&mode={}&selectedFrameIndex={}&frameCount={}",
+        request.width,
+        request.height,
+        if request.mode == "gif" {
+            "gif"
+        } else {
+            "image"
+        },
+        request.selected_frame_index.unwrap_or(0),
+        request.frame_count.unwrap_or(1)
     );
     let window = WebviewWindowBuilder::new(
         app,
         CUSTOM_FACE_IMAGE_PIXELIZER_LABEL,
         WebviewUrl::App(url.into()),
     )
-    .title("CC Notice 图片导入")
+    .title(if request.mode == "gif" {
+        "CC Notice GIF 导入"
+    } else {
+        "CC Notice 图片导入"
+    })
     .inner_size(
         CUSTOM_FACE_IMAGE_PIXELIZER_INNER_SIZE.0,
         CUSTOM_FACE_IMAGE_PIXELIZER_INNER_SIZE.1,

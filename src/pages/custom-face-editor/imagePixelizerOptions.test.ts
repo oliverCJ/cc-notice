@@ -7,6 +7,7 @@ describe('image pixelizer options', () => {
     expect(defaults.mode).toBe('mono');
     expect(defaults.colorCount).toBe(8);
     expect(defaults.dither).toBe(false);
+    expect(defaults.backgroundInvert).toBe(false);
     expect(defaults.contrast).toBe(0);
     expect(defaults.brightness).toBe(0);
     expect(defaults.scale).toBe(1);
@@ -21,5 +22,16 @@ describe('image pixelizer options', () => {
     expect(normalizePixelizerOptions({ ...defaults, offsetX: 999 }).offsetX).toBe(512);
     expect(normalizePixelizerOptions({ ...defaults, rotationDeg: 240 }).rotationDeg).toBe(180);
     expect(normalizePixelizerOptions({ ...defaults, rotationDeg: -240 }).rotationDeg).toBe(-180);
+  });
+
+  test('keeps transparent background lighting independent from image invert', () => {
+    const normalized = normalizePixelizerOptions({
+      ...defaultPixelizerOptions(),
+      invert: true,
+      backgroundInvert: true,
+    });
+
+    expect(normalized.invert).toBe(true);
+    expect(normalized.backgroundInvert).toBe(true);
   });
 });

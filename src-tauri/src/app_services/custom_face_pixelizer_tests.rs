@@ -64,6 +64,24 @@ fn png_2x2_black() -> Vec<u8> {
     bytes
 }
 
+fn png_2x1_black_and_transparent() -> Vec<u8> {
+    let mut bytes = Vec::new();
+    let image = image::RgbaImage::from_fn(2, 1, |x, _| {
+        if x == 0 {
+            image::Rgba([0, 0, 0, 255])
+        } else {
+            image::Rgba([255, 255, 255, 0])
+        }
+    });
+    image::DynamicImage::ImageRgba8(image)
+        .write_to(
+            &mut std::io::Cursor::new(&mut bytes),
+            image::ImageOutputFormat::Png,
+        )
+        .expect("png should encode");
+    bytes
+}
+
 fn png_5x5_asymmetric_marker() -> Vec<u8> {
     let mut bytes = Vec::new();
     let image = image::RgbaImage::from_fn(5, 5, |x, y| {
@@ -100,6 +118,7 @@ fn default_options() -> CustomFacePixelizeOptions {
         color_count: 8,
         dither: true,
         invert: false,
+        background_invert: false,
         threshold: 128,
         contrast: 0,
         brightness: 0,
@@ -116,6 +135,63 @@ fn packed_pixel_active(pixels: &[u8], width: usize, x: usize, y: usize) -> bool 
 }
 
 #[test]
+fn mono_background_invert_lights_only_transparent_pixels() {
+    let root = unique_temp_root("cc-notice-pixelizer-service-background-invert");
+    let normal = pixelize_custom_face_image(
+        &root,
+        CustomFacePixelizeRequest {
+            profile_width: 2,
+            profile_height: 1,
+            image_bytes: png_2x1_black_and_transparent(),
+            options: CustomFacePixelizeOptions {
+                dither: false,
+                background_invert: false,
+                ..default_options()
+            },
+        },
+    )
+    .expect("png should pixelize without transparent background lighting");
+    let background_lit = pixelize_custom_face_image(
+        &root,
+        CustomFacePixelizeRequest {
+            profile_width: 2,
+            profile_height: 1,
+            image_bytes: png_2x1_black_and_transparent(),
+            options: CustomFacePixelizeOptions {
+                dither: false,
+                background_invert: true,
+                ..default_options()
+            },
+        },
+    )
+    .expect("png should pixelize with transparent background lighting");
+    let inverted_content = pixelize_custom_face_image(
+        &root,
+        CustomFacePixelizeRequest {
+            profile_width: 2,
+            profile_height: 1,
+            image_bytes: png_2x1_black_and_transparent(),
+            options: CustomFacePixelizeOptions {
+                dither: false,
+                invert: true,
+                background_invert: true,
+                ..default_options()
+            },
+        },
+    )
+    .expect("png should pixelize with image invert and transparent background lighting");
+
+    assert!(packed_pixel_active(&normal.packed_pixels, 2, 0, 0));
+    assert!(!packed_pixel_active(&normal.packed_pixels, 2, 1, 0));
+    assert!(packed_pixel_active(&background_lit.packed_pixels, 2, 0, 0));
+    assert!(packed_pixel_active(&background_lit.packed_pixels, 2, 1, 0));
+    assert!(!packed_pixel_active(&inverted_content.packed_pixels, 2, 0, 0));
+    assert!(packed_pixel_active(&inverted_content.packed_pixels, 2, 1, 0));
+    assert_eq!(normal.preview_pixels[7], 0);
+    assert_eq!(background_lit.preview_pixels[7], 255);
+}
+
+#[test]
 fn mono_preview_respects_invert() {
     let root = unique_temp_root("cc-notice-pixelizer-service-invert");
     let normal = pixelize_custom_face_image(
@@ -129,6 +205,7 @@ fn mono_preview_respects_invert() {
                 color_count: 8,
                 dither: false,
                 invert: false,
+                background_invert: false,
                 threshold: 128,
                 contrast: 0,
                 brightness: 0,
@@ -151,6 +228,7 @@ fn mono_preview_respects_invert() {
                 color_count: 8,
                 dither: false,
                 invert: true,
+                background_invert: false,
                 threshold: 128,
                 contrast: 0,
                 brightness: 0,
@@ -321,6 +399,7 @@ fn pixelizes_png_bytes_into_color_preview() {
                 color_count: 4,
                 dither: true,
                 invert: false,
+                background_invert: false,
                 threshold: 128,
                 contrast: 0,
                 brightness: 0,
@@ -354,6 +433,7 @@ fn accepts_max_color_palette_for_preview() {
                 color_count: 256,
                 dither: false,
                 invert: false,
+                background_invert: false,
                 threshold: 128,
                 contrast: 0,
                 brightness: 0,

@@ -1164,6 +1164,7 @@ export type CustomFacePixelizeOptions = {
   colorCount: number;
   dither: boolean;
   invert: boolean;
+  backgroundInvert: boolean;
   threshold: number;
   contrast: number;
   brightness: number;
@@ -1194,6 +1195,15 @@ export type PrepareCustomFacePixelizerSourceResult = {
   workingHeight: number;
 };
 
+export type PrepareCustomFaceGifPixelizerSourceResult = {
+  sourceId: string;
+  sourceWidth: number;
+  sourceHeight: number;
+  frameCount: number;
+  totalDurationMs: number;
+  durationWasClamped: boolean;
+};
+
 export type CustomFacePixelizeSourceRequest = {
   sourceId: string;
   profileWidth: number;
@@ -1206,14 +1216,36 @@ export type CustomFacePixelizeResult = {
   height: number;
   packedPixels: number[];
   previewPixels: number[];
+  contentMask: number[];
   sourceWidth: number;
   sourceHeight: number;
+};
+
+export type CustomFaceGifPixelizeFrameResult = {
+  durationMs: number;
+  packedPixels: number[];
+  previewPixels: number[];
+  contentMask: number[];
+};
+
+export type CustomFaceGifPixelizeResult = {
+  width: number;
+  height: number;
+  frames: CustomFaceGifPixelizeFrameResult[];
+  sourceWidth: number;
+  sourceHeight: number;
+  totalDurationMs: number;
 };
 
 export type CustomFaceImageImportReadyPayload = {
   packedPixels: number[];
   sourceWidth: number;
   sourceHeight: number;
+  frames?: Array<{ durationMs: number; packedPixels: number[] }>;
+  placement?: 'replace' | 'insert' | 'append';
+  transparencyMode?: 'replace' | 'overlay';
+  contentMasks?: number[][];
+  insertionIndex?: number;
 };
 
 export type ExportCustomFaceRequest = {
@@ -1530,6 +1562,9 @@ export function closeCustomFaceEditor() {
 export type OpenCustomFaceImagePixelizerRequest = {
   width: number;
   height: number;
+  mode?: 'image' | 'gif';
+  selectedFrameIndex?: number;
+  frameCount?: number;
 };
 
 export function openCustomFaceImagePixelizer(request: OpenCustomFaceImagePixelizerRequest) {
@@ -1555,6 +1590,19 @@ export function prepareCustomFaceImagePixelizerSource(
 
 export function pixelizeCustomFaceImageSource(request: CustomFacePixelizeSourceRequest) {
   return invoke<CustomFacePixelizeResult>('pixelize_custom_face_image_source', { request });
+}
+
+export function prepareCustomFaceGifPixelizerSource(
+  request: PrepareCustomFacePixelizerSourceRequest
+) {
+  return invoke<PrepareCustomFaceGifPixelizerSourceResult>(
+    'prepare_custom_face_gif_pixelizer_source',
+    { request }
+  );
+}
+
+export function pixelizeCustomFaceGifSource(request: CustomFacePixelizeSourceRequest) {
+  return invoke<CustomFaceGifPixelizeResult>('pixelize_custom_face_gif_source', { request });
 }
 
 export function releaseCustomFaceImagePixelizerSource(sourceId: string) {

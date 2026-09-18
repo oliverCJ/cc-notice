@@ -3,6 +3,7 @@ export type ImagePixelizerOptions = {
   colorCount: number;
   dither: boolean;
   invert: boolean;
+  backgroundInvert: boolean;
   threshold: number;
   contrast: number;
   brightness: number;
@@ -18,6 +19,7 @@ export function defaultPixelizerOptions(): ImagePixelizerOptions {
     colorCount: 8,
     dither: false,
     invert: false,
+    backgroundInvert: false,
     threshold: 128,
     contrast: 0,
     brightness: 0,
@@ -42,6 +44,7 @@ export function normalizePixelizerOptions(options: ImagePixelizerOptions): Image
     ...options,
     mode,
     colorCount,
+    backgroundInvert: Boolean(options.backgroundInvert),
     threshold,
     contrast,
     brightness,

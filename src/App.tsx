@@ -19,7 +19,7 @@ import {
   saveDesktopNoticeWindowBounds,
   saveDesktopNoticeInstance,
   updateCustomInternalEvent,
-  UpdateCustomInternalEventRequest
+  UpdateCustomInternalEventRequest,
 } from './api/tauriApi';
 import type { DesktopNoticeInstance, DesktopNoticeWindowPayload } from '@/domain/desktopNotice';
 import { createTranslator, I18nProvider } from './i18n';
@@ -42,7 +42,7 @@ import {
   WindowStartupMode,
   aiTools,
   syncAiToolsFromBackend,
-  PageId
+  PageId,
 } from './state/appStore';
 import { AppShell } from '@/components/app/AppShell';
 import { useAppBootstrap } from '@/hooks/useAppBootstrap';
@@ -120,7 +120,7 @@ export default function App() {
     setAppConfig,
     setHookEventState,
     setInternalEvents,
-    setProfileState
+    setProfileState,
   } = useAppBootstrap();
   const deviceRegistry = useDeviceRuntimeRegistry();
   useEffect(() => {
@@ -138,7 +138,7 @@ export default function App() {
     handleClearDebugLog,
     handleSendTestEvent,
     refreshDebugState,
-    softwareNoticeState
+    softwareNoticeState,
   } = useDebugState();
   const runtimeMonitor = useRuntimeMonitorState(activePage === 'monitor');
   const diagnosticsState = useDiagnosticsState(
@@ -154,7 +154,7 @@ export default function App() {
     handleImportProfilePackage,
     handlePreviewProfilePackageImport,
     handleSaveProfile,
-    profileError
+    profileError,
   } = useProfileActions({ setAppConfig, setHookEventState, setProfileState });
   const {
     clearHookConfigArtifacts,
@@ -174,11 +174,11 @@ export default function App() {
     hookTargetError,
     hookTargetErrors,
     hookTargetWriteResults,
-    setHookConfigPreviewDialog
+    setHookConfigPreviewDialog,
   } = useHookConfigActions({
     hookEventState,
     selectedToolId,
-    setHookEventState
+    setHookEventState,
   });
   const t = useMemo(() => createTranslator(appConfig.ui.language), [appConfig.ui.language]);
   useThemeMode(appConfig.ui.themeMode);
@@ -222,11 +222,18 @@ export default function App() {
     let unlisten: (() => void) | null = null;
     void listen<boolean>(CUSTOM_FACE_EDITOR_STATE_EVENT, (event) => {
       if (!disposed) setCustomFaceEditorOpen(event.payload);
-    }).then((dispose) => {
-      if (disposed) dispose();
-      else unlisten = dispose;
-    }).catch((error) => console.warn('failed to initialize custom face editor state listener', error));
-    return () => { disposed = true; unlisten?.(); };
+    })
+      .then((dispose) => {
+        if (disposed) dispose();
+        else unlisten = dispose;
+      })
+      .catch((error) =>
+        console.warn('failed to initialize custom face editor state listener', error)
+      );
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
   }, []);
 
   useEffect(() => {
@@ -248,12 +255,7 @@ export default function App() {
         const hasResize =
           typeof event.payload.width === 'number' && typeof event.payload.height === 'number';
         const shouldSaveBounds = Boolean(event.payload.userInitiated || hasResize);
-        if (
-          disposed ||
-          !shouldSaveBounds ||
-          !instanceId ||
-          activePageRef.current === 'settings'
-        ) {
+        if (disposed || !shouldSaveBounds || !instanceId || activePageRef.current === 'settings') {
           return;
         }
         const existingTimer = desktopNoticeBoundsSaveTimersRef.current.get(instanceId);
@@ -295,11 +297,16 @@ export default function App() {
       if (disposed) return;
       appConfigRef.current = event.payload;
       setAppConfig(event.payload);
-    }).then((dispose) => {
-      if (disposed) dispose();
-      else unlisten = dispose;
-    }).catch((error) => console.warn('failed to initialize app config listener', error));
-    return () => { disposed = true; unlisten?.(); };
+    })
+      .then((dispose) => {
+        if (disposed) dispose();
+        else unlisten = dispose;
+      })
+      .catch((error) => console.warn('failed to initialize app config listener', error));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
   }, []);
 
   useEffect(() => {
@@ -350,56 +357,56 @@ export default function App() {
   async function handleSavePort(port: number) {
     await saveAppConfigQueued((currentConfig) => ({
       ...currentConfig,
-      localHookServer: { port }
+      localHookServer: { port },
     }));
   }
 
   async function handleSaveLanguage(language: Language) {
     await saveAppConfigQueued((currentConfig) => ({
       ...currentConfig,
-      ui: { ...currentConfig.ui, language }
+      ui: { ...currentConfig.ui, language },
     }));
   }
 
   async function handleSaveThemeMode(themeMode: AppConfigView['ui']['themeMode']) {
     await saveAppConfigQueued((currentConfig) => ({
       ...currentConfig,
-      ui: { ...currentConfig.ui, themeMode }
+      ui: { ...currentConfig.ui, themeMode },
     }));
   }
 
   async function handleSaveWindowCloseBehavior(closeBehavior: WindowCloseBehavior) {
     await saveAppConfigQueued((currentConfig) => ({
       ...currentConfig,
-      window: { ...currentConfig.window, closeBehavior }
+      window: { ...currentConfig.window, closeBehavior },
     }));
   }
 
   async function handleSaveWindowStartupMode(startupMode: WindowStartupMode) {
     await saveAppConfigQueued((currentConfig) => ({
       ...currentConfig,
-      window: { ...currentConfig.window, startupMode }
+      window: { ...currentConfig.window, startupMode },
     }));
   }
 
   async function handleSaveWindowLaunchAtLogin(launchAtLogin: boolean) {
     await saveAppConfigQueued((currentConfig) => ({
       ...currentConfig,
-      window: { ...currentConfig.window, launchAtLogin }
+      window: { ...currentConfig.window, launchAtLogin },
     }));
   }
 
   async function handleSaveWindowHideOnLoginLaunch(hideWindowOnLoginLaunch: boolean) {
     await saveAppConfigQueued((currentConfig) => ({
       ...currentConfig,
-      window: { ...currentConfig.window, hideWindowOnLoginLaunch }
+      window: { ...currentConfig.window, hideWindowOnLoginLaunch },
     }));
   }
 
   async function handleSaveArduinoCliPath(arduinoCliPath: string | null) {
     await saveAppConfigQueued((currentConfig) => ({
       ...currentConfig,
-      arduinoCliPath
+      arduinoCliPath,
     }));
   }
 
@@ -411,11 +418,11 @@ export default function App() {
     const instances = await saveDesktopNoticeInstance(instance);
     setAppConfig((currentConfig) => ({
       ...currentConfig,
-      desktopNoticeInstances: instances
+      desktopNoticeInstances: instances,
     }));
     appConfigRef.current = {
       ...appConfigRef.current,
-      desktopNoticeInstances: instances
+      desktopNoticeInstances: instances,
     };
   }
 
@@ -423,11 +430,11 @@ export default function App() {
     const instances = await deleteDesktopNoticeInstance(instanceId);
     setAppConfig((currentConfig) => ({
       ...currentConfig,
-      desktopNoticeInstances: instances
+      desktopNoticeInstances: instances,
     }));
     appConfigRef.current = {
       ...appConfigRef.current,
-      desktopNoticeInstances: instances
+      desktopNoticeInstances: instances,
     };
   }
 
@@ -443,11 +450,11 @@ export default function App() {
     const instances = await saveDesktopNoticeWindowBounds(instanceId);
     setAppConfig((currentConfig) => ({
       ...currentConfig,
-      desktopNoticeInstances: instances
+      desktopNoticeInstances: instances,
     }));
     appConfigRef.current = {
       ...appConfigRef.current,
-      desktopNoticeInstances: instances
+      desktopNoticeInstances: instances,
     };
   }
 
@@ -560,7 +567,9 @@ export default function App() {
     ),
     monitor: (
       <Suspense
-        fallback={<div className="text-sm text-muted-foreground">{t('common.loadingRuntimeMonitor')}</div>}
+        fallback={
+          <div className="text-sm text-muted-foreground">{t('common.loadingRuntimeMonitor')}</div>
+        }
       >
         <MonitorPage
           runtimeSnapshot={runtimeMonitor.snapshot}
@@ -670,7 +679,7 @@ export default function App() {
         onRefresh={refreshDebugState}
         onSendTestEvent={handleSendTestEvent}
       />
-    )
+    ),
   }[activePage];
 
   return (
@@ -690,7 +699,7 @@ export default function App() {
           profileName={profileState?.activeProfile.name ?? profileState?.activeProfileId ?? ''}
           repair={profileState?.profileRepair}
         />
-        {(devicesPageVisited || activePage === 'devices') ? (
+        {devicesPageVisited || activePage === 'devices' ? (
           <div hidden={activePage !== 'devices'}>
             <DevicesPage
               registry={deviceRegistry}
@@ -725,10 +734,14 @@ function CustomFaceEditorWindowApp() {
       configEventVersion += 1;
       setLanguage(event.payload.ui.language as Language);
       setThemeMode(event.payload.ui.themeMode ?? 'system');
-    }).then((dispose) => {
-      if (disposed) dispose();
-      else unlisten = dispose;
-    }).catch((error) => console.warn('failed to initialize custom face editor config listener', error));
+    })
+      .then((dispose) => {
+        if (disposed) dispose();
+        else unlisten = dispose;
+      })
+      .catch((error) =>
+        console.warn('failed to initialize custom face editor config listener', error)
+      );
     void getAppConfig()
       .then((config) => {
         if (!disposed && configEventVersion === 0) {
@@ -736,7 +749,9 @@ function CustomFaceEditorWindowApp() {
           setThemeMode(config.ui.themeMode ?? 'system');
         }
       })
-      .catch((error) => console.warn('failed to load app config for custom face editor window', error));
+      .catch((error) =>
+        console.warn('failed to load app config for custom face editor window', error)
+      );
     return () => {
       disposed = true;
       unlisten?.();
@@ -762,10 +777,14 @@ function CustomFaceImagePixelizerWindowApp() {
       if (disposed) return;
       setLanguage(event.payload.ui.language as Language);
       setThemeMode(event.payload.ui.themeMode ?? 'system');
-    }).then((dispose) => {
-      if (disposed) dispose();
-      else unlisten = dispose;
-    }).catch((error) => console.warn('failed to initialize custom face image pixelizer config listener', error));
+    })
+      .then((dispose) => {
+        if (disposed) dispose();
+        else unlisten = dispose;
+      })
+      .catch((error) =>
+        console.warn('failed to initialize custom face image pixelizer config listener', error)
+      );
     void getAppConfig()
       .then((config) => {
         if (!disposed) {
@@ -773,7 +792,9 @@ function CustomFaceImagePixelizerWindowApp() {
           setThemeMode(config.ui.themeMode ?? 'system');
         }
       })
-      .catch((error) => console.warn('failed to load app config for custom face image pixelizer window', error));
+      .catch((error) =>
+        console.warn('failed to load app config for custom face image pixelizer window', error)
+      );
     return () => {
       disposed = true;
       unlisten?.();
@@ -781,9 +802,11 @@ function CustomFaceImagePixelizerWindowApp() {
   }, []);
 
   return (
-    <I18nProvider language={language}>
-      <CustomFaceImagePixelizerWindow />
-    </I18nProvider>
+    <div className="h-screen overflow-hidden">
+      <I18nProvider language={language}>
+        <CustomFaceImagePixelizerWindow />
+      </I18nProvider>
+    </div>
   );
 }
 
@@ -799,10 +822,14 @@ function CustomFaceImageVectorizerWindowApp() {
       if (disposed) return;
       setLanguage(event.payload.ui.language as Language);
       setThemeMode(event.payload.ui.themeMode ?? 'system');
-    }).then((dispose) => {
-      if (disposed) dispose();
-      else unlisten = dispose;
-    }).catch((error) => console.warn('failed to initialize custom face image vectorizer config listener', error));
+    })
+      .then((dispose) => {
+        if (disposed) dispose();
+        else unlisten = dispose;
+      })
+      .catch((error) =>
+        console.warn('failed to initialize custom face image vectorizer config listener', error)
+      );
     void getAppConfig()
       .then((config) => {
         if (!disposed) {
@@ -810,7 +837,9 @@ function CustomFaceImageVectorizerWindowApp() {
           setThemeMode(config.ui.themeMode ?? 'system');
         }
       })
-      .catch((error) => console.warn('failed to load app config for custom face image vectorizer window', error));
+      .catch((error) =>
+        console.warn('failed to load app config for custom face image vectorizer window', error)
+      );
     return () => {
       disposed = true;
       unlisten?.();
@@ -858,10 +887,12 @@ function DesktopNoticeWindowApp({ instanceId }: { instanceId: string }) {
       if (disposed) return;
       setLanguage(event.payload.ui.language as Language);
       setThemeMode(event.payload.ui.themeMode ?? 'system');
-    }).then((dispose) => {
-      if (disposed) dispose();
-      else unlistenConfig = dispose;
-    }).catch((error) => console.warn('failed to initialize desktop notice config listener', error));
+    })
+      .then((dispose) => {
+        if (disposed) dispose();
+        else unlistenConfig = dispose;
+      })
+      .catch((error) => console.warn('failed to initialize desktop notice config listener', error));
     const bootstrapPayload = window.__CC_NOTICE_DESKTOP_NOTICE_PAYLOAD__;
     if (bootstrapPayload) {
       console.info('desktop notice window bootstrap payload loaded', {
@@ -869,7 +900,7 @@ function DesktopNoticeWindowApp({ instanceId }: { instanceId: string }) {
         variant: bootstrapPayload.variant,
         width: bootstrapPayload.size.width,
         height: bootstrapPayload.size.height,
-        previewMode: bootstrapPayload.previewMode
+        previewMode: bootstrapPayload.previewMode,
       });
       setPayload(bootstrapPayload);
       return () => {
@@ -887,7 +918,7 @@ function DesktopNoticeWindowApp({ instanceId }: { instanceId: string }) {
               variant: nextPayload.variant,
               width: nextPayload.size.width,
               height: nextPayload.size.height,
-              previewMode: nextPayload.previewMode
+              previewMode: nextPayload.previewMode,
             });
             setLanguage(config.ui.language as Language);
             setThemeMode(config.ui.themeMode ?? 'system');
@@ -958,10 +989,12 @@ function DeviceMonitorWindowApp({ deviceId }: { deviceId: string }) {
       if (disposed) return;
       setLanguage(event.payload.ui.language as Language);
       setThemeMode(event.payload.ui.themeMode ?? 'system');
-    }).then((dispose) => {
-      if (disposed) dispose();
-      else unlisten = dispose;
-    }).catch((error) => console.warn('failed to initialize device monitor config listener', error));
+    })
+      .then((dispose) => {
+        if (disposed) dispose();
+        else unlisten = dispose;
+      })
+      .catch((error) => console.warn('failed to initialize device monitor config listener', error));
     void getAppConfig()
       .then((config) => {
         if (!disposed) {

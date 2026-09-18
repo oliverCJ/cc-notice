@@ -8,12 +8,19 @@ export type EditorProfile = {
   framebufferBytes: number;
 };
 
-export type ToolId = 'brush' | 'eraser' | 'select' | 'line' | 'rectangle' | 'circle' | 'triangle' | 'pen';
+export type ToolId =
+  'brush' | 'eraser' | 'select' | 'line' | 'rectangle' | 'circle' | 'triangle' | 'pen';
 
 export type EditorMode = 'editing' | 'empty-group' | 'empty-frame';
 
 export type SelectionShape = 'rectangle' | 'circle';
-export type SelectionRect = { x: number; y: number; width: number; height: number; shape?: SelectionShape };
+export type SelectionRect = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  shape?: SelectionShape;
+};
 export type SelectionPivot = { x: number; y: number };
 
 export type SelectionMoveBaseline = {
@@ -82,6 +89,14 @@ export type EditorAction =
   | { type: 'move-frame'; from: number; to: number }
   | { type: 'set-selected-frame-duration'; durationMs: number }
   | { type: 'apply-pixel-transaction'; pixels: Array<{ x: number; y: number; active: boolean }> }
+  | {
+      type: 'apply-frame-import';
+      frames: Array<{ durationMs: number; packedPixels: number[] }>;
+      contentMasks?: number[][];
+      transparencyMode?: 'replace' | 'overlay';
+      insertionIndex?: number;
+      placement: 'replace' | 'insert' | 'append';
+    }
   | { type: 'duplicate-frame'; index: number }
   | { type: 'delete-frame'; index: number }
   | { type: 'delete-face'; faceId: string; replacementDefaultFaceId?: string }
