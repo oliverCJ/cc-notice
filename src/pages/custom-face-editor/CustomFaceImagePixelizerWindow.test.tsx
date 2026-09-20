@@ -279,6 +279,45 @@ test('passes transparent background lighting separately from image invert for im
   );
 });
 
+test('passes alpha threshold changes to image source pixelization', async () => {
+  prepareSourceMock.mockResolvedValue({
+    sourceId: 'source-alpha-threshold',
+    sourceWidth: 8,
+    sourceHeight: 8,
+    workingWidth: 8,
+    workingHeight: 8,
+  });
+  pixelizeSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    packedPixels: createPackedPixels(128, 32),
+    previewPixels: new Array(128 * 32 * 4).fill(255),
+    sourceWidth: 8,
+    sourceHeight: 8,
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.change(screen.getByTestId('custom-face-image-input'), {
+    target: { files: [new File([new Uint8Array([1])], 'alpha.png', { type: 'image/png' })] },
+  });
+  await waitFor(() => expect(pixelizeSourceMock).toHaveBeenCalledOnce());
+
+  fireEvent.change(screen.getByRole('slider', { name: '透明判定阈值' }), {
+    target: { value: '64' },
+  });
+  await waitForDebouncedPixelize();
+
+  await waitFor(() =>
+    expect(pixelizeSourceMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          alphaThreshold: 64,
+        }),
+      })
+    )
+  );
+});
+
 test('loads a GIF source and shows multi-frame preview with durations', async () => {
   window.history.replaceState({}, '', '/custom-face-image-pixelizer?width=128&height=32&mode=gif');
   prepareGifSourceMock.mockResolvedValue({
@@ -379,6 +418,54 @@ test('passes transparent background lighting to GIF source without changing tran
     )
   );
   expect(screen.getByText('当前选择：透明区域应用后覆盖为空')).toBeInTheDocument();
+});
+
+test('passes alpha threshold changes to GIF source pixelization', async () => {
+  window.history.replaceState({}, '', '/custom-face-image-pixelizer?width=128&height=32&mode=gif');
+  prepareGifSourceMock.mockResolvedValue({
+    sourceId: 'gif-source-alpha-threshold',
+    sourceWidth: 4,
+    sourceHeight: 4,
+    frameCount: 1,
+    totalDurationMs: 120,
+    durationWasClamped: false,
+  });
+  pixelizeGifSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    sourceWidth: 4,
+    sourceHeight: 4,
+    totalDurationMs: 120,
+    frames: [
+      {
+        durationMs: 120,
+        packedPixels: createPackedPixels(128, 32),
+        previewPixels: new Array(128 * 32 * 4).fill(255),
+        contentMask: new Array(128 * 32).fill(0),
+      },
+    ],
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.change(screen.getByTestId('custom-face-image-input'), {
+    target: { files: [new File([new Uint8Array([1])], 'alpha.gif', { type: 'image/gif' })] },
+  });
+  await waitFor(() => expect(pixelizeGifSourceMock).toHaveBeenCalledOnce());
+
+  fireEvent.change(screen.getByRole('slider', { name: '透明判定阈值' }), {
+    target: { value: '80' },
+  });
+  await waitForDebouncedPixelize();
+
+  await waitFor(() =>
+    expect(pixelizeGifSourceMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          alphaThreshold: 80,
+        }),
+      })
+    )
+  );
 });
 
 test('applies GIF overlay with original content masks after transparent background lighting', async () => {

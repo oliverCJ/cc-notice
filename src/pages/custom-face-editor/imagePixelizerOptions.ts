@@ -4,6 +4,7 @@ export type ImagePixelizerOptions = {
   dither: boolean;
   invert: boolean;
   backgroundInvert: boolean;
+  alphaThreshold: number;
   threshold: number;
   contrast: number;
   brightness: number;
@@ -20,6 +21,7 @@ export function defaultPixelizerOptions(): ImagePixelizerOptions {
     dither: false,
     invert: false,
     backgroundInvert: false,
+    alphaThreshold: 32,
     threshold: 128,
     contrast: 0,
     brightness: 0,
@@ -34,6 +36,7 @@ export function normalizePixelizerOptions(options: ImagePixelizerOptions): Image
   const mode = options.mode === 'color' ? 'color' : 'mono';
   const colorCount = clamp(Math.trunc(options.colorCount || 2), 2, 256);
   const threshold = clamp(Math.trunc(options.threshold || 128), 0, 255);
+  const alphaThreshold = clamp(Math.trunc(options.alphaThreshold ?? 32), 0, 255);
   const contrast = clamp(Math.trunc(options.contrast || 0), -100, 100);
   const brightness = clamp(Math.trunc(options.brightness || 0), -100, 100);
   const scale = clamp(Number(options.scale) || 1, 0.1, 4);
@@ -45,6 +48,7 @@ export function normalizePixelizerOptions(options: ImagePixelizerOptions): Image
     mode,
     colorCount,
     backgroundInvert: Boolean(options.backgroundInvert),
+    alphaThreshold,
     threshold,
     contrast,
     brightness,

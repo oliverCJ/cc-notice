@@ -782,6 +782,7 @@ export function CustomFaceImagePixelizerWindow() {
     setOptions((current) => ({
       ...current,
       threshold: defaultOptions.threshold,
+      alphaThreshold: defaultOptions.alphaThreshold,
       contrast: defaultOptions.contrast,
       brightness: defaultOptions.brightness,
       invert: defaultOptions.invert,
@@ -1506,6 +1507,19 @@ export function CustomFaceImagePixelizerWindow() {
               />
 
               <RangeField
+                id="image-pixelizer-alpha-threshold"
+                label={t('customFaceEditor.imagePixelizer.alphaThreshold')}
+                hint={t('customFaceEditor.imagePixelizer.alphaThresholdHint')}
+                min={0}
+                max={255}
+                step={1}
+                value={options.alphaThreshold}
+                onChange={(value) =>
+                  setOptions((current) => ({ ...current, alphaThreshold: value }))
+                }
+              />
+
+              <RangeField
                 id="image-pixelizer-contrast"
                 label={t('customFaceEditor.imagePixelizer.contrast')}
                 hint={t('customFaceEditor.imagePixelizer.contrastHint')}
@@ -1870,6 +1884,7 @@ function samePixelizerOptions(left: ImagePixelizerOptions, right: ImagePixelizer
     left.invert === right.invert &&
     left.backgroundInvert === right.backgroundInvert &&
     left.threshold === right.threshold &&
+    left.alphaThreshold === right.alphaThreshold &&
     left.contrast === right.contrast &&
     left.brightness === right.brightness &&
     left.scale === right.scale &&

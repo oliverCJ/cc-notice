@@ -1466,6 +1466,9 @@ export const enMessages = {
         'In color mode this limits the preview palette size; monochrome mode ignores it.',
       threshold: 'Threshold',
       thresholdHint: 'Lower thresholds keep more bright pixels; higher thresholds tighten edges.',
+      alphaThreshold: 'Alpha threshold',
+      alphaThresholdHint:
+        'Pixels with alpha below this value are treated as transparent background. Increase it to reduce antialiasing fringes.',
       contrast: 'Contrast',
       contrastHint:
         'Higher contrast spreads light and dark values apart; lower contrast softens the result.',

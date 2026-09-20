@@ -1408,6 +1408,9 @@ export const zhMessages = {
       colorCountHint: '多色模式下限制预览调色板的颜色数；黑白模式会忽略该值。',
       threshold: '阈值',
       thresholdHint: '黑白模式下更小的阈值会保留更多亮点，更大的阈值会收紧边缘。',
+      alphaThreshold: '透明判定阈值',
+      alphaThresholdHint:
+        'Alpha 低于该值的像素按透明背景处理。提高数值可减少抗锯齿边缘毛边。',
       contrast: '对比度',
       contrastHint: '提高对比度会拉开明暗差异，降低对比度会让结果更柔和。',
       brightness: '亮度',

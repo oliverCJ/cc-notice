@@ -8,6 +8,7 @@ describe('image pixelizer options', () => {
     expect(defaults.colorCount).toBe(8);
     expect(defaults.dither).toBe(false);
     expect(defaults.backgroundInvert).toBe(false);
+    expect(defaults.alphaThreshold).toBe(32);
     expect(defaults.contrast).toBe(0);
     expect(defaults.brightness).toBe(0);
     expect(defaults.scale).toBe(1);
@@ -18,6 +19,8 @@ describe('image pixelizer options', () => {
     expect(normalizePixelizerOptions({ ...defaultPixelizerOptions(), colorCount: 999 }).colorCount).toBe(256);
     expect(normalizePixelizerOptions({ ...defaults, contrast: -999 }).contrast).toBe(-100);
     expect(normalizePixelizerOptions({ ...defaults, brightness: 999 }).brightness).toBe(100);
+    expect(normalizePixelizerOptions({ ...defaults, alphaThreshold: -1 }).alphaThreshold).toBe(0);
+    expect(normalizePixelizerOptions({ ...defaults, alphaThreshold: 999 }).alphaThreshold).toBe(255);
     expect(normalizePixelizerOptions({ ...defaults, scale: 99 }).scale).toBe(4);
     expect(normalizePixelizerOptions({ ...defaults, offsetX: 999 }).offsetX).toBe(512);
     expect(normalizePixelizerOptions({ ...defaults, rotationDeg: 240 }).rotationDeg).toBe(180);

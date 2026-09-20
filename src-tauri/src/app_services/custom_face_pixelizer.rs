@@ -19,6 +19,7 @@ const MAX_IMAGE_PIXELS: u64 = 16_000_000;
 const MAX_PIXELIZER_SCALE: f32 = 4.0;
 const MAX_WORKING_IMAGE_EDGE: u32 = 1024;
 const TEMP_DIR_NAME: &str = "custom-face-pixelizer";
+const DEFAULT_ALPHA_THRESHOLD: u8 = 32;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -36,6 +37,8 @@ pub struct CustomFacePixelizeOptions {
     pub invert: bool,
     #[serde(default)]
     pub background_invert: bool,
+    #[serde(default = "default_alpha_threshold")]
+    pub alpha_threshold: u8,
     pub threshold: u8,
     pub contrast: i16,
     pub brightness: i16,
@@ -43,6 +46,10 @@ pub struct CustomFacePixelizeOptions {
     pub rotation_deg: i16,
     pub offset_x: i32,
     pub offset_y: i32,
+}
+
+fn default_alpha_threshold() -> u8 {
+    DEFAULT_ALPHA_THRESHOLD
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -441,6 +448,7 @@ fn pixelize_decoded_image(
         options.rotation_deg,
         options.offset_x,
         options.offset_y,
+        options.alpha_threshold,
     );
     let content_mask = content_source
         .map(|source| {
@@ -452,6 +460,7 @@ fn pixelize_decoded_image(
                 options.rotation_deg,
                 options.offset_x,
                 options.offset_y,
+                options.alpha_threshold,
             )
             .1
         })
@@ -500,6 +509,7 @@ fn pixelize_decoded_image(
         dither = options.dither,
         invert = options.invert,
         background_invert = options.background_invert,
+        alpha_threshold = options.alpha_threshold,
         scale = options.scale,
         rotation_deg = options.rotation_deg,
         offset_x = options.offset_x,
@@ -590,6 +600,7 @@ fn render_image_to_target_canvas(
     rotation_deg: i16,
     offset_x: i32,
     offset_y: i32,
+    alpha_threshold: u8,
 ) -> (image::RgbaImage, Vec<bool>) {
     let scale = if scale.is_finite() {
         scale.clamp(0.1, MAX_PIXELIZER_SCALE)
@@ -616,6 +627,7 @@ fn render_image_to_target_canvas(
         rotation_deg.clamp(-180, 180),
         offset_x,
         offset_y,
+        alpha_threshold,
     );
     (canvas, mask)
 }
@@ -627,6 +639,7 @@ fn render_transformed_object(
     rotation_deg: i16,
     offset_x: i32,
     offset_y: i32,
+    alpha_threshold: u8,
 ) {
     let target_width = canvas.width();
     let target_height = canvas.height();
@@ -661,11 +674,19 @@ fn render_transformed_object(
             }
             let pixel = *source.get_pixel(source_x as u32, source_y as u32);
             canvas.put_pixel(target_x, target_y, pixel);
-            if pixel.0[3] > 0 {
+            if alpha_is_content(pixel.0[3], alpha_threshold) {
                 mask[target_y as usize * target_width as usize + target_x as usize] = true;
             }
         }
     }
+}
+
+fn alpha_is_content(alpha: u8, alpha_threshold: u8) -> bool {
+    // 阈值为 0 时保持旧行为：只要不是完全透明就算作图像内容。
+    if alpha_threshold == 0 {
+        return alpha > 0;
+    }
+    alpha >= alpha_threshold
 }
 
 fn pack_pixels_from_luma(

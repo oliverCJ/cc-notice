@@ -1165,6 +1165,7 @@ export type CustomFacePixelizeOptions = {
   dither: boolean;
   invert: boolean;
   backgroundInvert: boolean;
+  alphaThreshold: number;
   threshold: number;
   contrast: number;
   brightness: number;
