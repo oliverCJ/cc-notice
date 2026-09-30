@@ -795,6 +795,16 @@ export function CustomFaceImagePixelizerWindow() {
       mode: sourceType === 'text' ? 'mono' : defaultOptions.mode,
       colorCount: defaultOptions.colorCount,
     }));
+  const resetPixelizerOption = <K extends keyof ImagePixelizerOptions>(key: K) =>
+    setOptions((current) => ({
+      ...current,
+      [key]: defaultOptions[key],
+    }));
+  const resetTextPixelizerOption = <K extends keyof TextPixelizerOptions>(key: K) =>
+    updateTextOptions((current) => ({
+      ...current,
+      [key]: defaultTextPixelizerOptions()[key],
+    }));
   const resetTextLayoutOptions = () =>
     setTextOptions((current) => ({
       ...defaultTextPixelizerOptions(),
@@ -1274,6 +1284,8 @@ export function CustomFaceImagePixelizerWindow() {
                 step={1}
                 value={options.colorCount}
                 disabled={normalizedOptions.mode !== 'color'}
+                defaultValue={defaultOptions.colorCount}
+                onReset={() => resetPixelizerOption('colorCount')}
                 onChange={(value) => setOptions((current) => ({ ...current, colorCount: value }))}
               />
             </ParameterGroup>
@@ -1378,6 +1390,8 @@ export function CustomFaceImagePixelizerWindow() {
                     max={128}
                     step={1}
                     value={textOptions.fontSize}
+                    defaultValue={defaultTextPixelizerOptions().fontSize}
+                    onReset={() => resetTextPixelizerOption('fontSize')}
                     onChange={(value) =>
                       updateTextOptions((current) => ({ ...current, fontSize: value }))
                     }
@@ -1390,6 +1404,8 @@ export function CustomFaceImagePixelizerWindow() {
                     max={1}
                     step={0.05}
                     value={textOptions.letterSpacingEm}
+                    defaultValue={defaultTextPixelizerOptions().letterSpacingEm}
+                    onReset={() => resetTextPixelizerOption('letterSpacingEm')}
                     onChange={(value) =>
                       updateTextOptions((current) => ({ ...current, letterSpacingEm: value }))
                     }
@@ -1402,6 +1418,8 @@ export function CustomFaceImagePixelizerWindow() {
                     max={2}
                     step={0.05}
                     value={textOptions.lineHeight}
+                    defaultValue={defaultTextPixelizerOptions().lineHeight}
+                    onReset={() => resetTextPixelizerOption('lineHeight')}
                     onChange={(value) =>
                       updateTextOptions((current) => ({ ...current, lineHeight: value }))
                     }
@@ -1414,6 +1432,8 @@ export function CustomFaceImagePixelizerWindow() {
                     max={64}
                     step={1}
                     value={textOptions.padding}
+                    defaultValue={defaultTextPixelizerOptions().padding}
+                    onReset={() => resetTextPixelizerOption('padding')}
                     onChange={(value) =>
                       updateTextOptions((current) => ({ ...current, padding: value }))
                     }
@@ -1448,6 +1468,8 @@ export function CustomFaceImagePixelizerWindow() {
                 max={4}
                 step={0.05}
                 value={options.scale}
+                defaultValue={defaultOptions.scale}
+                onReset={() => resetPixelizerOption('scale')}
                 onChange={(value) => setOptions((current) => ({ ...current, scale: value }))}
               />
               <RangeField
@@ -1458,6 +1480,8 @@ export function CustomFaceImagePixelizerWindow() {
                 max={180}
                 step={1}
                 value={options.rotationDeg}
+                defaultValue={defaultOptions.rotationDeg}
+                onReset={() => resetPixelizerOption('rotationDeg')}
                 onChange={(value) => setOptions((current) => ({ ...current, rotationDeg: value }))}
               />
               <RangeField
@@ -1468,6 +1492,8 @@ export function CustomFaceImagePixelizerWindow() {
                 max={canvasSize.width}
                 step={1}
                 value={options.offsetX}
+                defaultValue={defaultOptions.offsetX}
+                onReset={() => resetPixelizerOption('offsetX')}
                 onChange={(value) => setOptions((current) => ({ ...current, offsetX: value }))}
               />
               <RangeField
@@ -1478,6 +1504,8 @@ export function CustomFaceImagePixelizerWindow() {
                 max={canvasSize.height}
                 step={1}
                 value={options.offsetY}
+                defaultValue={defaultOptions.offsetY}
+                onReset={() => resetPixelizerOption('offsetY')}
                 onChange={(value) => setOptions((current) => ({ ...current, offsetY: value }))}
               />
               <div className="flex gap-2">
@@ -1503,6 +1531,8 @@ export function CustomFaceImagePixelizerWindow() {
                 max={255}
                 step={1}
                 value={options.threshold}
+                defaultValue={defaultOptions.threshold}
+                onReset={() => resetPixelizerOption('threshold')}
                 onChange={(value) => setOptions((current) => ({ ...current, threshold: value }))}
               />
 
@@ -1514,6 +1544,8 @@ export function CustomFaceImagePixelizerWindow() {
                 max={255}
                 step={1}
                 value={options.alphaThreshold}
+                defaultValue={defaultOptions.alphaThreshold}
+                onReset={() => resetPixelizerOption('alphaThreshold')}
                 onChange={(value) =>
                   setOptions((current) => ({ ...current, alphaThreshold: value }))
                 }
@@ -1527,6 +1559,8 @@ export function CustomFaceImagePixelizerWindow() {
                 max={100}
                 step={1}
                 value={options.contrast}
+                defaultValue={defaultOptions.contrast}
+                onReset={() => resetPixelizerOption('contrast')}
                 onChange={(value) => setOptions((current) => ({ ...current, contrast: value }))}
               />
 
@@ -1538,6 +1572,8 @@ export function CustomFaceImagePixelizerWindow() {
                 max={100}
                 step={1}
                 value={options.brightness}
+                defaultValue={defaultOptions.brightness}
+                onReset={() => resetPixelizerOption('brightness')}
                 onChange={(value) => setOptions((current) => ({ ...current, brightness: value }))}
               />
 
@@ -1741,7 +1777,9 @@ function RangeField({
   max,
   step,
   value,
+  defaultValue,
   disabled = false,
+  onReset,
   onChange,
 }: {
   id: string;
@@ -1751,7 +1789,9 @@ function RangeField({
   max: number;
   step: number;
   value: number;
+  defaultValue?: number;
   disabled?: boolean;
+  onReset?: () => void;
   onChange: (value: number) => void;
 }) {
   const t = useI18n();
@@ -1767,7 +1807,10 @@ function RangeField({
         min={min}
         step={step}
         value={value}
+        defaultValue={defaultValue}
         disabled={disabled}
+        resetLabel={t('customFaceEditor.imagePixelizer.resetGroup', { group: label })}
+        onReset={onReset}
         onChange={onChange}
       />
     </div>
