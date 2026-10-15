@@ -497,7 +497,9 @@ test('applies GIF overlay with original content masks after transparent backgrou
 
   render(<CustomFaceImagePixelizerWindow />);
   fireEvent.change(screen.getByTestId('custom-face-image-input'), {
-    target: { files: [new File([new Uint8Array([1])], 'transparent-overlay.gif', { type: 'image/gif' })] },
+    target: {
+      files: [new File([new Uint8Array([1])], 'transparent-overlay.gif', { type: 'image/gif' })],
+    },
   });
   await waitFor(() => expect(pixelizeGifSourceMock).toHaveBeenCalledOnce());
   fireEvent.click(screen.getByRole('checkbox', { name: '透明背景点亮' }));
@@ -854,6 +856,40 @@ test('passes transform adjustments to the pixelizer and can reset them', async (
       })
     )
   );
+});
+
+test('resets a single image pixelizer parameter without changing other adjusted parameters', async () => {
+  prepareSourceMock.mockResolvedValue({
+    sourceId: 'source-single-reset',
+    sourceWidth: 8,
+    sourceHeight: 8,
+    workingWidth: 8,
+    workingHeight: 8,
+  });
+  pixelizeSourceMock.mockResolvedValue({
+    width: 128,
+    height: 32,
+    packedPixels: createPackedPixels(128, 32),
+    previewPixels: new Array(128 * 32 * 4).fill(255),
+    sourceWidth: 8,
+    sourceHeight: 8,
+  });
+
+  render(<CustomFaceImagePixelizerWindow />);
+  fireEvent.change(screen.getByTestId('custom-face-image-input'), {
+    target: { files: [new File([new Uint8Array([1])], 'single-reset.png', { type: 'image/png' })] },
+  });
+  await waitFor(() => expect(pixelizeSourceMock).toHaveBeenCalledOnce());
+
+  fireEvent.change(screen.getByRole('slider', { name: '缩放' }), { target: { value: '1.5' } });
+  fireEvent.change(screen.getByRole('slider', { name: '阈值' }), { target: { value: '64' } });
+
+  expect(screen.getByRole('textbox', { name: '缩放数值' })).toHaveValue('1.5');
+  expect(screen.getByRole('textbox', { name: '阈值数值' })).toHaveValue('64');
+  fireEvent.click(screen.getByRole('button', { name: '还原缩放' }));
+
+  expect(screen.getByRole('textbox', { name: '缩放数值' })).toHaveValue('1');
+  expect(screen.getByRole('textbox', { name: '阈值数值' })).toHaveValue('64');
 });
 
 test('debounces rapid parameter changes before pixelizing again', async () => {
