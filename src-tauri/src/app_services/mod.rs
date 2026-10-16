@@ -4,6 +4,7 @@ pub mod arduino_cli_service;
 pub mod custom_face_installer;
 pub mod custom_face_library;
 pub mod custom_face_pixelizer;
+pub mod custom_face_pixelizer_gif;
 pub mod custom_face_vectorizer;
 pub mod custom_internal_event_service;
 pub mod custom_mascot_service;

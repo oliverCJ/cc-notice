@@ -174,6 +174,7 @@ export function CustomFaceEditorWorkbench({
   const pixels = frame
     ? new Uint8Array(frame.packedPixels)
     : new Uint8Array(state.profile.framebufferBytes);
+  const importWindowOpen = imagePixelizerOpen || imageVectorizerOpen || svgDialogOpen;
 
   useEffect(() => {
     if (!state.past.length) return;
@@ -208,15 +209,36 @@ export function CustomFaceEditorWorkbench({
   useEffect(() => {
     let disposed = false;
     let unlisten: (() => void) | null = null;
-    void listen<{ packedPixels: number[]; sourceWidth: number; sourceHeight: number }>(
-      CUSTOM_FACE_IMAGE_IMPORT_READY_EVENT,
-      (event) => {
-        if (disposed) return;
-        if (!isValidImageImportPayload(event.payload, state.profile.width, state.profile.height)) {
-          setPendingImport(null);
-          setStatusMessage(t('customFaceEditor.workbench.imageImportSizeMismatch'));
-          return;
-        }
+    void listen<{
+      packedPixels: number[];
+      sourceWidth: number;
+      sourceHeight: number;
+      frames?: Array<{ durationMs: number; packedPixels: number[] }>;
+      contentMasks?: number[][];
+      transparencyMode?: 'replace' | 'overlay';
+      placement?: 'replace' | 'insert' | 'append';
+      insertionIndex?: number;
+    }>(CUSTOM_FACE_IMAGE_IMPORT_READY_EVENT, (event) => {
+      if (disposed) return;
+      if (!isValidImageImportPayload(event.payload, state.profile.width, state.profile.height)) {
+        setPendingImport(null);
+        setStatusMessage(t('customFaceEditor.workbench.imageImportSizeMismatch'));
+        return;
+      }
+      if (event.payload.frames && event.payload.frames.length > 0) {
+        dispatch({
+          type: 'apply-frame-import',
+          frames: event.payload.frames,
+          contentMasks: event.payload.contentMasks,
+          transparencyMode: event.payload.transparencyMode,
+          insertionIndex: event.payload.insertionIndex,
+          placement:
+            event.payload.placement === 'insert' || event.payload.placement === 'append'
+              ? event.payload.placement
+              : 'replace',
+        });
+        setStatusMessage(t('customFaceEditor.workbench.imageApplied'));
+      } else {
         setPendingImport(
           createPendingImportState(
             event.payload.packedPixels,
@@ -225,11 +247,11 @@ export function CustomFaceEditorWorkbench({
             event.payload.sourceHeight
           )
         );
-        setAssetLibraryOpen(false);
-        setSvgDialogOpen(false);
-        setStatusMessage(t('customFaceEditor.workbench.imageApplied'));
       }
-    )
+      setAssetLibraryOpen(false);
+      setSvgDialogOpen(false);
+      setStatusMessage(t('customFaceEditor.workbench.imageApplied'));
+    })
       .then((dispose) => {
         if (disposed) dispose();
         else unlisten = dispose;
@@ -558,7 +580,6 @@ export function CustomFaceEditorWorkbench({
     try {
       const preview = await previewCustomFaceItemImport(path);
       if (
-        preview.displayProfileId !== state.profile.id ||
         preview.width !== state.profile.width ||
         preview.height !== state.profile.height
       ) {
@@ -702,7 +723,7 @@ export function CustomFaceEditorWorkbench({
           <button
             type="button"
             className="border border-border px-3 py-2 text-sm"
-            disabled={saving || !face}
+            disabled={saving || !face || importWindowOpen}
             onClick={() => setSvgDialogOpen(true)}
           >
             {t('customFaceEditor.workbench.importSvg')}
@@ -710,15 +731,47 @@ export function CustomFaceEditorWorkbench({
           <button
             type="button"
             className="border border-border px-3 py-2 text-sm"
-            disabled={saving || !face}
+            disabled={saving || !face || importWindowOpen}
             onClick={() =>
-              void openCustomFaceImagePixelizer({
-                width: state.profile.width,
-                height: state.profile.height,
-              }).catch((error) => console.warn('failed to open custom face image pixelizer', error))
+              (() => {
+                imagePixelizerOpenRef.current = true;
+                setImagePixelizerOpen(true);
+                void openCustomFaceImagePixelizer({
+                  width: state.profile.width,
+                  height: state.profile.height,
+                }).catch((error) => {
+                  imagePixelizerOpenRef.current = false;
+                  setImagePixelizerOpen(false);
+                  console.warn('failed to open custom face image pixelizer', error);
+                });
+              })()
             }
           >
             {t('customFaceEditor.workbench.importImage')}
+          </button>
+          <button
+            type="button"
+            className="border border-border px-3 py-2 text-sm"
+            disabled={saving || !face || importWindowOpen}
+            onClick={() =>
+              (() => {
+                imagePixelizerOpenRef.current = true;
+                setImagePixelizerOpen(true);
+                void openCustomFaceImagePixelizer({
+                  width: state.profile.width,
+                  height: state.profile.height,
+                  selectedFrameIndex: state.selectedFrameIndex,
+                  frameCount: face?.frames.length ?? 0,
+                  mode: 'gif',
+                }).catch((error) => {
+                  imagePixelizerOpenRef.current = false;
+                  setImagePixelizerOpen(false);
+                  console.warn('failed to open custom face GIF importer', error);
+                });
+              })()
+            }
+          >
+            导入 GIF 动画
           </button>
           <button
             type="button"

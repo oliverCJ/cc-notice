@@ -384,6 +384,8 @@ pub fn run() {
             commands::custom_face_pixelizer::pixelize_custom_face_image,
             commands::custom_face_pixelizer::prepare_custom_face_image_pixelizer_source,
             commands::custom_face_pixelizer::pixelize_custom_face_image_source,
+            commands::custom_face_pixelizer::prepare_custom_face_gif_pixelizer_source,
+            commands::custom_face_pixelizer::pixelize_custom_face_gif_source,
             commands::custom_face_pixelizer::release_custom_face_image_pixelizer_source,
             commands::custom_face_pixelizer::apply_custom_face_image_import,
             commands::custom_face_vectorizer::open_custom_face_image_vectorizer,

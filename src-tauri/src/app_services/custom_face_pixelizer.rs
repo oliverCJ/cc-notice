@@ -12,11 +12,14 @@ use image::GenericImageView;
 use image::Pixel;
 use serde::{Deserialize, Serialize};
 
+use super::custom_face_pixelizer_gif::decode_gif;
+
 const MAX_IMAGE_BYTES: usize = 10 * 1024 * 1024;
 const MAX_IMAGE_PIXELS: u64 = 16_000_000;
 const MAX_PIXELIZER_SCALE: f32 = 4.0;
 const MAX_WORKING_IMAGE_EDGE: u32 = 1024;
 const TEMP_DIR_NAME: &str = "custom-face-pixelizer";
+const DEFAULT_ALPHA_THRESHOLD: u8 = 32;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -32,6 +35,10 @@ pub struct CustomFacePixelizeOptions {
     pub color_count: u16,
     pub dither: bool,
     pub invert: bool,
+    #[serde(default)]
+    pub background_invert: bool,
+    #[serde(default = "default_alpha_threshold")]
+    pub alpha_threshold: u8,
     pub threshold: u8,
     pub contrast: i16,
     pub brightness: i16,
@@ -39,6 +46,10 @@ pub struct CustomFacePixelizeOptions {
     pub rotation_deg: i16,
     pub offset_x: i32,
     pub offset_y: i32,
+}
+
+fn default_alpha_threshold() -> u8 {
+    DEFAULT_ALPHA_THRESHOLD
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -70,6 +81,25 @@ pub struct PrepareCustomFacePixelizerSourceResult {
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct PrepareCustomFaceGifPixelizerSourceRequest {
+    pub profile_width: u32,
+    pub profile_height: u32,
+    pub image_bytes: Vec<u8>,
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PrepareCustomFaceGifPixelizerSourceResult {
+    pub source_id: String,
+    pub source_width: u32,
+    pub source_height: u32,
+    pub frame_count: usize,
+    pub total_duration_ms: u32,
+    pub duration_was_clamped: bool,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CustomFacePixelizeSourceRequest {
     pub source_id: String,
     pub profile_width: u32,
@@ -84,14 +114,41 @@ pub struct CustomFacePixelizeResult {
     pub height: u32,
     pub packed_pixels: Vec<u8>,
     pub preview_pixels: Vec<u8>,
+    pub content_mask: Vec<u8>,
     pub source_width: u32,
     pub source_height: u32,
 }
 
+#[derive(Clone, Debug, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomFaceGifPixelizeFrameResult {
+    pub duration_ms: u16,
+    pub packed_pixels: Vec<u8>,
+    pub preview_pixels: Vec<u8>,
+    pub content_mask: Vec<u8>,
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomFaceGifPixelizeResult {
+    pub width: u32,
+    pub height: u32,
+    pub frames: Vec<CustomFaceGifPixelizeFrameResult>,
+    pub source_width: u32,
+    pub source_height: u32,
+    pub total_duration_ms: u32,
+}
+
 struct PreparedPixelizerSource {
-    image: image::DynamicImage,
+    frames: Vec<PreparedPixelizerFrame>,
     source_width: u32,
     source_height: u32,
+}
+
+struct PreparedPixelizerFrame {
+    image: image::DynamicImage,
+    content_mask: Option<image::DynamicImage>,
+    duration_ms: u16,
 }
 
 #[derive(Default)]
@@ -132,7 +189,11 @@ impl CustomFacePixelizerSourceStore {
         sources.insert(
             source_id.clone(),
             PreparedPixelizerSource {
-                image: working_image,
+                frames: vec![PreparedPixelizerFrame {
+                    image: working_image,
+                    content_mask: None,
+                    duration_ms: 200,
+                }],
                 source_width,
                 source_height,
             },
@@ -164,14 +225,140 @@ impl CustomFacePixelizerSourceStore {
         let source = sources
             .get(&request.source_id)
             .ok_or_else(|| "图片源已失效，请重新导入图片".to_string())?;
+        let frame = source
+            .frames
+            .first()
+            .ok_or_else(|| "图片源不包含有效帧".to_string())?;
         pixelize_decoded_image(
-            &source.image,
+            &frame.image,
+            frame.content_mask.as_ref(),
             source.source_width,
             source.source_height,
             request.profile_width,
             request.profile_height,
             &request.options,
         )
+    }
+
+    pub fn prepare_gif_source(
+        &self,
+        request: PrepareCustomFaceGifPixelizerSourceRequest,
+    ) -> Result<PrepareCustomFaceGifPixelizerSourceResult, String> {
+        let generation = self.generation.load(Ordering::Acquire);
+        validate_image_bytes(&request.image_bytes)?;
+        let decoded = decode_gif(&request.image_bytes)?;
+        let source_id = self.next_source_id();
+        let frames = decoded
+            .frames
+            .iter()
+            .map(|frame| {
+                let image = image::DynamicImage::ImageRgba8(
+                    image::RgbaImage::from_raw(
+                        decoded.canvas_width,
+                        decoded.canvas_height,
+                        frame.rgba_pixels.clone(),
+                    )
+                    .ok_or_else(|| "GIF 帧像素数据无效".to_string())?,
+                );
+                Ok(PreparedPixelizerFrame {
+                    image: resize_to_working_image(
+                        &image,
+                        request.profile_width,
+                        request.profile_height,
+                    ),
+                    content_mask: Some(resize_to_working_image(
+                        &image::DynamicImage::ImageRgba8(
+                            image::RgbaImage::from_raw(
+                                decoded.canvas_width,
+                                decoded.canvas_height,
+                                frame.content_mask.clone(),
+                            )
+                            .ok_or_else(|| "GIF 内容掩码无效".to_string())?,
+                        ),
+                        request.profile_width,
+                        request.profile_height,
+                    )),
+                    duration_ms: frame.duration_ms,
+                })
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        let total_duration_ms = frames
+            .iter()
+            .map(|frame| u32::from(frame.duration_ms))
+            .sum();
+        let mut sources = self
+            .sources
+            .lock()
+            .map_err(|error| format!("图片源缓存不可用：{error}"))?;
+        if self.generation.load(Ordering::Acquire) != generation {
+            return Err("图片导入工作台已重置，请重新导入图片".to_string());
+        }
+        sources.insert(
+            source_id.clone(),
+            PreparedPixelizerSource {
+                frames,
+                source_width: decoded.canvas_width,
+                source_height: decoded.canvas_height,
+            },
+        );
+        tracing::info!(
+            source_width = decoded.canvas_width,
+            source_height = decoded.canvas_height,
+            frame_count = decoded.frames.len(),
+            total_duration_ms,
+            "prepared custom face GIF pixelizer source"
+        );
+        Ok(PrepareCustomFaceGifPixelizerSourceResult {
+            source_id,
+            source_width: decoded.canvas_width,
+            source_height: decoded.canvas_height,
+            frame_count: decoded.frames.len(),
+            total_duration_ms,
+            duration_was_clamped: decoded.duration_was_clamped,
+        })
+    }
+
+    pub fn pixelize_gif_source(
+        &self,
+        request: CustomFacePixelizeSourceRequest,
+    ) -> Result<CustomFaceGifPixelizeResult, String> {
+        let sources = self
+            .sources
+            .lock()
+            .map_err(|error| format!("图片源缓存不可用：{error}"))?;
+        let source = sources
+            .get(&request.source_id)
+            .ok_or_else(|| "图片源已失效，请重新导入图片".to_string())?;
+        let mut frames = Vec::with_capacity(source.frames.len());
+        for frame in &source.frames {
+            let result = pixelize_decoded_image(
+                &frame.image,
+                frame.content_mask.as_ref(),
+                source.source_width,
+                source.source_height,
+                request.profile_width,
+                request.profile_height,
+                &request.options,
+            )?;
+            frames.push(CustomFaceGifPixelizeFrameResult {
+                duration_ms: frame.duration_ms,
+                packed_pixels: result.packed_pixels,
+                preview_pixels: result.preview_pixels,
+                content_mask: result.content_mask,
+            });
+        }
+        let total_duration_ms = frames
+            .iter()
+            .map(|frame| u32::from(frame.duration_ms))
+            .sum();
+        Ok(CustomFaceGifPixelizeResult {
+            width: request.profile_width,
+            height: request.profile_height,
+            frames,
+            source_width: source.source_width,
+            source_height: source.source_height,
+            total_duration_ms,
+        })
     }
 
     pub fn release_source(&self, source_id: &str) -> bool {
@@ -231,6 +418,7 @@ pub fn pixelize_custom_face_image(
     let target_height = request.profile_height;
     let result = pixelize_decoded_image(
         &image,
+        None,
         source_width,
         source_height,
         target_width,
@@ -245,13 +433,14 @@ pub fn pixelize_custom_face_image(
 
 fn pixelize_decoded_image(
     image: &image::DynamicImage,
+    content_source: Option<&image::DynamicImage>,
     source_width: u32,
     source_height: u32,
     target_width: u32,
     target_height: u32,
     options: &CustomFacePixelizeOptions,
 ) -> Result<CustomFacePixelizeResult, String> {
-    let (mut resized, content_mask) = render_image_to_target_canvas(
+    let (mut resized, image_content_mask) = render_image_to_target_canvas(
         &image,
         target_width,
         target_height,
@@ -259,7 +448,23 @@ fn pixelize_decoded_image(
         options.rotation_deg,
         options.offset_x,
         options.offset_y,
+        options.alpha_threshold,
     );
+    let content_mask = content_source
+        .map(|source| {
+            render_image_to_target_canvas(
+                source,
+                target_width,
+                target_height,
+                options.scale,
+                options.rotation_deg,
+                options.offset_x,
+                options.offset_y,
+                options.alpha_threshold,
+            )
+            .1
+        })
+        .unwrap_or(image_content_mask);
     if options.contrast != 0 {
         contrast_in_place(&mut resized, options.contrast as f32);
     }
@@ -276,6 +481,7 @@ fn pixelize_decoded_image(
         &content_mask,
         options.threshold,
         options.invert,
+        options.background_invert,
     );
     let preview_pixels = match options.mode {
         CustomFacePixelizeMode::Mono => build_mono_preview_pixels(
@@ -283,6 +489,7 @@ fn pixelize_decoded_image(
             &content_mask,
             options.threshold,
             options.invert,
+            options.background_invert,
         ),
         CustomFacePixelizeMode::Color => {
             build_color_preview_pixels(&resized, options.color_count, options.dither)?
@@ -301,6 +508,8 @@ fn pixelize_decoded_image(
         color_count = options.color_count,
         dither = options.dither,
         invert = options.invert,
+        background_invert = options.background_invert,
+        alpha_threshold = options.alpha_threshold,
         scale = options.scale,
         rotation_deg = options.rotation_deg,
         offset_x = options.offset_x,
@@ -313,6 +522,7 @@ fn pixelize_decoded_image(
         height: target_height,
         packed_pixels,
         preview_pixels,
+        content_mask: content_mask.iter().map(|active| u8::from(*active)).collect(),
         source_width,
         source_height,
     })
@@ -390,6 +600,7 @@ fn render_image_to_target_canvas(
     rotation_deg: i16,
     offset_x: i32,
     offset_y: i32,
+    alpha_threshold: u8,
 ) -> (image::RgbaImage, Vec<bool>) {
     let scale = if scale.is_finite() {
         scale.clamp(0.1, MAX_PIXELIZER_SCALE)
@@ -416,6 +627,7 @@ fn render_image_to_target_canvas(
         rotation_deg.clamp(-180, 180),
         offset_x,
         offset_y,
+        alpha_threshold,
     );
     (canvas, mask)
 }
@@ -427,6 +639,7 @@ fn render_transformed_object(
     rotation_deg: i16,
     offset_x: i32,
     offset_y: i32,
+    alpha_threshold: u8,
 ) {
     let target_width = canvas.width();
     let target_height = canvas.height();
@@ -461,11 +674,19 @@ fn render_transformed_object(
             }
             let pixel = *source.get_pixel(source_x as u32, source_y as u32);
             canvas.put_pixel(target_x, target_y, pixel);
-            if pixel.0[3] > 0 {
+            if alpha_is_content(pixel.0[3], alpha_threshold) {
                 mask[target_y as usize * target_width as usize + target_x as usize] = true;
             }
         }
     }
+}
+
+fn alpha_is_content(alpha: u8, alpha_threshold: u8) -> bool {
+    // 阈值为 0 时保持旧行为：只要不是完全透明就算作图像内容。
+    if alpha_threshold == 0 {
+        return alpha > 0;
+    }
+    alpha >= alpha_threshold
 }
 
 fn pack_pixels_from_luma(
@@ -473,6 +694,7 @@ fn pack_pixels_from_luma(
     content_mask: &[bool],
     threshold: u8,
     invert: bool,
+    background_invert: bool,
 ) -> Vec<u8> {
     let width = image.width() as usize;
     let height = image.height() as usize;
@@ -480,18 +702,22 @@ fn pack_pixels_from_luma(
     for y in 0..height {
         for x in 0..width {
             let mask_index = y * width + x;
-            if !content_mask.get(mask_index).copied().unwrap_or(false) {
+            let in_content = content_mask.get(mask_index).copied().unwrap_or(false);
+            let active = if in_content {
+                let luminance = image.get_pixel(x as u32, y as u32).0[0];
+                let mut active = luminance <= threshold;
+                if invert {
+                    active = !active;
+                }
+                active
+            } else {
+                background_invert
+            };
+            if !active {
                 continue;
             }
-            let luminance = image.get_pixel(x as u32, y as u32).0[0];
-            let mut active = luminance <= threshold;
-            if invert {
-                active = !active;
-            }
-            if active {
-                let index = x + (y / 8) * width;
-                pixels[index] |= 1 << (y & 7);
-            }
+            let index = x + (y / 8) * width;
+            pixels[index] |= 1 << (y & 7);
         }
     }
     pixels
@@ -502,6 +728,7 @@ fn build_mono_preview_pixels(
     content_mask: &[bool],
     threshold: u8,
     invert: bool,
+    background_invert: bool,
 ) -> Vec<u8> {
     let width = image.width() as usize;
     let height = image.height() as usize;
@@ -510,18 +737,24 @@ fn build_mono_preview_pixels(
         for x in 0..width {
             let mask_index = y * width + x;
             let in_content = content_mask.get(mask_index).copied().unwrap_or(false);
-            let luminance = image.get_pixel(x as u32, y as u32).0[0];
-            let mut active = in_content && luminance <= threshold;
-            if invert {
-                active = in_content && !active;
-            }
+            // 透明背景点亮只影响透明区域，避免污染 GIF 原始 contentMask 语义。
+            let active = if in_content {
+                let luminance = image.get_pixel(x as u32, y as u32).0[0];
+                let mut active = luminance <= threshold;
+                if invert {
+                    active = !active;
+                }
+                active
+            } else {
+                background_invert
+            };
             let offset = (y * width + x) * 4;
             if active {
                 pixels[offset] = 255;
                 pixels[offset + 1] = 255;
                 pixels[offset + 2] = 255;
             }
-            pixels[offset + 3] = 255;
+            pixels[offset + 3] = if in_content || background_invert { 255 } else { 0 };
         }
     }
     pixels

@@ -1466,6 +1466,9 @@ export const enMessages = {
         'In color mode this limits the preview palette size; monochrome mode ignores it.',
       threshold: 'Threshold',
       thresholdHint: 'Lower thresholds keep more bright pixels; higher thresholds tighten edges.',
+      alphaThreshold: 'Alpha threshold',
+      alphaThresholdHint:
+        'Pixels with alpha below this value are treated as transparent background. Increase it to reduce antialiasing fringes.',
       contrast: 'Contrast',
       contrastHint:
         'Higher contrast spreads light and dark values apart; lower contrast softens the result.',
@@ -1481,8 +1484,12 @@ export const enMessages = {
       offsetYHint: 'Move the image up or down to align it on the pixel canvas.',
       dither: 'Dither',
       ditherHint: 'Enable noise-based blending to simulate more shades during preview.',
-      invert: 'Invert',
-      invertHint: 'Invert flips the on/off relationship for opposite-toned source images.',
+      invert: 'Image invert',
+      invertHint:
+        'Flips only the visible image pixels. Transparent background pixels are controlled separately.',
+      backgroundInvert: 'Light transparent background',
+      backgroundInvertHint:
+        'Converts transparent background pixels to lit pixels for assets that need the transparent area preserved as light.',
       outputInfo: 'Output info',
       outputReady: 'Ready',
       outputPending: 'Waiting for image',
