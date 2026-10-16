@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import { I18nProvider } from '@/i18n';
+import { appInfo } from '@/domain/appInfo';
 import { AppSidebarInfo } from './AppSidebarInfo';
 
 describe('AppSidebarInfo', () => {
@@ -11,7 +12,7 @@ describe('AppSidebarInfo', () => {
       </I18nProvider>
     );
 
-    expect(screen.getByText('v1.1.1')).toBeInTheDocument();
+    expect(screen.getByText(`v${appInfo.version}`)).toBeInTheDocument();
     expect(screen.getByText('OliverCJ')).toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });

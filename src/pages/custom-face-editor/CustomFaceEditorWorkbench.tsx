@@ -771,7 +771,7 @@ export function CustomFaceEditorWorkbench({
               })()
             }
           >
-            导入 GIF 动画
+            {t('customFaceEditor.workbench.importGif')}
           </button>
           <button
             type="button"

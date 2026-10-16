@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { AppShell } from './AppShell';
 import { I18nProvider } from '@/i18n';
+import { appInfo } from '@/domain/appInfo';
 
 test('hides nav items marked as hidden', () => {
   render(
@@ -51,7 +52,7 @@ test('renders sidebar app version and developer information', () => {
     </I18nProvider>
   );
 
-  expect(screen.getByText('v1.1.1')).toBeInTheDocument();
+  expect(screen.getByText(`v${appInfo.version}`)).toBeInTheDocument();
   expect(screen.getByText('开发者')).toBeInTheDocument();
   expect(screen.getByText('OliverCJ')).toBeInTheDocument();
 });

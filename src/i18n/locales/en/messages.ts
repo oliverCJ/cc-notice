@@ -1289,6 +1289,7 @@ export const enMessages = {
       saving: 'Saving...',
       importSvg: 'Import SVG',
       importImage: 'Import Image',
+      importGif: 'Import GIF',
       assets: 'Assets',
       groupName: 'Group name',
       applyGroupName: 'Apply group name',

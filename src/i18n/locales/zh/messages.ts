@@ -1240,6 +1240,7 @@ export const zhMessages = {
       saving: '保存中…',
       importSvg: '导入 SVG',
       importImage: '导入图片',
+      importGif: '导入 GIF 动画',
       assets: '素材库',
       groupName: '组名称',
       applyGroupName: '应用组名称',
