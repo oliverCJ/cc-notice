@@ -35,12 +35,15 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          registry-url: https://registry.npmjs.org/
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install npm dependencies
         run: npm ci
+        env:
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
 
       - name: Install macOS Rust target
         if: runner.os == 'macOS'
