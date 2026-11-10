@@ -93,6 +93,11 @@ pub fn codec_for_kind(kind: HookConfigCodecKind) -> &'static dyn HookConfigCodec
             static COPILOT: CopilotHooksJsonCodec = CopilotHooksJsonCodec;
             &COPILOT
         }
+        HookConfigCodecKind::DeepSeekJson => {
+            static DEEPSEEK: super::deepseek_codec::DeepSeekHooksJsonCodec =
+                super::deepseek_codec::DeepSeekHooksJsonCodec;
+            &DEEPSEEK
+        }
     }
 }
 
@@ -130,5 +135,66 @@ mod tests {
         assert!(state.has_managed_hooks);
         assert!(state.matches_selection);
         assert_eq!(Some(&json!("user")), value.get("name"));
+    }
+
+    #[test]
+    fn deepseek_codec_writes_versioned_command_hooks_and_preserves_user_hooks() {
+        let codec = super::super::deepseek_codec::DeepSeekHooksJsonCodec;
+        let value = codec
+            .merge(
+                "deepseek-harness",
+                json!({
+                    "custom": true,
+                    "hooks": {
+                        "Stop": [{"matcher": "special", "hooks": [{"id": "user-stop", "type": "command", "command": "user-hook"}]}]
+                    }
+                }),
+                &["Stop".to_string()],
+                Path::new("cc-notice-relay"),
+                false,
+            )
+            .expect("deepseek merge should work");
+
+        assert_eq!(Some(&json!(1)), value.get("version"));
+        assert_eq!(Some(&json!(true)), value.get("custom"));
+        assert_eq!(
+            Some(&json!("user-stop")),
+            value["hooks"]["Stop"][0]["hooks"][0].get("id")
+        );
+        let managed = &value["hooks"]["Stop"]
+            .as_array()
+            .expect("Stop groups should be an array")[1]["hooks"][0];
+        assert_eq!("command", managed["type"]);
+        assert_eq!("cc-notice-deepseek-Stop", managed["id"]);
+        assert_eq!(10_000, managed["timeoutMs"]);
+        assert_eq!(1, managed["maxConcurrent"]);
+
+        codec
+            .validate("deepseek-harness", &value)
+            .expect("schema should validate");
+    }
+
+    #[test]
+    fn deepseek_codec_restore_removes_only_managed_hooks() {
+        let codec = super::super::deepseek_codec::DeepSeekHooksJsonCodec;
+        let merged = codec
+            .merge(
+                "deepseek-harness",
+                json!({}),
+                &["SessionEnd".to_string()],
+                Path::new("cc-notice-relay"),
+                false,
+            )
+            .expect("deepseek merge should work");
+        let restored = codec
+            .restore("deepseek-harness", merged)
+            .expect("deepseek restore should work");
+        assert_eq!(
+            0,
+            restored["hooks"]["SessionEnd"]
+                .as_array()
+                .expect("SessionEnd groups should remain an array")
+                .len()
+        );
     }
 }

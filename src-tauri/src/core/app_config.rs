@@ -302,6 +302,13 @@ impl AppConfig {
         }
         for target in &self.hook_config_targets {
             registry::ai_tool_definition(&target.source)?;
+            if target.scope == HookConfigTargetScope::Project && target.source == "deepseek-harness"
+            {
+                return Err(format!(
+                    "{} only supports a global hook config target",
+                    target.source
+                ));
+            }
             if target.scope == HookConfigTargetScope::Project && target.project_path.is_none() {
                 return Err("project hook config target requires projectPath".to_string());
             }
@@ -329,6 +336,18 @@ impl AppConfig {
         }
         self.hook_config_targets
             .retain(|target| registry::is_supported_ai_tool(&target.source));
+        self.hook_config_targets.retain(|target| {
+            let allowed = target.scope != HookConfigTargetScope::Project
+                || target.source != "deepseek-harness";
+            if !allowed {
+                tracing::warn!(
+                    source = %target.source,
+                    target_id = %target.id,
+                    "removed project hook config target for global-only source"
+                );
+            }
+            allowed
+        });
         for tool in registry::all_ai_tools() {
             ensure_global_target(
                 &mut self.hook_config_targets,
@@ -916,6 +935,47 @@ mod tests {
             .hook_event_selections
             .events_for_source("unknown-tool")
             .is_empty());
+    }
+
+    #[test]
+    fn rejects_deepseek_project_target() {
+        let mut config = AppConfig::default();
+        config.hook_config_targets.push(HookConfigTarget {
+            id: "deepseek-project".to_string(),
+            scope: HookConfigTargetScope::Project,
+            source: "deepseek-harness".to_string(),
+            label: "DeepSeek Project".to_string(),
+            project_path: Some("/workspace/project-a".to_string()),
+            enabled: false,
+        });
+
+        assert_eq!(
+            Err("deepseek-harness only supports a global hook config target".to_string()),
+            config.validate()
+        );
+    }
+
+    #[test]
+    fn sanitize_removes_historical_deepseek_project_target() {
+        let mut config = AppConfig::default();
+        config.hook_config_targets.push(HookConfigTarget {
+            id: "deepseek-project".to_string(),
+            scope: HookConfigTargetScope::Project,
+            source: "deepseek-harness".to_string(),
+            label: "DeepSeek Project".to_string(),
+            project_path: Some("/workspace/project-a".to_string()),
+            enabled: true,
+        });
+
+        config.sanitize();
+
+        assert!(!config
+            .hook_config_targets
+            .iter()
+            .any(|target| target.id == "deepseek-project"));
+        assert!(config.hook_config_targets.iter().any(|target| {
+            target.source == "deepseek-harness" && target.scope == HookConfigTargetScope::Global
+        }));
     }
 
     #[test]

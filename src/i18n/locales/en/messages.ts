@@ -992,6 +992,13 @@ export const enMessages = {
       recommended: 'Recommended',
       requireOne: 'Select at least one Hook event.',
     },
+    deepseekPlugin: {
+      title: 'DeepSeek Harness plugin',
+      description:
+        'Install and enable the dsh-notice-hooks plugin in DSH before using these Hook settings with cc-notice.',
+      github: 'GitHub',
+      npm: 'npm',
+    },
     targets: {
       title: 'Configuration Targets',
       description: 'Manage global and project-level Hook configuration files.',

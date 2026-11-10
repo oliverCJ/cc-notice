@@ -29,7 +29,7 @@ import {
   CustomFaceLibraryEntries,
   loadCustomFaceLibraryEntries,
 } from '@/domain/customFaces/library';
-import type { AppConfigView } from '@/state/appStore';
+import type { AiToolOption, AppConfigView } from '@/state/appStore';
 
 type DialogState =
   | { type: 'none' }
@@ -43,6 +43,7 @@ type RulesPageProps = {
   activeProfileId: string;
   profileError?: string;
   hookCatalog: HookEventDefinition[];
+  tools?: AiToolOption[];
   hookEventSelections: { bySource: Record<string, string[]> };
   internalEvents: InternalEventDefinition[];
   desktopNoticeInstances: DesktopNoticeInstance[];
@@ -75,6 +76,7 @@ export function RulesPage({
   activeProfileId,
   profileError,
   hookCatalog,
+  tools,
   hookEventSelections,
   internalEvents,
   desktopNoticeInstances,
@@ -313,6 +315,7 @@ export function RulesPage({
 
       <RuleConfigurationTabs
         enabledHookEvents={enabledHookEvents}
+        tools={tools ?? []}
         hookCatalog={hookCatalog}
         internalEvents={internalEvents}
         desktopNoticeInstances={desktopNoticeInstances}

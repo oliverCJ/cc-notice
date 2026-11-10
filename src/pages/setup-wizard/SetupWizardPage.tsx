@@ -1,9 +1,5 @@
 import { Check } from 'lucide-react';
-import {
-  AiToolId,
-  LocalHookServerStatusView,
-  aiTools
-} from '../../state/appStore';
+import { AiToolId, LocalHookServerStatusView } from '../../state/appStore';
 import { DiagnosticsSnapshot, NoticeProfile } from '../../api/tauriApi';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +17,7 @@ import { useI18n } from '@/i18n';
 type SetupWizardPageProps = {
   activeStepId: SetupStepId;
   selectedToolId: AiToolId;
+  tools?: Array<{ id: AiToolId; name: string }>;
   hookServerStatus: LocalHookServerStatusView;
   profile: NoticeProfile | null;
   diagnosticsSnapshot: DiagnosticsSnapshot | null;
@@ -40,6 +37,7 @@ type SetupWizardPageProps = {
 export function SetupWizardPage({
   activeStepId,
   selectedToolId,
+  tools = [],
   hookServerStatus,
   profile,
   diagnosticsSnapshot,
@@ -56,7 +54,7 @@ export function SetupWizardPage({
   onSelectTool
 }: SetupWizardPageProps) {
   const t = useI18n();
-  const selectedTool = aiTools.find((tool) => tool.id === selectedToolId) ?? aiTools[0];
+  const selectedTool = tools.find((tool) => tool.id === selectedToolId) ?? tools[0];
   const activeStepIndex = setupFlowSteps.findIndex((step) => step.id === activeStepId);
 
   function goToPreviousStep() {
@@ -143,7 +141,8 @@ export function SetupWizardPage({
           {activeStepId === 'hook-settings' && (
             <HookSetupStep
               selectedToolId={selectedToolId}
-              selectedToolName={selectedTool.name}
+              selectedToolName={selectedTool?.name ?? selectedToolId}
+              tools={tools}
               onOpenHookSettings={onOpenHookSettings}
               onSelectTool={onSelectTool}
             />

@@ -12,6 +12,11 @@ impl HookConfigTargetService {
         project_path: &str,
     ) -> Result<AppConfig, String> {
         registry::ai_tool_definition(source)?;
+        if source == "deepseek-harness" {
+            return Err(format!(
+                "{source} only supports a global hook config target"
+            ));
+        }
         let normalized_path = Self::normalize_project_path(project_path)?;
         let exists = config.hook_config_targets.iter().any(|target| {
             target.scope == HookConfigTargetScope::Project
@@ -180,6 +185,21 @@ mod tests {
         assert_eq!(
             Some("/workspace/project-a".to_string()),
             target.project_path
+        );
+    }
+
+    #[test]
+    fn deepseek_project_target_is_rejected() {
+        let error = HookConfigTargetService::add_project_target(
+            AppConfig::default(),
+            "deepseek-harness",
+            "/workspace/project-a",
+        )
+        .expect_err("DeepSeek must be global-only");
+
+        assert_eq!(
+            "deepseek-harness only supports a global hook config target",
+            error
         );
     }
 

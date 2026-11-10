@@ -12,6 +12,7 @@ import { useHookEventSelection } from './useHookEventSelection';
 import { defaultTargetDebugEnabled } from './hookTargetDebugMode';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle } from 'lucide-react';
 import { Translator, useI18n } from '@/i18n';
 
@@ -88,6 +89,9 @@ export function HookSettingsPage({
       target.exists && (!target.matchesSelectedEvents || debugMismatch);
   });
   const hookConfigDisplayError = displayHookConfigError(hookTargetError ?? hookConfigError, t);
+  const tools = hookEventState?.tools?.length
+    ? hookEventState.tools.map((tool) => ({ id: tool.source, name: tool.displayName }))
+    : aiTools;
   const legacyTargets =
     hookEventState?.legacyTargets?.filter((target) => target.source === selectedToolId) ?? [];
 
@@ -101,10 +105,7 @@ export function HookSettingsPage({
       {/* AI 工具切换 */}
       <Tabs value={selectedToolId} onValueChange={(val) => onSelectTool(val as AiToolId)}>
         <TabsList>
-          {(hookEventState?.tools?.length
-            ? hookEventState.tools.map((tool) => ({ id: tool.source, name: tool.displayName }))
-            : aiTools
-          ).map((tool) => (
+          {tools.map((tool) => (
             <TabsTrigger key={tool.id} value={tool.id}>
               {tool.name}
             </TabsTrigger>
@@ -112,11 +113,14 @@ export function HookSettingsPage({
         </TabsList>
       </Tabs>
 
+      {selectedToolId === 'deepseek-harness' && <DeepSeekPluginResources />}
+
       <HookEventSelectionPanel
         onApplyRecommended={applyRecommended}
         onToggleEvent={toggleEvent}
         selectedEvents={selectedEvents}
         selectedToolId={selectedToolId}
+        tools={tools}
         visibleEvents={visibleEvents}
       />
 
@@ -173,6 +177,37 @@ export function HookSettingsPage({
         />
       )}
     </div>
+  );
+}
+
+function DeepSeekPluginResources() {
+  const t = useI18n();
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('hookSettings.deepseekPlugin.title')}</CardTitle>
+        <CardDescription>{t('hookSettings.deepseekPlugin.description')}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+        <a
+          href="https://github.com/oliverCJ/dsh-notice-hooks"
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary underline underline-offset-4"
+        >
+          {t('hookSettings.deepseekPlugin.github')}
+        </a>
+        <a
+          href="https://www.npmjs.com/package/dsh-notice-hooks"
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary underline underline-offset-4"
+        >
+          {t('hookSettings.deepseekPlugin.npm')}
+        </a>
+      </CardContent>
+    </Card>
   );
 }
 

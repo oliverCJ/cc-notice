@@ -256,6 +256,13 @@ pub fn summarize_hook_payload(
         "compact_summary",
         "hasCompactSummary",
     );
+    insert_presence(&mut summary, &parsed, "compaction_id", "hasCompactionId");
+    insert_presence(
+        &mut summary,
+        &parsed,
+        "source_command_id",
+        "hasSourceCommandId",
+    );
     insert_presence(&mut summary, &parsed, "message", "hasMessage");
     insert_presence(&mut summary, &parsed, "error_details", "hasErrorDetails");
 

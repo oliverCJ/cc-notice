@@ -5,7 +5,7 @@ import {
   HookEventDefinition,
   InternalEventDefinition
 } from '../../api/tauriApi';
-import { AiToolId, aiTools } from '../../state/appStore';
+import { AiToolId } from '../../state/appStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,6 +29,7 @@ type AiEventMappingPanelProps = {
   enabledHookEvents: Array<{ source: string; event: string }>;
   hookCatalog: HookEventDefinition[];
   internalEvents: InternalEventDefinition[];
+  tools?: Array<{ id: AiToolId; name: string }>;
   onChange: (next: {
     aiEventMappings: AiEventMapping[];
     hardwareRules: HardwareRule[];
@@ -41,6 +42,7 @@ export function AiEventMappingPanel({
   enabledHookEvents,
   hookCatalog,
   internalEvents,
+  tools = [],
   onChange
 }: AiEventMappingPanelProps) {
   const t = useI18n();
@@ -105,7 +107,7 @@ export function AiEventMappingPanel({
         {/* AI 工具切换 */}
         <Tabs value={selectedSource} onValueChange={(val) => setSelectedSource(val as AiToolId)}>
           <TabsList>
-            {aiTools.map((tool) => (
+            {tools.map((tool) => (
               <TabsTrigger key={tool.id} value={tool.id}>
                 {tool.name}
               </TabsTrigger>

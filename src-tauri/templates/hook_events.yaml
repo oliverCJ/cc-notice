@@ -441,3 +441,89 @@ sources:
         scenario: 用于观察权限和空闲通知。
         defaultSelected: false
         mappedNoticeEvent: notification
+  - id: deepseek-harness
+    events:
+      - event: SessionStart
+        title: 会话开始
+        description: DeepSeek Harness 会话创建或恢复时触发。
+        scenario: 用于提示 AI 已进入工作状态。
+        defaultSelected: true
+        mappedNoticeEvent: agent.started
+      - event: UserPromptSubmit
+        title: 用户提交提示
+        description: 用户向 DeepSeek Harness 提交提示时触发。
+        scenario: 用于提示新一轮 AI 工作即将开始。
+        defaultSelected: true
+        mappedNoticeEvent: agent.started
+      - event: PreToolUse
+        title: 工具调用前
+        description: DeepSeek Harness 即将调用工具前触发。
+        scenario: 用于提示 AI 正在执行具体操作。
+        defaultSelected: true
+        mappedNoticeEvent: tool.executing
+      - event: PostToolUse
+        title: 工具调用后
+        description: DeepSeek Harness 工具调用完成后触发。
+        scenario: 用于提示一次工具操作已结束。
+        defaultSelected: true
+        mappedNoticeEvent: agent.working
+      - event: PostToolUseFailure
+        title: 工具调用失败
+        description: DeepSeek Harness 工具调用失败后触发。
+        scenario: 用于提示 AI 操作失败。
+        defaultSelected: true
+        mappedNoticeEvent: agent.failed
+      - event: PermissionRequest
+        title: 权限请求
+        description: DeepSeek Harness 请求工具权限时触发。
+        scenario: 用于提示用户处理授权或确认。
+        defaultSelected: true
+        mappedNoticeEvent: agent.waiting_input
+      - event: SubagentStart
+        title: 子代理开始
+        description: DeepSeek Harness 子代理开始工作时触发。
+        scenario: 用于观察复杂任务中的子代理活动。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: SubagentStop
+        title: 子代理结束
+        description: DeepSeek Harness 子代理完成工作时触发。
+        scenario: 用于观察复杂任务中的子代理结束。
+        defaultSelected: false
+        mappedNoticeEvent: agent.completed
+      - event: Stop
+        title: 当前轮次结束
+        description: DeepSeek Harness 当前响应或任务轮次结束时触发。
+        scenario: 用于提示 AI 当前工作已完成。
+        defaultSelected: true
+        mappedNoticeEvent: agent.completed
+      - event: StopFailure
+        title: 当前轮次失败
+        description: DeepSeek Harness 当前轮次失败时触发。
+        scenario: 用于提示任务发生异常。
+        defaultSelected: true
+        mappedNoticeEvent: agent.failed
+      - event: PreCompact
+        title: 压缩前
+        description: DeepSeek Harness 即将压缩上下文前触发。
+        scenario: 用于观察上下文整理前的状态变化。
+        defaultSelected: false
+        mappedNoticeEvent: context.compacting
+      - event: PostCompact
+        title: 压缩后
+        description: DeepSeek Harness 完成上下文压缩后触发。
+        scenario: 用于观察上下文整理完成。
+        defaultSelected: false
+        mappedNoticeEvent: agent.working
+      - event: PostCompactFailure
+        title: 压缩失败
+        description: DeepSeek Harness 上下文压缩失败后触发。
+        scenario: 用于提示上下文整理发生异常。
+        defaultSelected: false
+        mappedNoticeEvent: agent.failed
+      - event: SessionEnd
+        title: 会话结束
+        description: DeepSeek Harness 会话终止时触发。
+        scenario: 用于观察会话结束。
+        defaultSelected: false
+        mappedNoticeEvent: agent.completed

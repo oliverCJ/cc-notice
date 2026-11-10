@@ -1,12 +1,13 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AiToolId, aiTools } from '../../../state/appStore';
+import { AiToolId } from '../../../state/appStore';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/i18n';
 
 type HookSetupStepProps = {
   selectedToolId: AiToolId;
   selectedToolName: string;
+  tools?: Array<{ id: AiToolId; name: string }>;
   onOpenHookSettings: () => void;
   onSelectTool: (toolId: AiToolId) => void;
 };
@@ -14,6 +15,7 @@ type HookSetupStepProps = {
 export function HookSetupStep({
   selectedToolId,
   selectedToolName,
+  tools = [],
   onOpenHookSettings,
   onSelectTool
 }: HookSetupStepProps) {
@@ -29,7 +31,7 @@ export function HookSetupStep({
         <CardContent className="space-y-4">
           {/* 工具选择按钮 */}
           <div className="grid gap-3 sm:grid-cols-2">
-            {aiTools.map((tool) => {
+            {tools.map((tool) => {
               const isSelected = selectedToolId === tool.id;
               return (
                 <button

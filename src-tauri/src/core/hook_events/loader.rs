@@ -121,7 +121,7 @@ mod tests {
     fn loads_hook_event_yaml_sources() {
         let config = load_hook_event_config().expect("hook event yaml should parse");
 
-        assert_eq!(5, config.sources.len());
+        assert_eq!(6, config.sources.len());
         assert!(config.sources.iter().any(|source| source.id == "codex"));
         assert!(config
             .sources
@@ -136,6 +136,10 @@ mod tests {
             .sources
             .iter()
             .any(|source| source.id == "github-copilot-cli"));
+        assert!(config
+            .sources
+            .iter()
+            .any(|source| source.id == "deepseek-harness"));
     }
 
     #[test]
@@ -143,6 +147,56 @@ mod tests {
         let config = load_hook_event_config().expect("hook event yaml should parse");
 
         validate_config(&config).expect("hook event yaml should be valid");
+    }
+
+    #[test]
+    fn deepseek_yaml_covers_compaction_events() {
+        let events = hook_events_for_source("deepseek-harness");
+        let names: Vec<&str> = events.iter().map(|event| event.event.as_str()).collect();
+
+        assert_eq!(
+            vec![
+                "SessionStart",
+                "UserPromptSubmit",
+                "PreToolUse",
+                "PostToolUse",
+                "PostToolUseFailure",
+                "PermissionRequest",
+                "SubagentStart",
+                "SubagentStop",
+                "Stop",
+                "StopFailure",
+                "PreCompact",
+                "PostCompact",
+                "PostCompactFailure",
+                "SessionEnd",
+            ],
+            names
+        );
+        assert_eq!(
+            "context.compacting",
+            events
+                .iter()
+                .find(|event| event.event == "PreCompact")
+                .unwrap()
+                .mapped_notice_event
+        );
+        assert_eq!(
+            "agent.working",
+            events
+                .iter()
+                .find(|event| event.event == "PostCompact")
+                .unwrap()
+                .mapped_notice_event
+        );
+        assert_eq!(
+            "agent.failed",
+            events
+                .iter()
+                .find(|event| event.event == "PostCompactFailure")
+                .unwrap()
+                .mapped_notice_event
+        );
     }
 
     #[test]

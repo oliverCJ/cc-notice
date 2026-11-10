@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { hookEventDescription, hookEventScenario, hookEventTitle } from '@/lib/hookEventText';
-import { AiToolId, aiTools } from '@/state/appStore';
+import { AiToolId } from '@/state/appStore';
 import { filterHookEvents } from './hookEventSelectionUtils';
 import { HookSettingsAlert } from './HookSettingsAlert';
 import { useI18n } from '@/i18n';
@@ -20,6 +20,7 @@ type HookEventSelectionPanelProps = {
   onToggleEvent: (eventName: string) => void;
   selectedEvents: string[];
   selectedToolId: AiToolId;
+  tools?: Array<{ id: AiToolId; name: string }>;
   visibleEvents: HookEventDefinition[];
 };
 
@@ -28,6 +29,7 @@ export function HookEventSelectionPanel({
   onToggleEvent,
   selectedEvents,
   selectedToolId,
+  tools = [],
   visibleEvents
 }: HookEventSelectionPanelProps) {
   const t = useI18n();
@@ -43,7 +45,7 @@ export function HookEventSelectionPanel({
             <CardTitle>{t('hookSettings.events.title')}</CardTitle>
             <CardDescription className="mt-1.5">
               {t('hookSettings.events.description', {
-                toolName: aiTools.find((tool) => tool.id === selectedToolId)?.name ?? selectedToolId
+                toolName: tools.find((tool) => tool.id === selectedToolId)?.name ?? selectedToolId
               })}
             </CardDescription>
           </div>

@@ -183,9 +183,14 @@ export default function App() {
   const t = useMemo(() => createTranslator(appConfig.ui.language), [appConfig.ui.language]);
   useThemeMode(appConfig.ui.themeMode);
   const appUpdate = useAppUpdate();
+  const availableAiTools = useMemo(
+    () =>
+      hookEventState?.tools?.map((tool) => ({ id: tool.source, name: tool.displayName })) ?? aiTools,
+    [hookEventState?.tools]
+  );
   const selectedTool = useMemo(
-    () => aiTools.find((tool) => tool.id === selectedToolId) ?? aiTools[0],
-    [selectedToolId]
+    () => availableAiTools.find((tool) => tool.id === selectedToolId) ?? availableAiTools[0],
+    [availableAiTools, selectedToolId]
   );
   useEffect(() => {
     void refreshAppSettings();
@@ -554,6 +559,7 @@ export default function App() {
         diagnosticsLoading={diagnosticsState.loading}
         diagnosticsError={diagnosticsState.error}
         selectedToolId={selectedToolId}
+        tools={availableAiTools}
         onActiveStepChange={setSetupActiveStepId}
         onOpenDebug={() => setActivePage('debug')}
         onOpenDevices={() => setActivePage('devices')}
@@ -588,6 +594,7 @@ export default function App() {
         activeProfileId={profileState?.activeProfileId ?? appConfig.activeProfileId}
         error={profileError}
         hookCatalog={hookEventState?.catalog ?? []}
+        tools={availableAiTools}
         hookEventSelections={hookEventState?.selected ?? appConfig.hookEventSelections}
         internalEvents={internalEvents}
         desktopNoticeInstances={appConfig.desktopNoticeInstances}

@@ -315,7 +315,7 @@ export type LocalHookServerStatus = {
 };
 
 export type HookEventDefinition = {
-  source: 'codex' | 'claude-code';
+  source: string;
   event: string;
   title: string;
   description: string;

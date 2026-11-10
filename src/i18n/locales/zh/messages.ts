@@ -958,6 +958,12 @@ export const zhMessages = {
       recommended: '推荐',
       requireOne: '至少选择一个 Hook 事件',
     },
+    deepseekPlugin: {
+      title: 'DeepSeek Harness 插件',
+      description: '使用 cc-notice 配置前，请先在 DSH 中安装并启用 dsh-notice-hooks 插件。',
+      github: 'GitHub',
+      npm: 'npm',
+    },
     targets: {
       title: '配置目标',
       description: '管理全局配置和项目级 Hook 配置文件',

@@ -9,6 +9,7 @@ import type { DesktopNoticeInstance } from '@/domain/desktopNotice';
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AiEventMappingPanel } from './AiEventMappingPanel';
+import type { AiToolOption } from '../../state/appStore';
 import { HardwareRulePanel } from './HardwareRulePanel';
 import { useI18n } from '@/i18n';
 import { buildLinkWorkflowViewModel, LinkWorkflowCanvas } from './link-workflow';
@@ -17,6 +18,7 @@ import { buildRuleDeviceOptions } from './ruleDeviceOptions';
 
 type RuleConfigurationTabsProps = {
   enabledHookEvents: EnabledHookEvent[];
+  tools?: AiToolOption[];
   hookCatalog: HookEventDefinition[];
   internalEvents: InternalEventDefinition[];
   desktopNoticeInstances: DesktopNoticeInstance[];
@@ -32,6 +34,7 @@ type RuleConfigurationTabsProps = {
 
 export function RuleConfigurationTabs({
   enabledHookEvents,
+  tools = [],
   hookCatalog,
   internalEvents,
   desktopNoticeInstances,
@@ -83,6 +86,7 @@ export function RuleConfigurationTabs({
         <AiEventMappingPanel
           enabledHookEvents={enabledHookEvents}
           hardwareRules={profile.hardwareRules}
+          tools={tools}
           hookCatalog={hookCatalog}
           internalEvents={internalEvents}
           mappings={profile.aiEventMappings}

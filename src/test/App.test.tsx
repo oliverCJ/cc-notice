@@ -926,6 +926,100 @@ test('logs warning when device runtime listener fails to initialize', async () =
   warnSpy.mockRestore();
 });
 
+test('hook settings shows DeepSeek plugin resources only for DeepSeek Harness', async () => {
+  const deepseekHookEventState = {
+    ...defaultHookEventState,
+    tools: [
+      {
+        source: 'deepseek-harness',
+        displayName: 'DeepSeek Harness',
+        globalConfigPath: '/Users/test/.dsh/hook.json',
+        canCreateProjectTarget: false
+      },
+      {
+        source: 'codex',
+        displayName: 'Codex',
+        globalConfigPath: '/Users/test/.codex/hooks.json',
+        canCreateProjectTarget: false
+      }
+    ],
+    catalog: [
+      {
+        source: 'deepseek-harness',
+        event: 'SessionStart',
+        title: '会话开始',
+        description: 'DeepSeek Harness 会话开始时触发。',
+        scenario: '用于提示 AI 已进入工作状态。',
+        defaultSelected: true,
+        mappedNoticeEvent: 'agent.started'
+      }
+    ],
+    selected: { bySource: { 'deepseek-harness': ['SessionStart'], codex: [] } },
+    targets: [
+      {
+        id: 'global-deepseek-harness',
+        scope: 'global',
+        source: 'deepseek-harness',
+        label: 'DeepSeek Harness 全局配置',
+        projectPath: null,
+        configPath: '/Users/test/.dsh/hook.json',
+        enabled: false,
+        exists: false,
+        canCreate: false,
+        matchesSelectedEvents: false,
+        debugEnabled: false
+      }
+    ]
+  };
+
+  invokeMock.mockImplementation((command, args) => {
+    if (command === 'get_app_config') {
+      return Promise.resolve({
+        ...defaultConfig,
+        hookEventSelections: deepseekHookEventState.selected,
+        hookConfigTargets: deepseekHookEventState.targets
+      });
+    }
+    if (command === 'hook_event_state') {
+      return Promise.resolve(deepseekHookEventState);
+    }
+    return defaultInvoke(command, args);
+  });
+
+  await renderApp();
+  fireEvent.click(screen.getByRole('button', { name: 'Hook 设置' }));
+  expect(await screen.findByRole('heading', { name: 'Hook 设置' })).toBeInTheDocument();
+  const deepseekTab = screen.getByRole('tab', { name: 'DeepSeek Harness' });
+  fireEvent.mouseDown(deepseekTab);
+  fireEvent.click(deepseekTab);
+  expect(deepseekTab).toHaveAttribute('data-state', 'active');
+  await waitFor(() =>
+    expect(screen.getByText(/请先在 DSH 中安装并启用 dsh-notice-hooks/)).toBeInTheDocument()
+  );
+  const pluginCardTitle = screen.getByText('DeepSeek Harness 插件');
+  const eventCardTitle = screen.getByText('Hook 事件');
+  expect(pluginCardTitle.compareDocumentPosition(eventCardTitle)).toBe(
+    Node.DOCUMENT_POSITION_FOLLOWING
+  );
+
+  const githubLink = screen.getByRole('link', { name: 'GitHub' });
+  const npmLink = screen.getByRole('link', { name: 'npm' });
+  expect(githubLink).toHaveAttribute('href', 'https://github.com/oliverCJ/dsh-notice-hooks');
+  expect(npmLink).toHaveAttribute('href', 'https://www.npmjs.com/package/dsh-notice-hooks');
+  expect(githubLink).toHaveAttribute('target', '_blank');
+  expect(npmLink).toHaveAttribute('target', '_blank');
+  expect(githubLink).toHaveAttribute('rel', 'noreferrer');
+  expect(npmLink).toHaveAttribute('rel', 'noreferrer');
+
+  fireEvent.mouseDown(screen.getByRole('tab', { name: 'Codex' }));
+  expect(screen.queryByText('DeepSeek Harness 插件')).not.toBeInTheDocument();
+  expect(
+    screen.queryByText(/请先在 DSH 中安装并启用 dsh-notice-hooks/)
+  ).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: 'GitHub' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: 'npm' })).not.toBeInTheDocument();
+});
+
 test('hook settings selects events, previews and writes global target only', async () => {
   await renderApp();
 

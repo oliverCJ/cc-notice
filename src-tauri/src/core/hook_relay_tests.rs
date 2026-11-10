@@ -404,6 +404,125 @@ fn debug_mode_attaches_raw_payload_while_keeping_summary_payload() {
 }
 
 #[test]
+fn deepseek_harness_payload_is_summarized_without_raw_payload_by_default() {
+    let options = RelayCliOptions {
+        source: "deepseek-harness".to_string(),
+        event: "PostToolUse".to_string(),
+        endpoint: None,
+        port: None,
+        payload: None,
+        occurred_at: Some("2026-06-08T12:00:00Z".to_string()),
+        debug: false,
+    };
+    let raw = r#"{
+        "hook_event_name":"PostToolUse",
+        "session_id":"dsh-session",
+        "cwd":"/workspace/dsh",
+        "turn_id":"turn-1",
+        "agent_id":"agent-1",
+        "agent_type":"worker",
+        "tool_name":"bash",
+        "tool_input":{"command":"pwd"},
+        "tool_response":{"exitCode":0}
+    }"#;
+
+    let body = build_submit_request_body(&options, raw)
+        .expect("DeepSeek body should build")
+        .expect("DeepSeek event should be forwarded");
+    let value: serde_json::Value = serde_json::from_str(&body).expect("body should be json");
+    let payload: serde_json::Value =
+        serde_json::from_str(value["payload"].as_str().expect("payload should be string"))
+            .expect("payload summary should be json");
+
+    assert_eq!("deepseek-harness", value["source"]);
+    assert_eq!("PostToolUse", value["event"]);
+    assert_eq!("dsh-session", payload["sessionId"]);
+    assert_eq!("turn-1", payload["turnId"]);
+    assert_eq!("agent-1", payload["agentId"]);
+    assert_eq!("worker", payload["agentType"]);
+    assert_eq!(serde_json::json!(true), payload["hasToolInput"]);
+    assert_eq!(serde_json::json!(true), payload["hasToolResponse"]);
+    assert!(value.get("rawPayload").is_none());
+}
+
+#[test]
+fn deepseek_compaction_payload_keeps_new_fields_in_summary() {
+    let options = RelayCliOptions {
+        source: "deepseek-harness".to_string(),
+        event: "PostCompactFailure".to_string(),
+        endpoint: None,
+        port: None,
+        payload: None,
+        occurred_at: Some("2026-06-08T12:00:00Z".to_string()),
+        debug: false,
+    };
+    let raw = r#"{
+        "hook_event_name":"PostCompactFailure",
+        "compaction_id":"compact-1",
+        "source_command_id":"compact-command-1",
+        "error":"compaction failed"
+    }"#;
+
+    let body = build_submit_request_body(&options, raw)
+        .expect("DeepSeek compaction body should build")
+        .expect("DeepSeek compaction event should be forwarded");
+    let value: serde_json::Value = serde_json::from_str(&body).expect("body should be json");
+    let payload: serde_json::Value =
+        serde_json::from_str(value["payload"].as_str().expect("payload should be string"))
+            .expect("payload summary should be json");
+
+    assert_eq!("PostCompactFailure", value["event"]);
+    assert_eq!(serde_json::json!(true), payload["hasCompactionId"]);
+    assert_eq!(serde_json::json!(true), payload["hasSourceCommandId"]);
+    assert_eq!("compaction failed", payload["error"]);
+    assert!(value.get("rawPayload").is_none());
+}
+
+#[test]
+fn deepseek_compaction_debug_mode_preserves_new_fields() {
+    let options = RelayCliOptions {
+        source: "deepseek-harness".to_string(),
+        event: "PostCompact".to_string(),
+        endpoint: None,
+        port: None,
+        payload: None,
+        occurred_at: Some("2026-06-08T12:00:00Z".to_string()),
+        debug: true,
+    };
+    let raw =
+        r#"{"hook_event_name":"PostCompact","compaction_id":"compact-2","source_command_id":null}"#;
+
+    let body = build_submit_request_body(&options, raw)
+        .expect("DeepSeek compaction debug body should build")
+        .expect("DeepSeek compaction event should be forwarded");
+    let value: serde_json::Value = serde_json::from_str(&body).expect("body should be json");
+
+    assert_eq!(raw, value["rawPayload"]);
+    assert_eq!("PostCompact", value["event"]);
+}
+
+#[test]
+fn deepseek_harness_debug_mode_preserves_raw_payload() {
+    let options = RelayCliOptions {
+        source: "deepseek-harness".to_string(),
+        event: "StopFailure".to_string(),
+        endpoint: None,
+        port: None,
+        payload: None,
+        occurred_at: Some("2026-06-08T12:00:00Z".to_string()),
+        debug: true,
+    };
+    let raw = r#"{"hook_event_name":"StopFailure","error":"failed"}"#;
+
+    let body = build_submit_request_body(&options, raw)
+        .expect("DeepSeek debug body should build")
+        .expect("DeepSeek debug event should be forwarded");
+    let value: serde_json::Value = serde_json::from_str(&body).expect("body should be json");
+
+    assert_eq!(raw, value["rawPayload"]);
+}
+
+#[test]
 fn relay_default_timestamp_uses_configured_local_offset() {
     let timestamp = crate::infrastructure::time_utils::format_rfc3339_for_offset(
         time::OffsetDateTime::new_utc(
