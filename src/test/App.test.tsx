@@ -996,6 +996,11 @@ test('hook settings shows DeepSeek plugin resources only for DeepSeek Harness', 
   await waitFor(() =>
     expect(screen.getByText(/请先在 DSH 中安装并启用 dsh-notice-hooks/)).toBeInTheDocument()
   );
+  const pluginCardTitle = screen.getByText('DeepSeek Harness 插件');
+  const eventCardTitle = screen.getByText('Hook 事件');
+  expect(pluginCardTitle.compareDocumentPosition(eventCardTitle)).toBe(
+    Node.DOCUMENT_POSITION_FOLLOWING
+  );
 
   const githubLink = screen.getByRole('link', { name: 'GitHub' });
   const npmLink = screen.getByRole('link', { name: 'npm' });
