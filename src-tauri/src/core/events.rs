@@ -4,6 +4,11 @@ use serde::{Deserialize, Serialize};
 pub enum SourceTool {
     Codex,
     ClaudeCode,
+    GeminiCli,
+    Cursor,
+    GithubCopilotCli,
+    DeepSeekHarness,
+    Other,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

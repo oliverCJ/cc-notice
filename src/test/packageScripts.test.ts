@@ -92,9 +92,6 @@ test('tauri npm script uses a cross-platform launcher without requiring sh', () 
   expect(script).not.toContain('npx.cmd');
   expect(script).toContain("spawnSync('cargo', ['--version']");
   expect(script).toContain('Rust/Cargo is required before running Tauri');
-  expect(script).not.toContain('buildRelayForDev');
-  expect(script).not.toContain("'--bin',");
-  expect(script).not.toContain("'cc-notice-relay'");
   expect(script).toContain('spawn');
 });
 

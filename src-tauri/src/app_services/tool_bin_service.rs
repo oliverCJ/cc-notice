@@ -62,16 +62,14 @@ impl ToolBinService {
 
     pub fn ensure_relay_installed(&self) -> Result<PathBuf, String> {
         let target = self.bin_dir().join(executable_name("cc-notice-relay"));
-        if target.exists() {
-            if same_file_content(&self.relay_source, &target)? {
-                return Ok(target);
-            }
-        }
         if !self.relay_source.exists() {
             return Err(format!(
                 "cc-notice-relay is not built at {}. Run npm run build:relay before writing hooks.",
                 self.relay_source.to_string_lossy()
             ));
+        }
+        if target.exists() && same_file_content(&self.relay_source, &target)? {
+            return Ok(target);
         }
 
         std::fs::create_dir_all(self.bin_dir()).map_err(|error| error.to_string())?;
@@ -312,6 +310,27 @@ mod tests {
 
         assert!(error.contains("cc-notice-relay is not built"));
         assert!(error.contains("npm run build:relay"));
+    }
+
+    #[test]
+    fn returns_readable_error_when_dev_source_is_missing_but_installed_copy_exists() {
+        let root = crate::test_support::unique_temp_root("tool-bin-missing-source-installed");
+        let app_home = root.join(".cc-notice");
+        let installed = app_home.join("bin/cc-notice-relay");
+        let source = root.join("target/debug/cc-notice-relay");
+        std::fs::create_dir_all(installed.parent().expect("installed parent"))
+            .expect("installed dir");
+        std::fs::write(&installed, "old-relay").expect("installed relay");
+        let service = ToolBinService::new(app_home, source.clone());
+
+        let error = service
+            .ensure_relay_installed()
+            .expect_err("missing source relay should fail clearly");
+
+        assert!(error.contains(source.to_string_lossy().as_ref()));
+        assert!(error.contains("cc-notice-relay is not built"));
+        assert!(error.contains("npm run build:relay"));
+        assert!(!error.contains("os error 2"));
     }
 
     #[test]

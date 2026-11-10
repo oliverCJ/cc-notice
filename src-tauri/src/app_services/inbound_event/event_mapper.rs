@@ -2,8 +2,13 @@ use crate::core::events::{NoticeEvent, NoticeEventType, SourceTool};
 
 pub(crate) fn source_tool_from_request(source: &str) -> SourceTool {
     match source {
+        "codex" => SourceTool::Codex,
         "claude-code" => SourceTool::ClaudeCode,
-        _ => SourceTool::Codex,
+        "gemini-cli" => SourceTool::GeminiCli,
+        "cursor" => SourceTool::Cursor,
+        "github-copilot-cli" => SourceTool::GithubCopilotCli,
+        "deepseek-harness" => SourceTool::DeepSeekHarness,
+        _ => SourceTool::Other,
     }
 }
 
@@ -39,11 +44,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn claude_code_source_maps_to_claude_code_tool() {
-        assert_eq!(
-            SourceTool::ClaudeCode,
-            source_tool_from_request("claude-code")
-        );
+    fn known_sources_map_to_independent_source_tools() {
+        let cases = [
+            ("codex", SourceTool::Codex),
+            ("claude-code", SourceTool::ClaudeCode),
+            ("gemini-cli", SourceTool::GeminiCli),
+            ("cursor", SourceTool::Cursor),
+            ("github-copilot-cli", SourceTool::GithubCopilotCli),
+            ("deepseek-harness", SourceTool::DeepSeekHarness),
+        ];
+
+        for (source, expected) in cases {
+            assert_eq!(expected, source_tool_from_request(source));
+        }
+    }
+
+    #[test]
+    fn unknown_source_maps_to_other() {
+        assert_eq!(SourceTool::Other, source_tool_from_request("unknown-tool"));
     }
 
     #[test]

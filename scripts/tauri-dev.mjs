@@ -92,8 +92,35 @@ function assertCargoAvailable() {
   process.exit(1);
 }
 
+function buildRelayForDev() {
+  if (args[0] !== 'dev') {
+    return;
+  }
+
+  const buildArgs = [
+    'build',
+    '--manifest-path',
+    'src-tauri/Cargo.toml',
+    '--bin',
+    'cc-notice-relay',
+  ];
+  console.info(`[tauri-dev] run cargo ${buildArgs.join(' ')}`);
+  const relayBuild = spawnSync('cargo', buildArgs, {
+    stdio: 'inherit',
+    env: process.env,
+  });
+  if (relayBuild.status === 0) {
+    return;
+  }
+
+  const details = relayBuild.error?.message ?? `exit code ${relayBuild.status ?? 1}`;
+  console.error(`[tauri-dev] failed to build cc-notice-relay: ${details}`);
+  process.exit(relayBuild.status ?? 1);
+}
+
 configureMacBuildEnv();
 assertCargoAvailable();
+buildRelayForDev();
 
 const { command, args: commandArgs } = tauriCommand();
 console.info(`[tauri-dev] run ${command} ${commandArgs.join(' ')}`);

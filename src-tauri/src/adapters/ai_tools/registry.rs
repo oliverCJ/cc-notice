@@ -72,6 +72,20 @@ const AI_TOOLS: &[AiToolDefinition] = &[
         global_root_env: Some("COPILOT_HOME"),
         env_config_dir: Some("hooks"),
     },
+    AiToolDefinition {
+        source: "deepseek-harness",
+        display_name: "DeepSeek Harness",
+        user_config_dir: ".dsh",
+        config_file_name: "hook.json",
+        inline_hooks_warning: false,
+        hook_config_shape: HookConfigShape::HooksObject,
+        payload_aliases: &DEFAULT_PAYLOAD_ALIASES,
+        codec_kind: HookConfigCodecKind::DeepSeekJson,
+        target_kind: HookTargetKind::SharedFile,
+        can_create_project_target: false,
+        global_root_env: None,
+        env_config_dir: None,
+    },
 ];
 
 pub fn all_ai_tools() -> &'static [AiToolDefinition] {
@@ -114,6 +128,20 @@ mod tests {
         assert!(ids.contains(&"gemini-cli"));
         assert!(ids.contains(&"cursor"));
         assert!(ids.contains(&"github-copilot-cli"));
+        assert!(ids.contains(&"deepseek-harness"));
+        assert_eq!(
+            "DeepSeek Harness",
+            ai_tool_definition("deepseek-harness").unwrap().display_name
+        );
+        assert_eq!(
+            HookConfigCodecKind::DeepSeekJson,
+            ai_tool_definition("deepseek-harness").unwrap().codec_kind
+        );
+        assert!(
+            !ai_tool_definition("deepseek-harness")
+                .unwrap()
+                .can_create_project_target
+        );
         assert_eq!("Codex", ai_tool_definition("codex").unwrap().display_name);
         assert_eq!(
             HookConfigShape::HooksObject,
@@ -160,6 +188,7 @@ mod tests {
     fn resolves_config_paths_from_tool_definition() {
         let codex = ai_tool_definition("codex").unwrap();
         let claude = ai_tool_definition("claude-code").unwrap();
+        let deepseek = ai_tool_definition("deepseek-harness").unwrap();
 
         assert_eq!(
             Path::new("/Users/alice/.codex/hooks.json"),
@@ -178,6 +207,16 @@ mod tests {
                     HookConfigTargetScope::Project,
                     Path::new("/Users/alice"),
                     Some(Path::new("/workspace/app")),
+                )
+                .unwrap()
+        );
+        assert_eq!(
+            Path::new("/Users/alice/.dsh/hook.json"),
+            deepseek
+                .config_path(
+                    HookConfigTargetScope::Global,
+                    Path::new("/Users/alice"),
+                    None
                 )
                 .unwrap()
         );

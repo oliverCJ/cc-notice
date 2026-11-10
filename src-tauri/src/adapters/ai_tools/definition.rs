@@ -31,6 +31,7 @@ pub enum HookConfigCodecKind {
     MatcherGroupJson,
     FlatHooksJson,
     CopilotHooksJson,
+    DeepSeekJson,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
